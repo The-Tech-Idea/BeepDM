@@ -68,14 +68,8 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     return false;
                 }
 
-                // Phase 6: security check. This runs BEFORE the CRUD flag
-                // guard below, and the order matters: SetBlockSecurity calls
-                // ApplyAllSecurityFlags, which writes the policy INTO those same
-                // CRUD flags. With the guard first, a security denial always
-                // exited here and EnforceBlockSecurity never ran, so the denial
-                // was honoured but never recorded — GetSecurityViolations stayed
-                // empty for every real denial and the security panel showed an
-                // empty audit trail. (2026-08-03)
+                // Record policy denial before checking effective flags, which
+                // combine authored configuration with the security overlay.
                 if (!EnforceBlockSecurity(blockName, SecurityPermission.Delete))
                 {
                     Status = $"Security: delete not permitted on block '{blockName}'";
@@ -367,153 +361,17 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         }
 
         /// <summary>
-        /// Builds the row-level security filter for a block
-        /// (<see cref="BlockSecurity.RowFilterClause"/>/<c>.RowFilterValues</c>),
-        /// parsed and ready to AND into a query's filter list the same way
-        /// <c>DefaultWhereClause</c> already is.
-        /// </summary>
-        /// <remarks>
-        /// <c>ISecurityManager.GetBlockRowFilter</c>/<c>GetBlockSecurity</c> existed
-        /// with no caller anywhere in the engine — a block configured with a row
-        /// filter (e.g. "TenantId = :TenantId", to restrict a user to their own
-        /// tenant's rows) had that restriction stored and never enforced:
-        /// <see cref="ExecuteQueryAsync"/> only ever checked the coarse
-        /// query/insert/update/delete allow-flags via
-        /// <see cref="EnforceBlockSecurity"/>, never the row filter, so a
-        /// permitted user saw every row rather than only their own. (2026-08-22)
-        /// </remarks>
-        private List<AppFilter> BuildSecurityRowFilters(string blockName)
-        {
-            var security = _securityManager?.GetBlockSecurity(blockName);
-            if (security == null || string.IsNullOrWhiteSpace(security.RowFilterClause))
-                return null;
-
-            var filters = _queryBuilderManager.ParseWhereClause(security.RowFilterClause);
-            if (filters == null || filters.Count == 0) return null;
-
-            if (security.RowFilterValues != null)
-            {
-                foreach (var filter in filters)
-                {
-                    // ParseWhereClause has no concept of a ":Name" bind
-                    // placeholder — it parses "TenantId = :TenantId" as a
-                    // literal FilterValue of ":TenantId". Resolve it against
-                    // RowFilterValues here, the one place that dictionary is
-                    // actually meant to be consumed per its own doc comment.
-                    if (filter.FilterValue != null &&
-                        filter.FilterValue.StartsWith(":", StringComparison.Ordinal) &&
-                        security.RowFilterValues.TryGetValue(filter.FilterValue.Substring(1), out var value))
-                    {
-                        filter.FilterValue = value?.ToString() ?? string.Empty;
-                    }
-                }
-            }
-
-            return filters;
-        }
-
-        /// <summary>
         /// Executes query for a block - equivalent to Oracle Forms EXECUTE_QUERY.
-        /// Merges block-level default WHERE clause with caller-supplied filters via QueryBuilder.
+        /// Enhanced execution combines caller, default and mandatory security restrictions.
         /// </summary>
         public async Task<bool> ExecuteQueryAsync(string blockName, List<AppFilter> filters = null)
         {
             try
             {
-                var block = GetBlock(blockName);
-
-                // Captured before ExecuteQueryEnhancedAsync transitions the mode
-                // below, for the EXIT_QUERY fire point further down.
-                // ExecuteQueryAndEnterCrudModeAsync (ModeTransitions.cs) is the
-                // method that reads as the natural EXIT_QUERY choke point, but
-                // it has no callers anywhere outside its own unit tests -- this
-                // method, not that one, is what both hosts' ExecuteQueryAsync
-                // actually calls.
-                var wasInEnterQueryMode = block?.Mode == DataBlockMode.EnterQuery;
-
-                // Phase 6: security check. This runs BEFORE the CRUD flag
-                // guard below, and the order matters: SetBlockSecurity calls
-                // ApplyAllSecurityFlags, which writes the policy INTO those same
-                // CRUD flags. With the guard first, a security denial always
-                // exited here and EnforceBlockSecurity never ran, so the denial
-                // was honoured but never recorded — GetSecurityViolations stayed
-                // empty for every real denial and the security panel showed an
-                // empty audit trail. (2026-08-03)
-                if (!EnforceBlockSecurity(blockName, SecurityPermission.Query))
-                {
-                    Status = $"Security: query not permitted on block '{blockName}'";
-                    return false;
-                }
-
-                if (block != null && !block.QueryAllowed)
-                {
-                    Status = $"Query not allowed for block '{blockName}'";
-                    return false;
-                }
-
-                // Merge default WHERE clause from block metadata
-                var finalFilters = filters;
-                if (block != null && !string.IsNullOrWhiteSpace(block.DefaultWhereClause))
-                {
-                    var defaultFilters = _queryBuilderManager.ParseWhereClause(block.DefaultWhereClause);
-                    finalFilters = _queryBuilderManager.CombineFiltersAnd(
-                        finalFilters ?? new List<AppFilter>(), defaultFilters);
-                }
-
-                // Merge row-level security filter — see BuildSecurityRowFilters.
-                var securityFilters = BuildSecurityRowFilters(blockName);
-                if (securityFilters != null)
-                {
-                    finalFilters = _queryBuilderManager.CombineFiltersAnd(
-                        finalFilters ?? new List<AppFilter>(), securityFilters);
-                }
-
-                var result = await ExecuteQueryEnhancedAsync(blockName, finalFilters).ConfigureAwait(false);
-                if (result.Flag == Errors.Ok)
-                {
-                    Status = $"Query executed successfully for block '{blockName}'";
-                    _messageManager?.ShowInfoMessage(blockName, Status);
-
-                    // TriggerType.ExitQuery (Oracle Forms EXIT_QUERY) existed
-                    // with no firing code anywhere -- confirmed by grepping the
-                    // whole engine. Fired only when the block actually was in
-                    // enter-query mode, matching Oracle Forms pairing
-                    // EXIT_QUERY with ENTER_QUERY, not with an ordinary
-                    // re-query of a block already showing results. (2026-08-26)
-                    if (wasInEnterQueryMode)
-                    {
-                        await _triggerManager.FireBlockTriggerAsync(
-                            TriggerType.ExitQuery, blockName,
-                            TriggerContext.ForBlock(TriggerType.ExitQuery, blockName, null, _dmeEditor)).ConfigureAwait(false);
-                    }
-                }
-                else
-                {
-                    bool warningOutcome = IsQueryWarningOutcome(result);
-                    Status = string.IsNullOrWhiteSpace(result.Message)
-                        ? (warningOutcome
-                            ? $"Query execution stopped for block '{blockName}'"
-                            : $"Error executing query for block '{blockName}'")
-                        : result.Message;
-
-                    if (warningOutcome)
-                    {
-                        _messageManager?.ShowWarningMessage(blockName, Status);
-                    }
-                    else
-                    {
-                        _messageManager?.ShowErrorMessage(blockName, Status);
-                    }
-                }
+                var result = await ExecuteManagedQueryAsync(blockName, filters, CancellationToken.None, true).ConfigureAwait(false);
                 return result.Flag == Errors.Ok;
             }
-            catch (Exception ex)
-            {
-                Status = $"Error executing query for '{blockName}': {ex.Message}";
-                LogError($"Error executing query for '{blockName}'", ex, blockName);
-                _eventManager.TriggerError(blockName, ex);
-                return false;
-            }
+            catch (Exception) { return false; }
         }
 
         /// <summary>
@@ -535,60 +393,28 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         {
             try
             {
-                var block = GetBlock(blockName);
-                if (block == null)
-                {
-                    Status = $"Block '{blockName}' not found";
-                    return -1;
-                }
-
-                var entityName = block.EntityStructure?.EntityName;
-                if (string.IsNullOrWhiteSpace(entityName))
-                {
-                    Status = $"Block '{blockName}' has no entity name to count against";
-                    return -1;
-                }
-
-                var ds = _dmeEditor.GetDataSource(block.DataSourceName);
-                if (ds == null)
-                {
-                    Status = $"Block '{blockName}' has no open datasource '{block.DataSourceName}'";
-                    return -1;
-                }
-
-                // Merge default WHERE clause with caller-supplied filters —
-                // identical to ExecuteQueryAsync, so COUNT_QUERY and
-                // EXECUTE_QUERY always agree on what "matches."
-                var finalFilters = filters;
-                if (!string.IsNullOrWhiteSpace(block.DefaultWhereClause))
-                {
-                    var defaultFilters = _queryBuilderManager.ParseWhereClause(block.DefaultWhereClause);
-                    finalFilters = _queryBuilderManager.CombineFiltersAnd(
-                        finalFilters ?? new List<AppFilter>(), defaultFilters);
-                }
-
-                // Merge row-level security filter — see BuildSecurityRowFilters.
-                // Without this, COUNT_QUERY would report how many rows match
-                // *ignoring* the same row-level restriction EXECUTE_QUERY
-                // enforces, leaking the true row count to a user who isn't
-                // permitted to see all of them.
-                var securityFilters = BuildSecurityRowFilters(blockName);
-                if (securityFilters != null)
-                {
-                    finalFilters = _queryBuilderManager.CombineFiltersAnd(
-                        finalFilters ?? new List<AppFilter>(), securityFilters);
-                }
-
-                var whereClause = finalFilters != null && finalFilters.Count > 0
-                    ? string.Join(" AND ", finalFilters.Select(TheTechIdea.Beep.Utils.Util.GenerateFilterExpression))
-                    : null;
-
-                var sql = string.IsNullOrWhiteSpace(whereClause)
-                    ? $"SELECT COUNT(*) FROM {entityName}"
-                    : $"SELECT COUNT(*) FROM {entityName} WHERE {whereClause}";
-
-                var scalar = await ds.GetScalarAsync(sql).ConfigureAwait(false);
-                var count = (int)scalar;
+                ct.ThrowIfCancellationRequested();
+                var readPlan = BuildManagedReadPlan(blockName, filters);
+                var block = readPlan.Block;
+                var entityName = string.IsNullOrWhiteSpace(readPlan.UnitEntityName)
+                    ? readPlan.EntityName : readPlan.UnitEntityName;
+                var ds = readPlan.DataSource ?? _dmeEditor.GetDataSource(readPlan.DataSourceName);
+                if (ds == null) throw new InvalidOperationException("Managed count has no datasource.");
+                VerifyManagedReadPlan(blockName, readPlan);
+                var parameterized = ds is TheTechIdea.Beep.DataBase.IParameterizedScalarDataSource;
+                var definition = TheTechIdea.Beep.Editor.Forms.Helpers.ManagedCountQuery.Build(
+                    entityName, readPlan.Filters, ds.DatasourceType, parameterized);
+                object scalar = parameterized
+                    ? await ((TheTechIdea.Beep.DataBase.IParameterizedScalarDataSource)ds).GetScalarAsync(definition, ct).ConfigureAwait(false)
+                    : await ds.GetScalarAsync(definition.QueryText).ConfigureAwait(false);
+                ct.ThrowIfCancellationRequested();
+                VerifyManagedReadPlan(blockName, readPlan);
+                if (scalar is not (sbyte or byte or short or ushort or int or uint or long or ulong or decimal or float or double))
+                    throw new InvalidOperationException("Managed count returned a nonnumeric result.");
+                var number = Convert.ToDecimal(scalar, System.Globalization.CultureInfo.InvariantCulture);
+                if (scalar == null || scalar == DBNull.Value || number < 0 || number > int.MaxValue || decimal.Truncate(number) != number)
+                    throw new InvalidOperationException("Managed count returned an invalid or overflowing result.");
+                var count = (int)number;
                 Status = $"Query would return {count} record(s) for block '{blockName}'";
                 return count;
             }

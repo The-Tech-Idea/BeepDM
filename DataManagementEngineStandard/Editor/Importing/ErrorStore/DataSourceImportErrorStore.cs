@@ -33,7 +33,9 @@ namespace TheTechIdea.Beep.Editor.Importing.ErrorStore
         public async Task SaveAsync(ImportErrorRecord record, CancellationToken token = default)
         {
             var ds = await GetDataSourceAsync().ConfigureAwait(false);
-            await Task.Run(() => ds.InsertEntity(EntityName, record), token).ConfigureAwait(false);
+            var acknowledgement = await Task.Run(() => ds.InsertEntity(EntityName, record), token).ConfigureAwait(false);
+            if (acknowledgement?.Flag != TheTechIdea.Beep.ConfigUtil.Errors.Ok)
+                throw new InvalidOperationException("Import reject-store write was not acknowledged.");
         }
 
         public async Task<IReadOnlyList<ImportErrorRecord>> LoadAsync(string contextKey, CancellationToken token = default)

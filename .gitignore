@@ -375,6 +375,12 @@ FodyWeavers.xsd
 .plans/
 **/.plans/
 
+# Keep the framework implementation roadmap under version control.
+!/.plans/
+/.plans/*
+!/.plans/framework/
+!/.plans/framework/*.md
+
 # Tizen workload installer (not part of this project)
 workload-install.ps1
 

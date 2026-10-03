@@ -472,23 +472,28 @@ namespace TheTechIdea.Beep.Editor.UOWManager
 
         public async Task<double> GetBlockAggregateScalarAsync(string blockName, string aggregateExpression, CancellationToken ct = default)
         {
-            var block = GetBlock(blockName);
-            if (block == null) return 0;
             try
             {
-                var ds = _dmeEditor.GetDataSource(block.DataSourceName);
-                if (ds == null) return 0;
-
-                var method = ds.GetType().GetMethod("GetScalarAsync");
-                if (method == null) return 0;
-
-                var task = (Task)method.Invoke(ds, new object[] { aggregateExpression });
-                if (task == null) return 0;
-
-                await task.ConfigureAwait(false);
-                var resultProp = task.GetType().GetProperty("Result");
-                var raw = resultProp?.GetValue(task);
-                return raw is double d ? d : Convert.ToDouble(raw ?? 0);
+                ct.ThrowIfCancellationRequested();
+                var plan = BuildManagedReadPlan(blockName, null);
+                var ds = plan.DataSource ?? _dmeEditor.GetDataSource(plan.DataSourceName);
+                if (ds == null) throw new InvalidOperationException("Managed aggregate has no datasource.");
+                var entity = string.IsNullOrWhiteSpace(plan.UnitEntityName) ? plan.EntityName : plan.UnitEntityName;
+                var parameterized = ds is IParameterizedScalarDataSource;
+                var definition = ManagedAggregateQuery.Build(entity, plan.DeclaredFields, plan.Filters,
+                    aggregateExpression, ds.DatasourceType, parameterized);
+                VerifyManagedReadPlan(blockName, plan);
+                object raw = parameterized
+                    ? await ((IParameterizedScalarDataSource)ds).GetScalarAsync(definition, ct).ConfigureAwait(false)
+                    : await ds.GetScalarAsync(definition.QueryText).ConfigureAwait(false);
+                ct.ThrowIfCancellationRequested();
+                VerifyManagedReadPlan(blockName, plan);
+                if (raw == null || raw == DBNull.Value) return 0;
+                if (raw is not (sbyte or byte or short or ushort or int or uint or long or ulong or decimal or float or double))
+                    throw new InvalidOperationException("Managed aggregate returned a nonnumeric result.");
+                var value = Convert.ToDouble(raw, System.Globalization.CultureInfo.InvariantCulture);
+                if (!double.IsFinite(value)) throw new InvalidOperationException("Managed aggregate returned a non-finite result.");
+                return value;
             }
             catch (Exception ex)
             {

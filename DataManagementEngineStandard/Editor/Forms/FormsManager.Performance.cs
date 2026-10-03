@@ -44,39 +44,13 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         }
 
         /// <summary>
-        /// Navigates the UoW cursor to the first record of the specified page and returns
-        /// a <see cref="PageInfo"/> describing the new position.
-        /// Returns <c>null</c> if the block is not found or the page number is out of range.
+        /// Local cursor paging over already loaded, authorized rows; never fetches a provider page.
+        /// Returns null unless page state is acknowledged. Use typed local outcomes for partial effects.
         /// </summary>
         public async Task<PageInfo> LoadPageAsync(string blockName, int pageNumber, CancellationToken ct = default)
         {
-            if (string.IsNullOrWhiteSpace(blockName)) return null;
-
-            var block = GetBlock(blockName);
-            if (block?.UnitOfWork == null)
-            {
-                Status = $"Block '{blockName}' not found or has no unit of work";
-                return null;
-            }
-
-            var pageInfo = _pagingManager.SetCurrentPage(blockName, pageNumber);
-
-            // Sync DataBlockInfo.CurrentPage
-            block.CurrentPage = pageInfo.PageNumber;
-
-            // Navigate the UoW cursor to the first record of the page (skip = pageInfo.Skip)
-            if (block.UnitOfWork.Units != null)
-            {
-                int skip = pageInfo.Skip;
-                int total = block.UnitOfWork.TotalItemCount;
-                int targetIndex = Math.Min(skip, Math.Max(0, total - 1));
-
-                if (total > 0)
-                    await NavigateToRecordAsync(blockName, targetIndex).ConfigureAwait(false);
-            }
-
-            Status = $"Block '{blockName}' loaded page {pageInfo.PageNumber} of {pageInfo.TotalPages}";
-            return pageInfo;
+            var result = await LoadLocalPageWithOutcomeAsync(blockName, pageNumber, ct).ConfigureAwait(false);
+            return result.PageStatePublished ? result.Page : null;
         }
 
         /// <summary>
@@ -86,6 +60,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         public long GetTotalRecordCount(string blockName)
         {
             if (string.IsNullOrWhiteSpace(blockName)) return 0;
+
+            if (_pagingManager is ILocalPagingPublication state && state.TryGetStoredCount(blockName, out var known))
+                return known;
 
             var stored = _pagingManager.GetTotalRecordCount(blockName);
             if (stored > 0) return stored;
@@ -105,8 +82,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         }
 
         /// <summary>
-        /// Configures how many pages beyond the current one should be pre-fetched.
-        /// Set to 0 to disable fetch-ahead.
+        /// Stores intended fetch-ahead depth. This facade does not fetch or cache provider pages.
         /// </summary>
         public void SetFetchAheadDepth(string blockName, int depth)
         {
@@ -142,8 +118,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         }
 
         /// <summary>
-        /// Configures the maximum number of records fetched per load cycle when lazy loading
-        /// or paged loading is active.
+        /// Stores an intended fetch limit; this setting alone does not bound managed/provider reads.
         /// </summary>
         public void SetMaxRecordsPerFetch(string blockName, int max)
         {
@@ -157,8 +132,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         #region 7.3 — Cache Management
 
         /// <summary>
-        /// Removes a block from the performance cache, forcing the next read to go to the data source.
-        /// Use when an external process has modified the data.
+        /// Removes cached block metadata. This does not itself re-query records or refresh a view.
         /// </summary>
         public void InvalidateBlockCache(string blockName)
         {

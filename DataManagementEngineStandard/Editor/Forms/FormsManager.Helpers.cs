@@ -28,6 +28,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         /// <param name="unitOfWork">Unit of work backing the block.</param>
         protected void ValidateBlockRegistrationParameters(string blockName, IUnitofWork unitOfWork)
         {
+            ObjectDisposedException.ThrowIf(_disposed, this);
             if (string.IsNullOrWhiteSpace(blockName))
                 throw new ArgumentException("Block name cannot be null or empty", nameof(blockName));
             
@@ -297,7 +298,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         private void ResumeSync(string blockName) =>
             _syncSuppressCount.AddOrUpdate(blockName, 0, (_, v) => Math.Max(0, v - 1));
         private bool IsSyncSuppressed(string blockName) =>
-            _syncSuppressCount.TryGetValue(blockName, out var cnt) && cnt > 0;
+            (_syncSuppressCount.TryGetValue(blockName, out var cnt) && cnt > 0) || IsDetailSyncSuppressed(blockName);
 
         private void ValidateRelationshipParameters(string masterBlockName, string detailBlockName)
         {
@@ -326,185 +327,6 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     return new List<DataBlockRelationship>();
 
                 return relationships.Where(r => r.IsActive).ToList();
-            }
-        }
-
-        private async Task SynchronizeDetailHierarchyAsync(string masterBlockName, HashSet<string> visited, CancellationToken ct = default)
-        {
-            ct.ThrowIfCancellationRequested();
-
-            if (!visited.Add(masterBlockName))
-                return;
-
-            var relationships = GetActiveRelationships(masterBlockName);
-            if (!relationships.Any())
-                return;
-
-            var masterBlock = GetBlock(masterBlockName);
-            var currentItem = masterBlock?.UnitOfWork?.CurrentItem;
-            if (currentItem == null)
-            {
-                foreach (var relationship in relationships)
-                    await ClearDetailHierarchyAsync(relationship.DetailBlockName, visited, ct).ConfigureAwait(false);
-                return;
-            }
-
-            foreach (var relationship in relationships)
-            {
-                ct.ThrowIfCancellationRequested();
-
-                // Coordination = Deferred (added 2026-08-22): leave this
-                // detail block exactly as it is — neither re-queried nor
-                // cleared — and record that it owes a sync. A host calls
-                // SynchronizeDeferredDetailAsync when it actually needs the
-                // detail current (e.g. the user is about to view it). Do not
-                // recurse into this relationship's own sub-details either:
-                // if this level hasn't caught up, nothing below it should.
-                if (relationship.Coordination == DetailCoordination.Deferred)
-                {
-                    _pendingDeferredSync[relationship.DetailBlockName] = true;
-                    continue;
-                }
-
-                var fieldMappings = GetRelationshipFieldMappings(relationship);
-                if (fieldMappings.Count == 0)
-                {
-                    // B8 (audit pass 3, 2026-06): silent-fail fix.
-                    // The previous version treated an empty
-                    // mapping list (returned when
-                    // MasterDetailKeyResolver.TryParseMappings
-                    // fails — e.g. malformed composite key like
-                    // "OrderId;LineNumber" with the wrong
-                    // separator) as "no filter, clear the
-                    // detail". The clear still happened, but
-                    // the user had no signal that their
-                    // relationship config was wrong. Log it
-                    // once before the clear so the misconfig
-                    // is visible.
-                    LogError(
-                        $"SynchronizeDetailHierarchyAsync: failed to parse master/detail key mapping for relationship " +
-                        $"({relationship.MasterBlockName}.{relationship.MasterKeyField} -> " +
-                        $"{relationship.DetailBlockName}.{relationship.DetailForeignKeyField}). " +
-                        $"Falling back to clearing the detail block.",
-                        null, relationship.DetailBlockName);
-                    await ClearDetailHierarchyAsync(relationship.DetailBlockName, visited, ct).ConfigureAwait(false);
-                    continue;
-                }
-
-                var filters = new List<AppFilter>();
-                var hasMissingMasterValue = false;
-
-                foreach (var mapping in fieldMappings)
-                {
-                    var masterValue = GetPropertyValue(currentItem, mapping.MasterField);
-                    if (IsNullOrEmpty(masterValue))
-                    {
-                        hasMissingMasterValue = true;
-                        break;
-                    }
-
-                    filters.Add(new AppFilter
-                    {
-                        FieldName = mapping.DetailField,
-                        Operator = "=",
-                        // B3 (audit pass 3, 2026-06): culture-invariant
-                        // ToString. The previous version used the
-                        // current culture's default, which
-                        // produced different strings for
-                        // DateTime / float / decimal in
-                        // different locales. The filter value
-                        // round-trips through the UoW's Get
-                        // path, which parses the string back to
-                        // the target type — a culture-mismatched
-                        // string would silently fail to parse
-                        // and the detail query would return
-                        // zero rows. Using InvariantCulture makes
-                        // the round-trip deterministic.
-                        FilterValue = masterValue is IFormattable fmt
-                            ? fmt.ToString(null, System.Globalization.CultureInfo.InvariantCulture)
-                            : masterValue.ToString()
-                    });
-                }
-
-                if (hasMissingMasterValue)
-                {
-                    await ClearDetailHierarchyAsync(relationship.DetailBlockName, visited, ct).ConfigureAwait(false);
-                    continue;
-                }
-
-                var detailBlock = GetBlock(relationship.DetailBlockName);
-                if (detailBlock?.UnitOfWork == null)
-                    continue;
-
-
-                SuppressSync(relationship.DetailBlockName);
-                try
-                {
-                    await detailBlock.UnitOfWork.Get(filters).ConfigureAwait(false);
-                }
-                // B4 (audit pass 3, 2026-06): the previous
-                // version had no catch — an exception from
-                // UnitOfWork.Get (e.g. SQL error, disposed
-                // connection) would propagate up and abort
-                // the whole hierarchy sync, leaving the
-                // remaining relationships' detail blocks in
-                // an un-synced state. Now: log, continue to
-                // the next relationship.
-                catch (Exception ex)
-                {
-                    LogError(
-                        $"SynchronizeDetailHierarchyAsync: failed to query detail block '{relationship.DetailBlockName}' for " +
-                        $"master '{relationship.MasterBlockName}' key '{relationship.MasterKeyField}'. " +
-                        $"Detail block left in its previous state.",
-                        ex, relationship.DetailBlockName);
-                }
-                finally
-                {
-                    ResumeSync(relationship.DetailBlockName);
-                }
-
-                await SynchronizeDetailHierarchyAsync(relationship.DetailBlockName, visited, ct).ConfigureAwait(false);
-            }
-        }
-
-        private async Task ClearDetailHierarchyAsync(string blockName, HashSet<string> visited, CancellationToken ct = default)
-        {
-            ct.ThrowIfCancellationRequested();
-
-            if (!visited.Add(blockName))
-                return;
-
-            var blockInfo = GetBlock(blockName);
-            if (blockInfo?.UnitOfWork != null)
-            {
-                SuppressSync(blockName);
-                try
-                {
-                    blockInfo.UnitOfWork.Clear();
-                }
-                // B5 (audit pass 3, 2026-06): same pattern as
-                // B4. UnitOfWork.Clear() on a disposed or
-                // otherwise unhappy UoW throws — the
-                // exception previously aborted the whole
-                // hierarchy clear, leaving downstream
-                // detail blocks uncleared. Now: log,
-                // continue clearing the rest of the
-                // hierarchy.
-                catch (Exception ex)
-                {
-                    LogError(
-                        $"ClearDetailHierarchyAsync: failed to clear block '{blockName}'",
-                        ex, blockName);
-                }
-                finally
-                {
-                    ResumeSync(blockName);
-                }
-            }
-
-            foreach (var detailBlockName in GetDetailBlocks(blockName))
-            {
-                await ClearDetailHierarchyAsync(detailBlockName, visited, ct).ConfigureAwait(false);
             }
         }
 
@@ -539,6 +361,10 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             {
                 return new List<DataBlockFieldMapping>();
             }
+
+            if (relationship.KeyFieldMappings?.Count > 0)
+                return relationship.KeyFieldMappings.Select(m => new DataBlockFieldMapping
+                    { MasterField = m.MasterField, DetailField = m.DetailField }).ToList();
 
             if (!MasterDetailKeyResolver.TryParseMappings(
                 relationship.MasterKeyField,

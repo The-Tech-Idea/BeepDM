@@ -32,7 +32,7 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
             {
                 return upperRule switch
                 {
-                    "NEWGUID" or "GUID" or "UUID" or "GENERATEUNIQUEID" => Guid.NewGuid().ToString(),
+                    "NEWGUID" or "GUID" or "UUID" or "GENERATEUNIQUEID" or "NEWGUID()" or "GENERATEUNIQUEID()" => Guid.NewGuid().ToString(),
                     _ when upperRule.StartsWith("GUID(") => ParseGuidFormat(rule),
                     _ when upperRule.StartsWith("UUID(") => ParseGuidFormat(rule),
                     _ => Guid.NewGuid().ToString()
@@ -49,6 +49,9 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
         {
             if (string.IsNullOrWhiteSpace(rule))
                 return false;
+
+            if (RequiredDefaultResolution.Current != null)
+                return RequiredBuiltInRule.MatchesOperator(rule, SupportedRuleTypes);
 
             var upperRule = rule.ToUpperInvariant().Trim();
             return SupportedRuleTypes.Any(type => upperRule.Contains(type)) ||

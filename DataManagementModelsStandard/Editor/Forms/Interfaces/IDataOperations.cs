@@ -321,8 +321,8 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
         PageInfo GetCurrentPage(string blockName);
 
         /// <summary>
-        /// Advances the paging state to the specified page number and returns the resulting
-        /// <see cref="PageInfo"/>.  Does NOT load data — callers must re-execute the query.
+        /// Changes arithmetic bookkeeping only, not cursor/data acknowledgement. Use managed
+        /// local paging outcomes or a separately qualified provider path to publish loaded state.
         /// </summary>
         PageInfo SetCurrentPage(string blockName, int pageNumber);
 

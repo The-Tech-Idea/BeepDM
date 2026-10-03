@@ -16,6 +16,7 @@
 All interfaces share namespace `TheTechIdea.Beep.Editor.UOWManager.Interfaces`.
 
 ## Integration Notes
+- Optional `IFormsProviderPaging` exposes explicit bounded staged fetch, distinct from `IFormsLocalPaging` cursor navigation. See the [provider contract and qualification](../../../../DataManagementEngineStandard/Editor/Forms/PROVIDER-PAGING.md); legacy paged Get does not opt in and no prefetch/cache is implied.
 - Interfaces are designed to keep UI framework code separate from data logic.
 - Preserve async entry points for save/rollback and synchronization operations.
 - Keep validation hooks consistent so forms and APIs can share rule logic.

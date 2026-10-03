@@ -30,16 +30,71 @@ namespace TheTechIdea.Beep.Editor.UOW
     // Array.Empty for every block while ClearBlockQueryHistory did nothing.
     // GetChangeSummary, GetQueryHistory, ClearQueryHistory and CloneItem were all
     // already here — only the declaration was missing. (2026-08-03)
-    public class UnitOfWorkWrapper : IUnitOfWorkWrapper, IUnitofWork, IAggregatable, IUndoable, IUnitofWorkHistory
+    public class UnitOfWorkWrapper : IUnitOfWorkWrapper, IUnitofWork, IAggregatable, IUndoable, IUnitofWorkHistory, IEnlistedUnitofWork, IStagedUnitofWorkRead, IStagedUnitofWorkPageRead, IUnitofWorkRecordRevision, IUnitofWorkReadBufferIdentity
     {
         private dynamic _unitOfWork;
         private bool _disposed = false;
         private Delegate _itemChangedForwarder;
         private EventInfo _itemChangedEventInfo;
+        private readonly bool _supportsRecordRevision;
+        private readonly bool _supportsReadBufferIdentity;
+
+        public bool SupportsReadBufferIdentity => _supportsReadBufferIdentity;
+        public bool RequiresReadAuthorization => _disposed ||
+            ((object)_unitOfWork is IUnitofWorkReadBufferIdentity source && source.RequiresReadAuthorization);
+        public bool TryGetReadBufferIdentity(out object identity)
+        {
+            if (!_disposed && (object)_unitOfWork is IUnitofWorkReadBufferIdentity source)
+                return source.TryGetReadBufferIdentity(out identity);
+            identity = null;
+            return false;
+        }
+
+        public bool SupportsRecordRevision => _supportsRecordRevision;
+
+        public bool TryGetRecordRevision(out long revision)
+        {
+            if (!_disposed && (object)_unitOfWork is IUnitofWorkRecordRevision source)
+                return source.TryGetRecordRevision(out revision);
+            revision = 0;
+            return false;
+        }
+
+        public bool SupportsStagedRead => !_disposed &&
+            (object)_unitOfWork is IStagedUnitofWorkRead reader && reader.SupportsStagedRead;
+
+        public bool SupportsStagedPageRead => !_disposed &&
+            (object)_unitOfWork is IStagedUnitofWorkPageRead reader && reader.SupportsStagedPageRead;
+
+        public Task<IUnitofWorkPageReadStage> PreparePageReadAsync(BoundedPageRequest request,
+            CancellationToken cancellationToken = default)
+        {
+            if (!SupportsStagedPageRead) throw new NotSupportedException("Underlying UoW does not support bounded staged pages.");
+            return ((IStagedUnitofWorkPageRead)(object)_unitOfWork).PreparePageReadAsync(request, cancellationToken);
+        }
+
+        public Task<IUnitofWorkReadStage> PrepareReadAsync(List<AppFilter> filters,
+            CancellationToken cancellationToken = default)
+        {
+            if (!SupportsStagedRead) throw new NotSupportedException("Underlying UoW does not support staged reads.");
+            return ((IStagedUnitofWorkRead)(object)_unitOfWork).PrepareReadAsync(filters, cancellationToken);
+        }
+
+        public bool SupportsEnlistedCommit => !_disposed &&
+            (object)_unitOfWork is IEnlistedUnitofWork enlisted && enlisted.SupportsEnlistedCommit;
+
+        public Task<IUnitofWorkCommitStage> PrepareCommitAsync(IDataSource transactionOwner,
+            CancellationToken cancellationToken = default)
+        {
+            if (!SupportsEnlistedCommit) throw new NotSupportedException("Underlying UoW does not support transaction enlistment.");
+            return ((IEnlistedUnitofWork)(object)_unitOfWork).PrepareCommitAsync(transactionOwner, cancellationToken);
+        }
 
         public UnitOfWorkWrapper(object unitOfWork)
         {
             _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
+            _supportsRecordRevision = unitOfWork is IUnitofWorkRecordRevision source && source.SupportsRecordRevision;
+            _supportsReadBufferIdentity = unitOfWork is IUnitofWorkReadBufferIdentity buffers && buffers.SupportsReadBufferIdentity;
             AttachUnderlyingItemChangedForwarder();
         }
 

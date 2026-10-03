@@ -81,6 +81,17 @@ The ETL engine in BeepDM is **pipeline-based**: a `PipelineDefinition` is a DAG 
 
 ## Design Rules
 
+- `DataSinkPlugin` checks each write acknowledgement. `TotalRecordsWritten` is
+  not incremented for Failed/null/ambiguous results.
+- Upsert requires optional `IUpsertDataSource`; an arbitrary failed update is
+  never treated as a missing row followed by an insert.
+- `UseTransaction=true` requires `IRDBSource` and begins/commits/rolls back a real
+  datasource transaction. Its write count is published only after commit.
+  Default false permits partial writes; rollback cannot undo them.
+- `PipelineWriteException` carries `AcknowledgedRecords` and `CanRetry`.
+  Pipeline retry must not replay partial or uncertain writes, or cancellation.
+  Token-aware retry overloads cancel backoff as well as checking before attempts.
+
 - Pipelines are **durable**: a crashed run resumes from the last checkpoint, not from step 1.
 - Built-in plugins are reference implementations; **the plugin registry is the extension surface**.
 - Validators short-circuit — a failed `NotNullValidator` does not silently produce partial output.
@@ -93,7 +104,7 @@ The ETL engine in BeepDM is **pipeline-based**: a `PipelineDefinition` is a DAG 
 - See **beepdm-configuration** for the mapping store ETL reads from.
 - See **beepdm-migration** for schema changes that gate ETL runs.
 - See **beepdm-schema** for the preflight service ETL calls.
-- See **beepdm-unitofwork** for per-record transactions inside sinks.
+- See **beepdm-unitofwork** for tracked transactional CRUD outside the direct pipeline sink path.
 - See **beepdm-workflow** for higher-level orchestration that can invoke pipelines.
 - See **beepdm-retry** for the shared `IRetryPipeline` primitive. ETL pipeline-run retry should compose it (see `Editor/ETL/Scheduling/SchedulerHost.cs:484` for the current manual-retry loop and the why-not-yet-pipeline comment); the existing 7 manual retry loops in ETL/Setup/Proxy/WebAPI are documented in the retry skill's boundary table.
-- See `.cursor/etl/SKILL.md` for the deep-dive implementation details.
+- See `tests/FrameworkReliabilityTests/PipelineWriteTests.cs` for sink acknowledgement, transaction, and retry regressions.

@@ -10,6 +10,191 @@ WinForms UI shells that wrap each subsystem using the canonical
 
 ## Phase Overview
 
+### Forms Reliability Track (Review: 2026-10-03)
+
+Scope: FormsManager and platform-neutral UI integration contracts.
+[Current review and ordered plan](../DataManagementEngineStandard/Editor/Forms/RELIABILITY-AND-ENHANCEMENT-PLAN.md)
+contains nine prioritized source findings and stages A-G; all implementation
+stages are tracked in the [Forms tracker](../DataManagementEngineStandard/Editor/Forms/.plans/todo-tracker.md#current-reliability-track).
+Stages A/B/C/D/E implementation is in progress; [commit contracts](../DataManagementEngineStandard/Editor/Forms/COMMIT-OWNERSHIP.md)
+and [implementation evidence](../DataManagementEngineStandard/Editor/Forms/IMPLEMENTATION-LOG.md)
+record 795 source-built Forms passes per TFM (2,385 executions), 1,393 framework
+regressions per TFM and the preceding 12 focused UoW regressions per TFM.
+[Managed query policy](../DataManagementEngineStandard/Editor/Forms/QUERY-POLICY.md)
+covers basic/enhanced/detail/count/aggregate reads with fail-closed compilation;
+default UoWs stage basic/enhanced/detail reads; auxiliary read/cache targets remain open. Real SQLite
+ADO.NET reads/scalars and commit/rollback are qualified through a
+test adapter; external provider plugins and UI adapters remain unqualified.
+[Lifetime contracts](../DataManagementEngineStandard/Editor/Forms/LIFETIME-CONTRACTS.md)
+cover captured teardown, borrowed helpers, gated event/message leases, attachment
+unwind, staged default item/root replacement, pending setup revocation/drain and
+timer identity. Full public-operation admission/cancellation, graph/system-state
+rollback and host conformance remain open. [Captured detail coordination](../DataManagementEngineStandard/Editor/Forms/DETAIL-COORDINATION.md)
+adds serialized targeted requests, conservative dirty admission, linked close
+cancellation/drain and per-detail outcomes. [Default staged managed reads](../DataManagementEngineStandard/Editor/Forms/READ-PUBLICATION.md)
+retain prior rows/cursor/mode on rejected implicit queries, serialize query/detail
+reads and supersede older unpublished queries by registration/request identity.
+Typed outcomes distinguish confirmed publication from observer failures and drain
+admitted work before acknowledging cancellation; legacy Get still self-publishes. Global operation scheduling,
+arbitrary concurrent edits and validation/LOV record generations remain open.
+[Captured validation/LOV targets](../DataManagementEngineStandard/Editor/Forms/RECORD-TARGETS.md)
+now reject stale manager annotations/selection using record/item/request identity
+and canonical observed UoW revisions, including cursor/edit ABA. Typed LOV outcomes
+retain partial setter evidence and join close/drain. Raw helper events, auxiliary
+lookup policy/cache, async rule context and UI adapter generations remain open.
+Captured editor completion now separates provider OK from acknowledged current writes,
+enforces editability/raw-text disclosure and drains physical popup acknowledgement.
+The manual UI dispatch fixture qualifies the provider boundary, not real adapters.
+The [opt-in view-binding increment](../DataManagementEngineStandard/Editor/Forms/UI-BINDING-CONTRACTS.md)
+adds an adapter utility over existing contracts, immutable captured targets,
+dispatcher/origin capabilities, policy-revision/field-policy ownership, masked/null/
+byte-safe presentation, captured writes/focus and physical delivery/detach drain.
+Its real-UoW/mock-host/manual-dispatch fixture covers 46 added cases per TFM;
+concrete adapters must run the published E-01 through E-10 checklist. Custom host
+edit/query pipelines, async user/error provenance and instantaneous privacy remain open.
+The [cached-buffer binding increment](../DataManagementEngineStandard/Editor/Forms/BUFFER-AUTHORIZATION.md)
+adds 30 real-UoW cases per TFM: managed query/detail receipts revoke fresh binding
+of older-context buffers; field-only changes permit fresh remasking. Local tenant
+scope and buffer replacement/ABA invalidate receipts, including in-flight reads.
+Raw row mutation/auxiliary caches and instantaneous privacy remain open.
+The [policy-reconciliation increment](../DataManagementEngineStandard/Editor/Forms/POLICY-REPAINT.md)
+adds 31 notification/UI/drain cases per TFM. Default/facade feeds now queue clearing
+of revoked presentation or remasking of authorized rows, preserving dirty records
+and rejecting stale owners. Deliberate reconciliation, partial clearing failure
+evidence and physical callback/dispatcher drain are implemented. Custom state/
+message payloads, error completion and native adapters remain open.
+The [permission-projection increment](../DataManagementEngineStandard/Editor/Forms/PERMISSION-PROJECTION.md)
+separates configured flags from runtime grants, restores removed rules and gates
+default item publication by registry/registration/revision identity. Its 24 added
+cases qualify authored writes under denial, reset, clone/serializer boundaries,
+replacement/observer races, ownership and preinstalled policy; whole configuration,
+raw helper mutation feeds and injected-helper qualification remain open.
+Hide/lock before principal switch for immediate privacy.
+The preceding combined green Forms/framework matrix was 5,892 executions. An unchanged
+net10 lifecycle alias-removal case failed on the preceding full run and then passed
+isolated/full rechecks; it and earlier child-owner instability remain release gates.
+The previous binding increment's final combined source-built matrix passed 6,030 executions;
+these prior instability records remain open, not erased by this clean run.
+The preceding cached-buffer increment passed 6,120 source-built Forms/framework
+executions across net8/net9/net10; no complete stage or release gate is closed.
+Preceding policy-reconciliation matrix: 6,213 source-built Forms/framework executions
+across net8/net9/net10. Earlier intermittent release failures remain unresolved.
+Preceding permission-projection matrix: 6,282 source-built Forms/framework executions
+across net8/net9/net10, with no failures/skips. No complete stage closes.
+The preceding final permission-projection matrix, including the failed-action one-shot fence:
+6,285 executions (702 Forms and 1,393 framework per TFM), no failures/skips.
+The [local paging increment](../DataManagementEngineStandard/Editor/Forms/LOCAL-PAGING.md)
+adds 30 cases and implements typed local cursor acknowledgement, exact long math,
+stored zero/count shrink, captured ownership/configuration and physical drain.
+Stage F remains in progress. The subsequent
+[bounded provider fetch increment](../DataManagementEngineStandard/Editor/Forms/PROVIDER-PAGING.md)
+adds 63 cases, optional producer/stage capabilities, complete key ordering, actual
+UTF-8 row/byte bounds, long count/page evidence, mandatory policy and shared
+dirty/supersession/drain handling. Its native SQLite test lane uses coherent count/
+page transactions and bound LIMIT/OFFSET; it does not qualify external plugins.
+Policy/query/registration-aware bounded prefetch/cache remains required and
+unimplemented. Neither paged overloads nor stored settings activate it.
+Final local-paging matrix: 6,375 source-built Forms/framework executions across
+net8/net9/net10, no failures/skips. Source-referenced examples compile on all three
+targets with zero warnings/errors; earlier intermittent release gates remain open.
+Current provider-fetch matrix: 6,564 source-built Forms/framework executions across
+net8/net9/net10 (795 Forms and 1,393 framework per TFM), no failures/skips.
+Earlier intermittent release gates remain unresolved; all A-G remain open.
+Five Forms skills and their direct installed copies have updated
+references; their example fragments compile across net8/net9/net10, not a full
+skill or UI adapter conformance closeout.
+Baseline: 221 net8.0 Forms tests passed and a forced solution build completed
+with zero errors and 6,232 solution-wide warnings. Provider atomicity, external
+UI adapters remain unqualified; the newer matrix qualifies net9/net10 Forms
+execution. Older framework
+and Forms completion/build notes below describe their respective prior audits.
+
+### Framework Reliability Track (Review: 2026-10-02)
+
+Latest planning-only refresh (2026-10-03):
+[current review and ordered enhancement plan](framework/REVIEW-AND-PLAN-CURRENT.md).
+Fresh net9.0 Engine build fails with five migration refactor errors and 1,987
+warnings; preceding green inventories are historical. Complete compilation and
+actual ownership/captured storage, then safe compensation. Sync publication,
+remaining configuration, provider inventory and release preparation remain open
+parallel lanes. Existing IDs/checkmarks and in-progress source are preserved.
+
+Subsequent required configuration increment: 4,719 source-built Windows passes, zero
+failures/skips, 1,240 reliability cases per TFM. Editor-owned registration, one
+normalization, cache bypass and reported-fallback denial are verified with 34 new
+cases per TFM. Forty further cases verify caller-safe implicit refresh, closed
+bounded literals/per-row byte copies and both declared catalogs before provider-
+opening validation. A further 43 cases pin roster/priorities through registration
+edits, protect row SentData/admitted named lookup and retain sticky safe nested
+failures/selector callback boundaries. Another 59 shipped outer-grammar cases
+qualify exact routing/arity, nested dates, quoted keys/operands, GUID aliases and
+sequence-placeholder denial. A further 47 cases preserve required dot literals/
+empty strings and declared grouping/actual filters, without changing public
+legacy parsing. Another 82 cases qualify bounded shipped required expression/formula
+ASTs, Boolean-only conditions, precedence, exact typed comparisons, invariant numbers,
+Decimal rounding, lazy branches and pre-read limits/cancellation. Nested overrides
+retain pinned selection; unused branches are syntax-checked only. Broader numeric/
+query-provider/identity/scope/date/NFEL semantics remain. Another 80 cases qualify
+required query/filter plans, actual closed invariant binding, null/empty distinction,
+typed aggregates, safe callback/cursor/disposal failures and bounded streaming/
+cancellation. Partial acknowledgements survive query failure without replay;
+explicit context, eager allocation, hidden failures, isolation and translation remain.
+Another 56 cases qualify required identity/scope rules: explicit string email/
+application-role context without row spoofing or inferred substitutes, strict
+conflicts/types/limits, getter cancellation/failure, actual OS SID/membership and
+folders, STA/MTA Downloads ownership and exact environment scopes. SYSTEMPATH is
+Machine PATH; ENV(PATH) is Process PATH. Supplied host strings are not authorization
+proof, and OS/host context is not immutable or all-platform qualified.
+Another 84 cases qualify required dates: Gregorian ISO literals without host-culture
+fallback, retained UTC kind/explicit offsets, exact fractional tick/calendar
+arithmetic, invariant bounded formats, pre-callback known-date-tree checks and
+actual typed nested/property results through the pinned roster. Clock aliases have
+explicit kinds and retain dynamic time; no immutable run clock or named-zone DST
+policy is claimed. Legacy direct and custom subclass contracts remain separate.
+Another 83 cases qualify required configuration: exact declared environment
+prefixes, named flat string maps, function/colon/dot aliases, full bounded capture
+before key selection, no row/editor inference and connection alias conflict denial.
+Missing/invalid explicit sources cannot fall back. Callback/disposal failures and
+cancellation deny with safe Partial counts. Capture is per resolution, not run-owned
+configuration or automatic host/credential integration; legacy/custom paths remain.
+
+B1 immutable policy/plugin context and rule/provider
+qualification remain before B2 promotion/cursor agreement; five phases stay open.
+
+Latest planning-only refresh: [2026-10-03 current source review and delivery plan](framework/REVIEW-REFRESH-2026-10-03.md).
+Rebuilt Windows matrix: 2,895 passing executions, zero failures/skips, with 632
+reliability cases per TFM. Required defaults-catalog admission is locally tested;
+defaults/resolver ownership remains before staged promotion/cursor agreement.
+Configuration/security and migration ownership run alongside provider/release
+preparation. No runtime changes or broad phase completion in this refresh.
+The paragraphs below retain preceding implementation/planning evidence.
+
+The review's red baseline is corrected by actual acknowledged file reject replay:
+the current full Windows matrix passes 2,868 executions, zero failures/skips,
+with 623 reliability cases per TFM. Operator preparation/CAS claims, actual
+direction-specific writes, uncertain/restarted recovery and corrupt-file protection
+are verified. Native/provider-run recovery and defaults/resolvers remain before
+promotion/cursor qualification. Existing verified
+record/threshold admission and metadata/type fixes remain delivered; broader
+defaults, provider, persistence, lifecycle and release gates remain open.
+
+The cross-cutting review and proposed five-phase enhancement plan live in
+[framework/MASTER-FRAMEWORK-TRACKER.md](framework/MASTER-FRAMEWORK-TRACKER.md).
+It records source-backed findings, the current test baseline, dependencies, and
+acceptance criteria. Phases 1-3 have partial implementation; the last recorded full
+Windows solution matrix passed 2,136 executions with 379 reliability cases each
+net8/9/10. The original planning refresh started no tests; subsequent sync storage,
+terminal acknowledgement and diagnostic isolation changes have full local TFM
+evidence. Runtime isolation, normal datasource lifecycle and P3-04/05 captured
+migration intent/storage are verified slices, not new backlog items. Next finish
+required record-quality, mapped-sync metadata and deeper default qualification
+(R14/R15/R16; strict transform core verified), promotion and
+durable cursor agreement (remaining R12/R13), then remaining configuration/security
+qualification and P3-06 recovery/admission. Lifecycle, conformance and bounded
+execution follow; provider inventory and build/CI start in parallel. Existing
+subsystem plans remain in place and should be reconciled against current code
+before delivery. Start with [the current review](framework/CURRENT-REVIEW.md).
+
 ### Track A — Core Enhancements (Phase 1–4)
 
 **Repos:**

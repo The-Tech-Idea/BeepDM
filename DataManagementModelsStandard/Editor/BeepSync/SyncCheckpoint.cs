@@ -5,8 +5,8 @@ using System.Linq;
 namespace TheTechIdea.Beep.Editor.BeepSync
 {
     /// <summary>
-    /// Checkpoint artifact persisted after each successful batch during a sync run.
-    /// Enables partial-resume and idempotent replay without re-processing records already written.
+    /// Run checkpoint persisted before provider execution and at completion.
+    /// Storage alone does not establish safe offset replay or provider idempotency.
     /// </summary>
     public class SyncCheckpoint
     {
@@ -15,6 +15,15 @@ namespace TheTechIdea.Beep.Editor.BeepSync
 
         /// <summary>Schema Id this checkpoint belongs to.</summary>
         public string SchemaId { get; set; }
+
+        /// <summary>Versioned sync context identity. Missing/changed identity is not safe execution evidence.</summary>
+        public string SchemaFingerprint { get; set; }
+
+        /// <summary>Provider state must be reconciled before replaying uncertain or acknowledged partial work.</summary>
+        public bool RequiresReconciliation { get; set; }
+
+        /// <summary>Optional typed failed-run evidence; legacy missing evidence never establishes safe replay.</summary>
+        public SyncFailureEvidence FailureEvidence { get; set; }
 
         /// <summary>Number of records successfully processed at the time this checkpoint was saved.</summary>
         public int ProcessedOffset { get; set; }
@@ -33,7 +42,7 @@ namespace TheTechIdea.Beep.Editor.BeepSync
 
         /// <summary>
         /// Lifecycle state of this checkpoint.
-        /// Values: <c>"InProgress"</c>, <c>"Completed"</c>, <c>"Failed"</c>, <c>"Stale"</c>.
+        /// Values: <c>"InProgress"</c>, <c>"Running"</c>, <c>"Completed"</c>, <c>"Failed"</c>, <c>"Stale"</c>.
         /// </summary>
         public string Status { get; set; } = "InProgress";
 
@@ -54,7 +63,7 @@ namespace TheTechIdea.Beep.Editor.BeepSync
 
         /// <summary>
         /// Primary-key value of the last successfully written record in this run.
-        /// Used as the idempotency anchor when resuming from a partial batch.
+        /// Storage preserves its type; the current sync translator does not publish or replay this key.
         /// </summary>
         public object LastProcessedKeyValue { get; set; }
     }

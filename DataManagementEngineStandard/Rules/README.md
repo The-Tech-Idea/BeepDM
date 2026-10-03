@@ -1,5 +1,11 @@
 # BeepDM Rules Engine — Developer Guide
 
+For actual NFEL parser/RuleEngine expression execution, read [NFEL-1 admission and
+execution](NFEL.md). It defines grammar, typed/lazy evaluation, pre-populated rule
+admission, policy capture, bounds and retention. This is separate from invoking a
+custom IRule implementation's SolveRule method directly; the examples below are
+built-in module guidance, not a claim that RuleEngine invokes arbitrary modules.
+
 The rules engine lets you compose, store, and execute named business-logic units
 without writing boilerplate code in controllers or service classes.  Every rule:
 

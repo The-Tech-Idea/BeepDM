@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using TheTechIdea.Beep.Editor.Importing.Interfaces;
 using TheTechIdea.Beep.Services;
+using TheTechIdea.Beep.Editor.Importing.Storage;
 
 namespace TheTechIdea.Beep.Editor.Importing.History
 {
@@ -17,36 +18,21 @@ namespace TheTechIdea.Beep.Editor.Importing.History
     /// </summary>
     public sealed class JsonFileImportRunHistoryStore : IImportRunHistoryStore
     {
-        private readonly string _folder;
-        private readonly SemaphoreSlim _lock = new(1, 1);
+        private readonly ImportJsonLinesStore<ImportRunRecord> _store;
 
-        public JsonFileImportRunHistoryStore()
+        public JsonFileImportRunHistoryStore() : this(Path.Combine(EnvironmentService.CreateAppfolder("Importing"), "History"))
         {
-            var root = EnvironmentService.CreateAppfolder("Importing");
-            _folder  = Path.Combine(root, "History");
-            Directory.CreateDirectory(_folder);
         }
 
-        public async Task SaveRunAsync(ImportRunRecord record, CancellationToken token = default)
-        {
-            await _lock.WaitAsync(token).ConfigureAwait(false);
-            try
-            {
-                var line = JsonSerializer.Serialize(record) + Environment.NewLine;
-                await File.AppendAllTextAsync(GetPath(record.ContextKey), line, token).ConfigureAwait(false);
-            }
-            finally { _lock.Release(); }
-        }
+        public JsonFileImportRunHistoryStore(string folder) =>
+            _store = new ImportJsonLinesStore<ImportRunRecord>(folder, ".history.jsonl", record => record.ContextKey);
+
+        public Task SaveRunAsync(ImportRunRecord record, CancellationToken token = default) =>
+            _store.AppendAsync(record, token);
 
         public async Task<IReadOnlyList<ImportRunRecord>> GetRunsAsync(string contextKey, CancellationToken token = default)
         {
-            var path = GetPath(contextKey);
-            if (!File.Exists(path)) return Array.Empty<ImportRunRecord>();
-
-            var lines = await File.ReadAllLinesAsync(path, token).ConfigureAwait(false);
-            return lines
-                .Where(l => !string.IsNullOrWhiteSpace(l))
-                .Select(l => JsonSerializer.Deserialize<ImportRunRecord>(l)!)
+            return (await _store.ReadAsync(contextKey, token).ConfigureAwait(false))
                 .OrderByDescending(r => r.StartedAt)
                 .ToList();
         }
@@ -57,21 +43,7 @@ namespace TheTechIdea.Beep.Editor.Importing.History
             return all.FirstOrDefault(r => r.FinalState == ImportState.Completed);
         }
 
-        public async Task ClearAsync(string contextKey, CancellationToken token = default)
-        {
-            await _lock.WaitAsync(token).ConfigureAwait(false);
-            try
-            {
-                var path = GetPath(contextKey);
-                if (File.Exists(path)) File.Delete(path);
-            }
-            finally { _lock.Release(); }
-        }
-
-        private string GetPath(string contextKey)
-        {
-            var safe = string.Join("_", contextKey.Split(Path.GetInvalidFileNameChars()));
-            return Path.Combine(_folder, $"{safe}.history.jsonl");
-        }
+        public Task ClearAsync(string contextKey, CancellationToken token = default) =>
+            _store.ClearAsync(contextKey, token);
     }
 }

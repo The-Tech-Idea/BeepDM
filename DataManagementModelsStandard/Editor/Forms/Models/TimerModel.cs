@@ -2,6 +2,15 @@ using System;
 
 namespace TheTechIdea.Beep.Editor.Forms.Models
 {
+    /// <summary>An isolated timer scheduler, cleanup or observer failure.</summary>
+    public sealed class TimerCallbackFailure
+    {
+        public string TimerName { get; }
+        public Exception Exception { get; }
+        public TimerCallbackFailure(string timerName, Exception exception)
+        { TimerName = timerName; Exception = exception; }
+    }
+
     /// <summary>
     /// Lifecycle state of a form-level timer.
     /// </summary>

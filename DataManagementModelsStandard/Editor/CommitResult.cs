@@ -45,6 +45,8 @@ namespace TheTechIdea.Beep.Editor
     {
         /// <summary>Per-item commit results.</summary>
         public List<CommitItemResult> Results { get; set; } = new List<CommitItemResult>();
+        /// <summary>Consumer notification errors after writes committed; not provider failures.</summary>
+        public List<IErrorsInfo> NotificationErrors { get; } = new List<IErrorsInfo>();
 
         /// <summary>True if ALL items committed successfully.</summary>
         public bool AllSucceeded => Results.All(r => r.Success);

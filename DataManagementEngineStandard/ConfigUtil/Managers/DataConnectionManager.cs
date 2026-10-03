@@ -2,6 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using TheTechIdea.Beep.Security;
+using TheTechIdea.Beep.Services.Persistence;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.Logger;
 using TheTechIdea.Beep.Utilities;
@@ -20,6 +25,7 @@ namespace TheTechIdea.Beep.ConfigUtil.Managers
         private readonly IDMLogger _logger;
         private readonly IJsonLoader _jsonLoader;
         private readonly string _configPath;
+        private readonly IConnectionSecretProtector _protector;
 
         public List<ConnectionProperties> DataConnections { get; set; }
 
@@ -31,10 +37,15 @@ namespace TheTechIdea.Beep.ConfigUtil.Managers
         public IConnectionCatalogRepository? CatalogRepository { get; set; }
 
         public DataConnectionManager(IDMLogger logger, IJsonLoader jsonLoader, string configPath)
+            : this(logger, jsonLoader, configPath, ConnectionCredentialProtection.Default)
+        { }
+
+        public DataConnectionManager(IDMLogger logger, IJsonLoader jsonLoader, string configPath, IConnectionSecretProtector protector)
         {
             _logger = logger;
             _jsonLoader = jsonLoader;
             _configPath = configPath;
+            _protector = protector ?? throw new ArgumentNullException(nameof(protector));
             DataConnections = new List<ConnectionProperties>();
         }
 
@@ -296,62 +307,106 @@ namespace TheTechIdea.Beep.ConfigUtil.Managers
             return index >= 0 && DataConnections.Remove(DataConnections[index]);
         }
 
-        /// <summary>
-        /// Saves data connections. When a catalog repository is set, this is a no-op
-        /// (the repository auto-persists). Otherwise saves to DataConnections.json.
-        /// </summary>
-        public void SaveDataConnectionsValues()
-        {
-            if (CatalogRepository != null)
-            {
-                CatalogRepository.Save(DataConnections ?? new List<ConnectionProperties>());
-                return;
-            }
+        /// <summary>Legacy signature retained; failed saves now propagate instead of masquerading as success.</summary>
+        public void SaveDataConnectionsValues() => SaveDataConnectionsAcknowledged().ThrowIfNotSaved();
 
+        public PersistenceWriteResult SaveDataConnectionsAcknowledged(CancellationToken token = default)
+        {
             try
             {
+                token.ThrowIfCancellationRequested();
+                var connections = (DataConnections ?? new List<ConnectionProperties>()).ToArray();
+                if (CatalogRepository != null)
+                {
+                    return CatalogRepository.Save(connections)
+                        ? new PersistenceWriteResult(PersistenceWriteStatus.Saved)
+                        : new PersistenceWriteResult(PersistenceWriteStatus.Failed, new IOException("Connection catalog did not acknowledge the save."));
+                }
+
+                var codec = _jsonLoader as IJsonSnapshotCodec
+                    ?? throw new NotSupportedException("Protected connection persistence requires an IJsonSnapshotCodec loader.");
+                var protectedConnections = connections.Select(connection =>
+                {
+                    ValidateConnection(connection);
+                    return _protector.Protect(connection);
+                }).ToList();
+                var serialized = codec.SerializeSnapshot(protectedConnections);
                 string path = Path.Combine(_configPath, "DataConnections.json");
-                _jsonLoader.Serialize(path, DataConnections);
+                AtomicFileStore.UpdateText(path, current =>
+                {
+                    // A stale snapshot is explicit replacement, never permission to reset corrupt evidence.
+                    if (current != null) ParseConnections(current, codec);
+                    return serialized;
+                }, token);
+                return new PersistenceWriteResult(PersistenceWriteStatus.Saved);
+            }
+            catch (OperationCanceledException ex)
+            {
+                return new PersistenceWriteResult(PersistenceWriteStatus.Cancelled, ex);
             }
             catch (Exception ex)
             {
-                _logger?.WriteLog($"Error saving data connections: {ex.Message}");
+                ReportPersistenceError(ex);
+                return new PersistenceWriteResult(ex is NotSupportedException
+                    ? PersistenceWriteStatus.Unsupported : PersistenceWriteStatus.Failed, ex);
             }
         }
 
-        /// <summary>
-        /// Loads data connections. When a catalog repository is set, loads from the
-        /// catalog. Otherwise loads from DataConnections.json.
-        /// </summary>
+        /// <summary>Refreshes only after successful validation/decryption; corruption never resets live state.</summary>
         public List<ConnectionProperties> LoadDataConnectionsValues()
         {
-            if (CatalogRepository != null)
-            {
-                DataConnections = CatalogRepository.LoadConnections().ToList();
-                return DataConnections;
-            }
-
             try
             {
+                if (CatalogRepository != null)
+                {
+                    var loaded = CatalogRepository.LoadConnections()
+                        ?? throw new InvalidDataException("Connection catalog returned no snapshot.");
+                    DataConnections = loaded.ToList();
+                    return DataConnections;
+                }
+
                 string path = Path.Combine(_configPath, "DataConnections.json");
-                if (File.Exists(path))
-                {
-                    DataConnections = _jsonLoader.DeserializeObject<ConnectionProperties>(path);
-                }
-
-                if (DataConnections == null)
-                {
-                    DataConnections = new List<ConnectionProperties>();
-                }
-
+                var json = AtomicFileStore.ReadText(path);
+                var connections = json == null ? new List<ConnectionProperties>() :
+                    ParseConnections(json, _jsonLoader as IJsonSnapshotCodec
+                        ?? throw new NotSupportedException("Protected connection persistence requires an IJsonSnapshotCodec loader."));
+                DataConnections = connections;
                 return DataConnections;
             }
             catch (Exception ex)
             {
-                _logger?.WriteLog($"Error loading data connections: {ex.Message}");
-                DataConnections = new List<ConnectionProperties>();
-                return DataConnections;
+                ReportPersistenceError(ex);
+                throw;
             }
+        }
+
+        private List<ConnectionProperties> ParseConnections(string json, IJsonSnapshotCodec codec)
+        {
+            if (string.IsNullOrWhiteSpace(json)) throw new InvalidDataException("Existing connection configuration is empty.");
+            using var reader = new JsonTextReader(new StringReader(json)) { MaxDepth = 64, DateParseHandling = DateParseHandling.None };
+            var document = JArray.Load(reader, new JsonLoadSettings { DuplicatePropertyNameHandling = DuplicatePropertyNameHandling.Error });
+            if (reader.Read()) throw new InvalidDataException("Connection configuration contains additional JSON content.");
+            var connections = codec.DeserializeSnapshot<List<ConnectionProperties>>(json)
+                ?? throw new InvalidDataException("Connection configuration is missing its records.");
+            var result = new List<ConnectionProperties>(connections.Count);
+            foreach (var connection in connections)
+            {
+                ValidateConnection(connection);
+                result.Add(_protector.Unprotect(connection));
+            }
+            return result;
+        }
+
+        private static void ValidateConnection(ConnectionProperties connection)
+        {
+            if (connection == null || string.IsNullOrWhiteSpace(connection.ConnectionName))
+                throw new InvalidDataException("A connection record must have an identity.");
+        }
+
+        private void ReportPersistenceError(Exception ex)
+        {
+            try { _logger?.WriteLog($"Connection persistence failed ({ex.GetType().Name})."); }
+            catch (Exception logError) { System.Diagnostics.Debug.WriteLine($"Connection persistence logging failed ({logError.GetType().Name})."); }
         }
 
         /// <summary>

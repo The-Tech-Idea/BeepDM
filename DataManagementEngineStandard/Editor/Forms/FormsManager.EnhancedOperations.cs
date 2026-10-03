@@ -172,14 +172,8 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     return result;
                 }
 
-                // Phase 6: security check. This runs BEFORE the CRUD flag
-                // guard below, and the order matters: SetBlockSecurity calls
-                // ApplyAllSecurityFlags, which writes the policy INTO those same
-                // CRUD flags. With the guard first, a security denial always
-                // exited here and EnforceBlockSecurity never ran, so the denial
-                // was honoured but never recorded — GetSecurityViolations stayed
-                // empty for every real denial and the security panel showed an
-                // empty audit trail. (2026-08-03)
+                // Record policy denial before checking effective flags, which
+                // combine authored configuration with the security overlay.
                 if (!EnforceBlockSecurity(blockName, SecurityPermission.Insert))
                 {
                     result.Flag = Errors.Failed;
@@ -354,14 +348,8 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     return result;
                 }
 
-                // Phase 6: security check. This runs BEFORE the CRUD flag
-                // guard below, and the order matters: SetBlockSecurity calls
-                // ApplyAllSecurityFlags, which writes the policy INTO those same
-                // CRUD flags. With the guard first, a security denial always
-                // exited here and EnforceBlockSecurity never ran, so the denial
-                // was honoured but never recorded — GetSecurityViolations stayed
-                // empty for every real denial and the security panel showed an
-                // empty audit trail. (2026-08-03)
+                // Record policy denial before checking effective flags, which
+                // combine authored configuration with the security overlay.
                 if (!EnforceBlockSecurity(blockName, SecurityPermission.Update))
                 {
                     result.Flag = Errors.Failed;
@@ -508,108 +496,12 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         /// </summary>
         public async Task<IErrorsInfo> ExecuteQueryEnhancedAsync(string blockName, List<AppFilter> filters = null)
         {
-            var result = new ErrorsInfo { Flag = Errors.Ok };
-            
-            try
-            {
-                var blockInfo = GetBlock(blockName);
-                if (blockInfo?.UnitOfWork == null)
-                {
-                    result.Flag = Errors.Failed;
-                    result.Message = $"Block '{blockName}' not found or has no unit of work";
-                    return result;
-                }
-
-                // CRITICAL: This method should handle the Query->CRUD transition
-                // If not in Query mode, first transition to Query mode
-                if (blockInfo.Mode != DataBlockMode.Query)
-                {
-                    LogOperation($"Block '{blockName}' not in Query mode, entering Query mode first", blockName);
-                    
-                    var queryModeResult = await EnterQueryModeAsync(blockName).ConfigureAwait(false);
-                    if (queryModeResult.Flag != Errors.Ok)
-                    {
-                        result.Flag = queryModeResult.Flag;
-                        result.Message = $"Cannot execute query: Failed to enter Query mode - {queryModeResult.Message}";
-                        return result;
-                    }
-                }
-
-                // Fire PRE-QUERY trigger — abort if cancelled
-                var preQueryResult = await _triggerManager.FireBlockTriggerAsync(
-                    TriggerType.PreQuery, blockName,
-                    TriggerContext.ForBlock(TriggerType.PreQuery, blockName, null, _dmeEditor)).ConfigureAwait(false);
-                if (preQueryResult == TriggerResult.Cancelled)
-                {
-                    result.Flag = Errors.Failed;
-                    result.Message = $"Query cancelled by PRE-QUERY trigger in block '{blockName}'";
-                    return result;
-                }
-
-                // IUnitofWork (non-generic) declares Get(List<AppFilter>) and Get() directly.
-                // Direct dynamic dispatch — the previous GetMethod("Get").Invoke(...) was
-                // a silent-no-op trap if the method didn't exist.
-                if (filters != null && filters.Any())
-                {
-                    await blockInfo.UnitOfWork.Get(filters).ConfigureAwait(false);
-                }
-                else
-                {
-                    await blockInfo.UnitOfWork.Get().ConfigureAwait(false);
-                }
-
-                // :SYSTEM.LAST_QUERY -- see G0.36 in gaps.md. DataSourceAppFilterExtensions
-                // (DataManagementModelsStandard/Extensions) already builds a parameterized
-                // SELECT statement from an AppFilter list -- no new serialization needed.
-                // Best-effort: an unresolvable data source (bad DataSourceName, block not yet
-                // wired to a real IDataSource in a test) leaves LAST_QUERY at its prior value
-                // rather than failing the query that already succeeded above.
-                var queryDataSource = string.IsNullOrWhiteSpace(blockInfo.DataSourceName)
-                    ? null
-                    : _dmeEditor?.GetDataSource(blockInfo.DataSourceName);
-                if (queryDataSource != null)
-                {
-                    var entityNameForQuery = blockInfo.EntityStructure?.EntityName ?? blockName;
-                    var queryDefinition = queryDataSource.BuildSelectQueryDefinition(entityNameForQuery, filters);
-                    _systemVariablesManager?.SetLastQuery(queryDefinition.QueryText);
-                }
-
-                // :SYSTEM.BLOCK_STATUS / :SYSTEM.RECORD_STATUS -- see G0.36 in gaps.md.
-                // A record just fetched by a query and not yet touched is Oracle Forms'
-                // "QUERY" status. Set unconditionally on a successful Get (whether or not
-                // it found rows), the same simplification SetMode already makes at this
-                // site -- ItemChanged (the "CHANGED" transition) takes over the moment a
-                // field on it is actually edited.
-                _systemVariablesManager?.SetBlockStatus(blockName, "QUERY");
-                _systemVariablesManager?.SetRecordStatus(blockName, "QUERY");
-
-                // CRITICAL: After successful query execution, transition to CRUD mode
-                blockInfo.Mode = DataBlockMode.CRUD;
-                blockInfo.LastModeChange = DateTime.Now;
-                // :SYSTEM.MODE -- see G0.36 in gaps.md.
-                _systemVariablesManager?.SetMode(ToSystemVariableMode(DataBlockMode.CRUD));
-
-                // Fire POST-QUERY trigger (before returning to caller)
-                await _triggerManager.FireBlockTriggerAsync(
-                    TriggerType.PostQuery, blockName,
-                    TriggerContext.ForBlock(TriggerType.PostQuery, blockName, null, _dmeEditor)).ConfigureAwait(false);
-
-                var recordCount = GetRecordCount(blockName);
-                
-                result.Message = $"Query executed successfully. {recordCount} records found.";
-                Status = $"Query executed successfully for block '{blockName}'. {recordCount} records.";
-                LogOperation($"Query executed successfully for block '{blockName}' with {recordCount} records", blockName);
-
-                return result;
-            }
+            try { return await ExecuteQueryWithOutcomeAsync(blockName, filters).ConfigureAwait(false); }
             catch (Exception ex)
             {
-                result.Flag = Errors.Failed;
-                result.Message = ex.Message;
-                result.Ex = ex;
-                Status = $"Error executing query for '{blockName}': {ex.Message}";
-                LogError($"Error executing query for '{blockName}'", ex, blockName);
-                return result;
+                return new FormQueryResult { FormInstanceId = _commitFormInstanceId, BlockName = blockName,
+                    State = ex is OperationCanceledException ? FormQueryState.Cancelled : FormQueryState.Failed,
+                    Flag = Errors.Failed, Message = ex.Message, Ex = ex };
             }
         }
 

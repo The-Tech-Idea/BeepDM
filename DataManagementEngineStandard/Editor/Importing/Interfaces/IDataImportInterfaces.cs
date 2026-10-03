@@ -180,7 +180,8 @@ namespace TheTechIdea.Beep.Editor.Importing.Interfaces
         /// </summary>
         /// <param name="record">Source record</param>
         /// <param name="config">Import configuration</param>
-        /// <returns>Fully transformed record</returns>
+        /// <returns>Fully transformed record. Built-in required-stage failures throw a safe ImportTransformationException.</returns>
+        /// <remarks>Use optional IDataImportTransformationOutcome for typed pre-write failure evidence. Never hide a required failure by returning the input.</remarks>
         object ApplyTransformationPipeline(object record, DataImportConfiguration config);
     }
 

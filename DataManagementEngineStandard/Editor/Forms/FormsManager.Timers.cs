@@ -27,6 +27,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         /// <returns>The timer definition describing the created timer</returns>
         public TimerDefinition CreateTimer(string timerName, TimeSpan interval, bool repeating = false)
         {
+            ObjectDisposedException.ThrowIf(_disposed, this);
             var def = _timerManager.CreateTimer(timerName, interval, repeating);
             LogOperation($"Timer '{timerName}' created (interval={interval}, repeating={repeating})");
             return def;

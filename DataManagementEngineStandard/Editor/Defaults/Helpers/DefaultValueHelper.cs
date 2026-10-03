@@ -44,6 +44,64 @@ namespace TheTechIdea.Beep.Editor.Defaults.Helpers
             }
         }
 
+        /// <summary>Required editor-owned lookup: an existing connection with no defaults is empty; failed/ambiguous lookup is not.</summary>
+        public List<DefaultValue> GetDefaultsRequired(string dataSourceName)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(dataSourceName) || _editor.ConfigEditor?.DataConnections is not { } connections)
+                    throw new DefaultCatalogReadException();
+                var snapshot = connections.ToArray();
+                if (snapshot.Any(connection => connection == null)) throw new DefaultCatalogReadException();
+                var matches = snapshot.Where(connection => string.Equals(connection.ConnectionName, dataSourceName, StringComparison.OrdinalIgnoreCase)).ToArray();
+                if (matches.Length != 1) throw new DefaultCatalogReadException();
+                return CaptureRequired(matches[0].DatasourceDefaults ?? new List<DefaultValue>());
+            }
+            catch (Exception) { throw new DefaultCatalogReadException(); }
+        }
+
+        internal static List<DefaultValue> CaptureRequired(List<DefaultValue> defaults)
+        {
+            try
+            {
+                if (defaults == null || defaults.Count > 10000) throw new DefaultCatalogReadException();
+                var definitions = defaults.ToArray();
+                var fields = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                var owned = new List<DefaultValue>();
+                long literalBytes = 0;
+                foreach (var definition in definitions)
+                {
+                    if (definition == null) throw new DefaultCatalogReadException();
+                    if (!definition.IsEnabled) continue;
+                    if (string.IsNullOrWhiteSpace(definition.PropertyName) || definition.PropertyName.Length > 1024 ||
+                        !fields.Add(definition.PropertyName) || definition.Rule?.Length > 16384) throw new DefaultCatalogReadException();
+                    var value = string.IsNullOrWhiteSpace(definition.Rule) ? definition.PropertyValue : null;
+                    literalBytes += value is string text ? 2L * text.Length : value is byte[] data ? data.Length : 32;
+                    if (literalBytes > 16 * 1024 * 1024) throw new DefaultCatalogReadException();
+                    owned.Add(new DefaultValue { PropertyName = definition.PropertyName, Rule = definition.Rule,
+                        PropertyValue = CopyLiteralRequired(value), IsEnabled = true });
+                }
+                return owned;
+            }
+            catch (Exception) { throw new DefaultCatalogReadException(); }
+        }
+
+        internal static object CopyLiteralRequired(object value)
+        {
+            // A value type can contain mutable references. Admit only known scalar types.
+            return value switch
+            {
+                null => null,
+                string text when text.Length <= 1048576 => text,
+                byte[] bytes when bytes.Length <= 1048576 => bytes.ToArray(),
+                bool or char or byte or sbyte or short or ushort or int or uint or long or ulong or decimal
+                    or Guid or DateTime or DateTimeOffset or TimeSpan or DateOnly or TimeOnly => value,
+                double number when double.IsFinite(number) => value,
+                float number when float.IsFinite(number) => value,
+                _ => throw new DefaultCatalogReadException()
+            };
+        }
+
         public IErrorsInfo SaveDefaults(List<DefaultValue> defaults, string dataSourceName)
         {
             var errorInfo = new ErrorsInfo();

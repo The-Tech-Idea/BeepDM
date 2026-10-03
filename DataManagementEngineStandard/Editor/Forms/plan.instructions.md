@@ -1,5 +1,11 @@
 # UnitofWorksManager - Optimization and Enhancement Plan
 
+> Historical proposal, not current implementation guidance. Use the
+> [2026-10-03 FormsManager reliability plan](RELIABILITY-AND-ENHANCEMENT-PLAN.md)
+> for source-backed gaps, UI contracts, dependencies and acceptance gates.
+> Feature-absence claims, estimates and proposed API sketches below require
+> revalidation; do not implement them blindly over existing functionality.
+
 ## Current Analysis
 
 ### Code Review Summary

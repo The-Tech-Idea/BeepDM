@@ -43,7 +43,11 @@ namespace TheTechIdea.Beep.Editor.Defaults.RuleParsing
                 "ENV","CONFIG","PROPERTY","RECORD","FIELD"
             };
 
-        public static ParsedRule Normalize(string rule)
+        public static ParsedRule Normalize(string rule) => NormalizeCore(rule, required: false);
+
+        internal static ParsedRule NormalizeRequired(string rule) => NormalizeCore(rule, required: true);
+
+        private static ParsedRule NormalizeCore(string rule, bool required)
         {
             if (string.IsNullOrWhiteSpace(rule))
             {
@@ -62,7 +66,7 @@ namespace TheTechIdea.Beep.Editor.Defaults.RuleParsing
             {
                 var expressionBody = trimmed.Substring(1).TrimStart();
                 // Re-enter normalization with the bare expression body.
-                return NormalizeExpression(expressionBody, rule);
+                return NormalizeExpression(expressionBody, rule, required);
             }
 
             // ── No `:` prefix — check if it is a known bare operator for backward compat. ──
@@ -75,13 +79,13 @@ namespace TheTechIdea.Beep.Editor.Defaults.RuleParsing
             if (_legacyExpressionTokens.Contains(bareToken))
             {
                 // Legacy rule — treat as expression with deprecation warning.
-                var legacyParsed = NormalizeExpression(trimmed, rule);
+                var legacyParsed = NormalizeExpression(trimmed, rule, required);
                 var warnDiag = new RuleDiagnostic(RuleDiagnosticSeverity.Warning, "NRM002",
                     $"Rule '{rule}' is missing the ':' prefix. Consider updating it to ':{rule}' to silence this warning.");
                 return new ParsedRule(
                     legacyParsed.Operator, legacyParsed.Args, rule,
                     legacyParsed.NormalizedRule, legacyParsed.SyntaxVersion,
-                    new[] { warnDiag });
+                    required ? System.Linq.Enumerable.ToArray(System.Linq.Enumerable.Concat(legacyParsed.Diagnostics, new[] { warnDiag })) : new[] { warnDiag });
             }
 
             // ── No `:` and not a known operator → plain literal. ──
@@ -98,8 +102,10 @@ namespace TheTechIdea.Beep.Editor.Defaults.RuleParsing
         /// Internal helper: normalizes an expression string (already stripped of the `:` prefix)
         /// using the dot-style parser or legacy function-style path.
         /// </summary>
-        private static ParsedRule NormalizeExpression(string expressionBody, string originalRule)
+        private static ParsedRule NormalizeExpression(string expressionBody, string originalRule, bool required)
         {
+            if (required && RequiredDotStyleRuleParser.TryParse(expressionBody, originalRule, out var strictParsed))
+                return strictParsed;
             // --- Dot-style detection ---
             if (DotStyleRuleParser.IsDotStyleRule(expressionBody))
                 return _dotParser.Parse(expressionBody);

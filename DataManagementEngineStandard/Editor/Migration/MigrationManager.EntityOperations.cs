@@ -562,7 +562,7 @@ namespace TheTechIdea.Beep.Editor.Migration
         // and the inlined file-mutation helpers were removed in Phase 10.3.
 
         private ISchemaMigrationProvider ResolveProvider()
-            => _editor.GetMigrationProvider(MigrateDataSource);
+            => _executionScope.Value?.ProviderCaptured == true ? _executionScope.Value.Provider : _editor.GetMigrationProvider(MigrateDataSource);
 
         private static DdlOperationOutcome OutcomeFor(IErrorsInfo result)
         {

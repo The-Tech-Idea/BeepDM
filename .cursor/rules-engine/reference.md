@@ -1,5 +1,37 @@
 # Rules Engine Reference
 
+## NFEL-1 Profile
+
+Read Engine `Rules/NFEL.md` before changing NFEL semantics. Configure an actual
+NfelParser on RuleEngine; wrappers/metadata do not select this execution path.
+Registration captures expression text. Actual solves reparse and compare supplied
+types/decoded values; changed text or mismatched tokens deny before parameter lookup.
+Existing saved NFEL tokens with enclosing quotes/unknown ternary must be explicitly
+reparsed and reviewed, not silently accepted. Old token ordinals are preserved;
+Power/Question/Colon are appended, not qualified for older engine readers.
+
+NFEL supports arithmetic/unary signs/power, comparisons, Boolean logic and lazy
+ternary. Dotted names are literal parameter keys. String literals are decoded;
+comparisons are ordinal case-insensitive. Conditions are actual Booleans. Numeric
+arithmetic/literals use finite binary64, while integral/Decimal parameter comparisons
+are exact. No implicit numeric strings, arbitrary observer conversion, functions,
+member getters or prefixed references. Broader numeric profiles are separate work.
+
+Source/token/node/depth bounds are 65,536 / 4,096 / 2,048 / 64; decoded strings are
+bounded to 16,384 characters. Successful history evicts oldest entries at 128
+structures, 1,048,576 source characters or 32,768 tokens. Returned structures/tokens
+do not own the history. Clear is synchronized but does not cancel active parsing.
+Allowed tokens apply to both branches even when unused; policy/tree copies survive
+caller mutation. Fresh rules are Draft and do not bypass lifecycle minimums.
+Timeouts are checked around lookups but cannot interrupt blocking trusted callbacks.
+Audit/registration lifecycle, host parameter snapshots, adapters and package-reader
+compatibility remain separate gates; parsing is not security isolation.
+
+Use `NfelAdmissionTests` for actual SolveRule and direct evaluation assertions,
+not only parser diagnostics. Keep required-default expression ASTs and legacy
+SQL/formula/RulesParser dialects separate. Executable custom IRule modules run by
+their own SolveRule API, not by automatic expression-engine dispatch.
+
 ## 1) Rule Extension Checklist
 
 - Implement `IRule`:
@@ -8,7 +40,9 @@
   - deterministic `SolveRule(...)`
 - Add `[Rule(ruleKey: "...", ParserKey = "...")]` attribute.
 - Ensure rule returns `(outputs, result)` with predictable keys.
-- Register with `RuleEngine.RegisterRule(...)`.
+- For expression holders, register actual expression RuleText with RuleEngine.
+  Execute custom modules through their own IRule.SolveRule API; expression-engine
+  registration does not dispatch to their method bodies.
 - Add tests for:
   - happy path
   - missing parameter handling

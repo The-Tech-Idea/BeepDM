@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Threading;
 using TheTechIdea.Beep.Editor.UOWManager.Interfaces;
 using TheTechIdea.Beep.Editor.Forms.Models;
 
@@ -12,7 +13,7 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
     /// Pass a single shared instance to all FormsManager constructors so each form
     /// can post and receive typed messages from any other form.
     /// </summary>
-    public class FormMessageBus : IFormMessageBus
+    public class FormMessageBus : IFormMessageBus, IOwnedFormMessageSubscriptions
     {
         // key = "formName|messageType"
         private readonly ConcurrentDictionary<string, List<Action<FormMessage>>> _subscriptions
@@ -76,18 +77,53 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
             }
         }
 
+        /// <summary>Returns an idempotent, instance-owned subscription rather than a form-name unsubscribe.</summary>
+        public IDisposable SubscribeOwned(string formName, string messageType, Action<FormMessage> handler)
+        {
+            if (string.IsNullOrWhiteSpace(formName) || string.IsNullOrWhiteSpace(messageType) || handler == null)
+                throw new ArgumentException("Owned subscriptions require a form, message type and handler.");
+            var lease = new OwnedSubscription(this, BuildKey(formName, messageType), handler);
+            Subscribe(formName, messageType, lease.Deliver);
+            return lease;
+        }
+
+        private sealed class OwnedSubscription : IDisposable
+        {
+            private FormMessageBus _bus;
+            private Action<FormMessage> _handler;
+            private readonly string _key;
+            internal OwnedSubscription(FormMessageBus bus, string key, Action<FormMessage> handler)
+            { _bus = bus; _key = key; _handler = handler; }
+            internal void Deliver(FormMessage message) => Volatile.Read(ref _handler)?.Invoke(message);
+            public void Dispose()
+            {
+                Interlocked.Exchange(ref _handler, null);
+                var bus = Interlocked.Exchange(ref _bus, null);
+                if (bus == null) return;
+                lock (bus._subLock)
+                {
+                    if (!bus._subscriptions.TryGetValue(_key, out var list)) return;
+                    list.Remove(Deliver);
+                    if (list.Count == 0) bus._subscriptions.TryRemove(_key, out _);
+                }
+            }
+        }
+
         /// <inheritdoc/>
         public void Unsubscribe(string formName, string messageType)
-            => _subscriptions.TryRemove(BuildKey(formName, messageType), out _);
+        {
+            lock (_subLock) _subscriptions.TryRemove(BuildKey(formName, messageType), out _);
+        }
 
         /// <inheritdoc/>
         public void UnsubscribeAll(string formName)
         {
             if (string.IsNullOrWhiteSpace(formName)) return;
             var prefix = formName.ToUpperInvariant() + "|";
-            foreach (var key in new List<string>(_subscriptions.Keys))
-                if (key.ToUpperInvariant().StartsWith(prefix))
-                    _subscriptions.TryRemove(key, out _);
+            lock (_subLock)
+                foreach (var key in new List<string>(_subscriptions.Keys))
+                    if (key.ToUpperInvariant().StartsWith(prefix, StringComparison.Ordinal))
+                        _subscriptions.TryRemove(key, out _);
         }
 
         private static string BuildKey(string formName, string messageType)
@@ -96,9 +132,12 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
         private void DispatchToSubscribers(string formName, string messageType, FormMessage msg)
         {
             var key = BuildKey(formName, messageType);
-            if (!_subscriptions.TryGetValue(key, out var list)) return;
             List<Action<FormMessage>> snapshot;
-            lock (_subLock) { snapshot = new List<Action<FormMessage>>(list); }
+            lock (_subLock)
+            {
+                if (!_subscriptions.TryGetValue(key, out var list)) return;
+                snapshot = new List<Action<FormMessage>>(list);
+            }
             foreach (var h in snapshot)
             {
                 // We intentionally swallow handler exceptions here so one bad

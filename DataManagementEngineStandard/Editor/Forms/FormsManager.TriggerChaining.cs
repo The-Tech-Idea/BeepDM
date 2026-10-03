@@ -52,7 +52,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
 
         private void OnTriggerExecuted(object sender, TriggerExecutedEventArgs e)
         {
-            if (e?.Trigger == null) return;
+            if (_disposed || e?.Trigger == null) return;
 
             _triggerExecutionLog?.Record(new TriggerExecutionLogEntry
             {

@@ -36,10 +36,26 @@ Use this skill when working on `DataManagementEngineStandard/Rules` and `DataMan
   - `RuleParserFactory.RegisterParser(...)`, `GetParser(...)`
 - Catalog and governance:
   - `RuleCatalog.Register(...)`, `GetByGuid(...)`, `GetByName(...)`, `Promote(...)`
-  - `IRuleStructure.LifecycleState`, `SchemaVersion`, `Touch()`
+  - `IRuleStructure.LifecycleState`, `SchemaVersion`, concrete `RuleStructure.Touch()`
+
+## NFEL Execution Boundary
+- Select `RuleEngine(new NfelParser())` explicitly; a parser key or RuleType string
+  does not switch an existing engine's execution profile. See `reference.md` for
+  NFEL-1 grammar/limits and `Rules/NFEL.md` for the authoritative runtime contract.
+- NFEL reparses registered expression text and denies mismatched pre-populated
+  tokens. Never use caller-modified tokens to override reviewed RuleText.
+- Logical/ternary conditions require Booleans and branches are lazy, but all tokens
+  still pass captured policy. No implicit numeric strings, arbitrary object
+  conversions, member traversal or NFEL `@rule` references.
+- Parser history is bounded and defensive. Clear is not cancellation; policy
+  timeouts cannot interrupt blocking user callbacks or establish a plugin sandbox.
+- `RuleEngine.SolveRule` evaluates expressions; it does not dispatch to arbitrary
+  registered `IRule.SolveRule` bodies. Invoke executable modules directly through
+  their actual IRule API when that is the intended operation.
 
 ## Typical Usage Pattern
-1. Create or load an `IRule` (`RuleText`, optional `Structure` metadata).
+1. Decide whether the operation executes an IRule module or evaluates a parsed expression.
+   For expression-engine registration, RuleText is the actual expression, not a module name.
 2. Parse it with `RuleParser` (or parser selected via `RuleParserFactory`).
 3. Register it in `RuleEngine`.
 4. Evaluate with `SolveRule` using parameters and an explicit `RuleExecutionPolicy`.
@@ -50,7 +66,8 @@ Use this skill when working on `DataManagementEngineStandard/Rules` and `DataMan
 2. Implement `IRule` with stable `RuleText` key and `SolveRule(...)`.
 3. Add `[Rule(...)]` metadata for discovery/catalog semantics.
 4. Return deterministic `outputs` and `result` from `SolveRule`.
-5. Register rule instance in bootstrap/composition root via `RuleEngine.RegisterRule`.
+5. Invoke executable modules through their actual `IRule.SolveRule` API. Register
+   expression holders with RuleEngine only when RuleText is evaluable expression text.
 
 ## Creating a Custom Parser
 1. Implement `IRuleParser`.
@@ -73,6 +90,9 @@ Use this skill when working on `DataManagementEngineStandard/Rules` and `DataMan
 ## File Locations
 - `DataManagementEngineStandard/Rules/RulesEngine.cs`
 - `DataManagementEngineStandard/Rules/RulesEngine.ExpressionEvaluation.cs`
+- `DataManagementEngineStandard/Rules/RulesEngine.Nfel.cs`
+- `DataManagementEngineStandard/Rules/BuiltinParsers/NfelParser.cs`
+- `DataManagementEngineStandard/Rules/NFEL.md`
 - `DataManagementEngineStandard/Rules/RulesParser.cs`
 - `DataManagementEngineStandard/Rules/Tokenizer.cs`
 - `DataManagementEngineStandard/Rules/RuleCatalog.cs`
@@ -84,7 +104,7 @@ Use this skill when working on `DataManagementEngineStandard/Rules` and `DataMan
 
 ## Example
 ```csharp
-var parser = new RuleParser();
+var parser = new NfelParser();
 var engine = new RuleEngine(parser);
 
 engine.RuleEvaluated += (_, e) =>
@@ -92,8 +112,8 @@ engine.RuleEvaluated += (_, e) =>
     Console.WriteLine($"{e.RuleKey} success={e.Success} elapsed={e.Elapsed.TotalMilliseconds}ms");
 };
 
-var rule = new TheTechIdea.Beep.Rules.BuiltinRules.Record.SetFieldValue();
-engine.RegisterRule(rule);
+var parsed = parser.ParseRule("price * qty");
+if (!parsed.Success) throw new RuleParseException(parsed.Diagnostics, "Invalid expression.");
 
 var policy = new RuleExecutionPolicy
 {
@@ -103,11 +123,11 @@ var policy = new RuleExecutionPolicy
 
 var parameters = new Dictionary<string, object>
 {
-    ["FieldName"] = "Status",
-    ["Value"] = "Processed"
+    ["price"] = 12.5,
+    ["qty"] = 2
 };
 
-var (_, result) = engine.SolveRule(rule.RuleText, parameters, policy);
+var result = engine.EvaluateExpression(parsed.Structure.Tokens, parameters, policy);
 ```
 
 ## Related Skills

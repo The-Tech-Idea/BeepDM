@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Concurrent;
+using System.Collections.ObjectModel;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using TheTechIdea.Beep.Editor.Forms.Models;
 using TheTechIdea.Beep.Editor.UOWManager.Interfaces;
@@ -59,7 +61,7 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
     /// Evaluates the current <see cref="SecurityContext"/> against registered
     /// <see cref="BlockSecurity"/> and <see cref="FieldSecurity"/> rules.
     /// </summary>
-    public class SecurityManager : ISecurityManager
+    public class SecurityManager : ISecurityManager, IQuerySecurityPublication, IObservableSecurityPolicy
     {
         #region Fields
         private readonly ConcurrentDictionary<string, BlockSecurity> _blockSecurities
@@ -72,6 +74,39 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
         private readonly object _violationLock = new object();
 
         private readonly IFieldMaskProvider _maskProvider;
+        private readonly object _policyLock = new object();
+        private SecurityContext _context = new SecurityContext();
+        private long _securityRevision;
+        private long _readAuthorizationRevision;
+        public long SecurityRevision { get { lock (_policyLock) return _securityRevision; } }
+        private readonly ConcurrentQueue<Exception> _policyNotificationFailures = new();
+        public IReadOnlyList<Exception> PolicyNotificationFailures => _policyNotificationFailures.ToArray();
+        public event EventHandler<SecurityPolicyChangedEventArgs> SecurityPolicyChanged;
+
+        private SecurityPolicyChangedEventArgs CurrentPolicyChange() => new(_securityRevision, _readAuthorizationRevision);
+
+        private void NotifyPolicyChange(SecurityPolicyChangedEventArgs change)
+        {
+            foreach (EventHandler<SecurityPolicyChangedEventArgs> observer in
+                SecurityPolicyChanged?.GetInvocationList() ?? Array.Empty<Delegate>())
+                try { observer(this, change); }
+                catch (Exception ex)
+                {
+                    _policyNotificationFailures.Enqueue(ex);
+                    while (_policyNotificationFailures.Count > 128) _policyNotificationFailures.TryDequeue(out _);
+                }
+        }
+
+        public bool TryPublishQuery(long revision, Action publishOwnedState)
+        {
+            ArgumentNullException.ThrowIfNull(publishOwnedState);
+            lock (_policyLock)
+            {
+                if (revision != _securityRevision) return false;
+                publishOwnedState();
+                return true;
+            }
+        }
         #endregion
 
         #region Events
@@ -87,21 +122,23 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
         public SecurityManager(IFieldMaskProvider maskProvider = null)
         {
             _maskProvider = maskProvider ?? new DefaultFieldMaskProvider();
-            CurrentContext = new SecurityContext();
         }
         #endregion
 
         #region ISecurityManager
 
         /// <summary>Gets the current security context.</summary>
-        public SecurityContext CurrentContext { get; private set; }
+        public SecurityContext CurrentContext { get { lock (_policyLock) return CloneContext(_context); } }
 
         // ── Context ──────────────────────────────────────────────────────────
 
         /// <summary>Sets the active security context.</summary>
         public void SetSecurityContext(SecurityContext context)
         {
-            CurrentContext = context ?? new SecurityContext();
+            var copy = CloneContext(context ?? new SecurityContext());
+            SecurityPolicyChangedEventArgs change;
+            lock (_policyLock) { _context = copy; _securityRevision++; _readAuthorizationRevision++; change = CurrentPolicyChange(); }
+            NotifyPolicyChange(change);
         }
 
         // ── Block Security ───────────────────────────────────────────────────
@@ -110,47 +147,88 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
         public void SetBlockSecurity(string blockName, BlockSecurity security)
         {
             if (string.IsNullOrEmpty(blockName) || security == null) return;
-            security.BlockName = blockName;
-            _blockSecurities[blockName] = security;
+            var copy = CloneBlockSecurity(security);
+            copy.BlockName = blockName;
+            SecurityPolicyChangedEventArgs change;
+            lock (_policyLock) { _blockSecurities[blockName] = copy; _securityRevision++; _readAuthorizationRevision++; change = CurrentPolicyChange(); }
+            NotifyPolicyChange(change);
         }
 
         /// <summary>Returns block-level security rules for a block.</summary>
         public BlockSecurity GetBlockSecurity(string blockName)
-            => _blockSecurities.TryGetValue(blockName ?? string.Empty, out var bs) ? bs : null;
+        {
+            lock (_policyLock)
+                return _blockSecurities.TryGetValue(blockName ?? string.Empty, out var bs) ? CloneBlockSecurity(bs) : null;
+        }
 
         /// <summary>Removes all block-level and field-level security rules for a block.</summary>
         public void ClearBlockSecurity(string blockName)
         {
             if (string.IsNullOrWhiteSpace(blockName)) return;
-            _blockSecurities.TryRemove(blockName, out _);
-            _fieldSecurities.TryRemove(blockName, out _);
+            SecurityPolicyChangedEventArgs change;
+            lock (_policyLock)
+            {
+                _blockSecurities.TryRemove(blockName, out _);
+                foreach (var key in _fieldSecurities.Keys.Where(k => k.StartsWith(blockName.ToUpperInvariant() + "|", StringComparison.Ordinal)))
+                    _fieldSecurities.TryRemove(key, out _);
+                _securityRevision++;
+                _readAuthorizationRevision++;
+                change = CurrentPolicyChange();
+            }
+            NotifyPolicyChange(change);
         }
 
         /// <summary>Returns whether a block operation is allowed in the current context.</summary>
         public bool IsBlockAllowed(string blockName, SecurityPermission permission)
         {
-            if (CurrentContext.IsAdmin) return true;
+            lock (_policyLock)
+                return EvaluatePermission(blockName, permission);
+        }
 
-            if (!_blockSecurities.TryGetValue(blockName ?? string.Empty, out var bs))
-                return true;  // no security rule = allow
-
-            // Check role-specific overrides first
-            foreach (var role in CurrentContext.Roles)
-            {
-                if (bs.RolePermissions.TryGetValue(role, out var rp))
-                    return (rp & permission) != 0;
-            }
-
-            // Fall back to block defaults
+        private bool EvaluatePermission(string blockName, SecurityPermission permission)
+        {
+            if (_context.IsAdmin) return true;
+            if (!_blockSecurities.TryGetValue(blockName ?? string.Empty, out var policy)) return true;
+            var matches = _context.Roles.Where(role => role != null && policy.RolePermissions.ContainsKey(role)).ToList();
+            if (matches.Count > 0)
+                return matches.Any(role => (policy.RolePermissions[role] & permission) == permission);
             return permission switch
             {
-                SecurityPermission.Query  => bs.AllowQuery,
-                SecurityPermission.Insert => bs.AllowInsert,
-                SecurityPermission.Update => bs.AllowUpdate,
-                SecurityPermission.Delete => bs.AllowDelete,
-                _                         => true
+                SecurityPermission.Query => policy.AllowQuery,
+                SecurityPermission.Insert => policy.AllowInsert,
+                SecurityPermission.Update => policy.AllowUpdate,
+                SecurityPermission.Delete => policy.AllowDelete,
+                _ => true
             };
         }
+
+        public QuerySecuritySnapshot CaptureQuerySecurity(string blockName)
+        {
+            lock (_policyLock)
+            {
+                _blockSecurities.TryGetValue(blockName ?? string.Empty, out var policy);
+                return new QuerySecuritySnapshot(_securityRevision, EvaluatePermission(blockName, SecurityPermission.Query),
+                    policy?.RowFilterClause ?? string.Empty,
+                    new ReadOnlyDictionary<string, object>(new Dictionary<string, object>(
+                        policy?.RowFilterValues ?? new Dictionary<string, object>(), StringComparer.OrdinalIgnoreCase)),
+                    _readAuthorizationRevision);
+            }
+        }
+
+        private static SecurityContext CloneContext(SecurityContext context) => new SecurityContext
+        {
+            UserName = context.UserName, IsAdmin = context.IsAdmin,
+            Roles = new List<string>(context.Roles ?? new List<string>()),
+            Claims = new Dictionary<string, string>(context.Claims ?? new Dictionary<string, string>(), StringComparer.OrdinalIgnoreCase)
+        };
+
+        private static BlockSecurity CloneBlockSecurity(BlockSecurity policy) => new BlockSecurity
+        {
+            BlockName = policy.BlockName, AllowQuery = policy.AllowQuery, AllowInsert = policy.AllowInsert,
+            AllowUpdate = policy.AllowUpdate, AllowDelete = policy.AllowDelete, RowFilterClause = policy.RowFilterClause,
+            RolePermissions = new Dictionary<string, SecurityPermission>(policy.RolePermissions ?? new Dictionary<string, SecurityPermission>(), StringComparer.OrdinalIgnoreCase),
+            RowFilterValues = new Dictionary<string, object>(policy.RowFilterValues ?? new Dictionary<string, object>(), StringComparer.OrdinalIgnoreCase)
+        };
 
         /// <summary>Applies evaluated block security flags through the supplied callback.</summary>
         public void ApplyBlockSecurityFlags(Action<string, bool, bool, bool, bool> applyBlockFlags)
@@ -183,16 +261,25 @@ namespace TheTechIdea.Beep.Editor.Forms.Helpers
         {
             if (string.IsNullOrEmpty(blockName) || string.IsNullOrEmpty(fieldName) || security == null) return;
             var key = MakeFieldKey(blockName, fieldName);
-            security.BlockName = blockName;
-            security.FieldName = fieldName;
-            _fieldSecurities[key] = security;
+            var copy = CloneFieldSecurity(security);
+            copy.BlockName = blockName;
+            copy.FieldName = fieldName;
+            SecurityPolicyChangedEventArgs change;
+            lock (_policyLock) { _fieldSecurities[key] = copy; _securityRevision++; change = CurrentPolicyChange(); }
+            NotifyPolicyChange(change);
         }
 
-        /// <summary>Returns field-level security rules for a block field.</summary>
+        private static FieldSecurity CloneFieldSecurity(FieldSecurity policy) => new()
+        {
+            BlockName = policy.BlockName, FieldName = policy.FieldName, Visible = policy.Visible,
+            Editable = policy.Editable, Masked = policy.Masked, MaskPattern = policy.MaskPattern, UiHint = policy.UiHint
+        };
+
+        /// <summary>Returns an owned field-policy copy; use SetFieldSecurity to publish changes.</summary>
         public FieldSecurity GetFieldSecurity(string blockName, string fieldName)
         {
             var key = MakeFieldKey(blockName, fieldName);
-            return _fieldSecurities.TryGetValue(key, out var fs) ? fs : null;
+            lock (_policyLock) return _fieldSecurities.TryGetValue(key, out var fs) ? CloneFieldSecurity(fs) : null;
         }
 
         /// <summary>Applies evaluated field security flags through the supplied callbacks.</summary>

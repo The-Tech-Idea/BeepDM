@@ -27,7 +27,7 @@ namespace TheTechIdea.Beep.Editor.BeepSync
 
         // ── Row counts ───────────────────────────────────────────────────────────
 
-        /// <summary>Total rows read from the source entity.</summary>
+        /// <summary>Rows attempted by admitted imports, combined across directions; not all materialized source rows.</summary>
         public int SourceRowsScanned { get; set; }
 
         /// <summary>Total rows successfully written to the destination entity.</summary>
@@ -60,8 +60,8 @@ namespace TheTechIdea.Beep.Editor.BeepSync
         public double RejectRate { get; set; }
 
         /// <summary>
-        /// <c>true</c> when the batch-threshold rule triggered an AbortRun action
-        /// and the run was halted before all source rows were processed.
+        /// <c>true</c> when a required attempt threshold denied completion,
+        /// including numeric rejection and evaluation failure. Earlier writes are not rolled back.
         /// </summary>
         public bool RunAbortedByThreshold { get; set; }
 

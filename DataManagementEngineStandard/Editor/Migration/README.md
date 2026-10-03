@@ -1,5 +1,15 @@
 # Migration Manager
 
+Current governed-plan contract: [PLAN-INTENT.md](PLAN-INTENT.md). New plans use
+versioned schema-sensitive identity and captured provider payloads. Legacy
+approvals/checkpoints require rebuilding and re-approval; partial DDL recovery
+and persistence acknowledgement still have explicit limits.
+
+Optional durable claim backend: [EXECUTION-OWNERSHIP.md](EXECUTION-OWNERSHIP.md).
+ConfigEditor exposes IMigrationExecutionOwnership with live-owner exclusion,
+abandoned-work detection and explicit reconciliation. MigrationManager does not
+yet acquire it automatically; concurrent execution/public progress remain open.
+
 > **Read this first — verified status (code + tests, not aspiration).** `MigrationManager` is real,
 > sophisticated code (~10.8k LOC, 18 partials) — but until recently it had **zero tests**. A test
 > harness now exists (`tests/MigrationManagerTests`, a Moq recording fake that drives the real manager
@@ -13,7 +23,7 @@
 > `ExecuteStep` now runs `DropColumn`/`AlterColumn`/`DropEntity`/`TruncateEntity`/`RenameEntity`/`RenameColumn`
 > through the per-datasource `ISchemaMigrationProvider` (no raw DDL). The destructive-change **policy gate,
 > compensation, and rollback-readiness are now reachable and enforced**: a destructive plan is blocked at
-> preflight unless the caller passes approval (`ExecuteMigrationPlan(plan, policyOptions: <approver+override>)`)
+> preflight unless the caller passes approval (approver/reason plus `ApprovedPlanHash = plan.PlanHash`)
 > and supplies backup/restore evidence on the readiness report. Proven end-to-end in `DestructiveExecutionTests`.
 > *Column type changes (`AlterColumn`) are still not auto-planned* — a reflected .NET type vs a live DB
 > type is not a reliable equality signal, so it would false-positive on every column; use the imperative

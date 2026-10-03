@@ -630,6 +630,12 @@
             Controls how the repository resolves naming collisions during import/promote.
             </summary>
         </member>
+        <member name="T:TheTechIdea.Beep.ConfigUtil.ConnectionCatalogNotificationFailureEventArgs">
+            <summary>A committed catalog change whose observer failed; never contains raw exception or connection data.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.ConnectionProperties.ProtectedCredentialPayload">
+            <summary>Opaque, versioned protected credential-container snapshot. Runtime connections use decrypted fields instead.</summary>
+        </member>
         <member name="P:TheTechIdea.Beep.ConfigUtil.ConnectionProperties.AuthenticationTypeEnum">
             <summary>
             Authentication type enum for this connection (supports all connection types: databases, Web APIs, files, cloud services)
@@ -810,6 +816,15 @@
             <summary>
             Connection health status for monitoring.
             </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.ConfigUtil.IConnectionSecretProtector">
+            <summary>Immutable per-runtime policy. Returned snapshots must not mutate or share credential containers with the input.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.ConfigUtil.IConnectionCredentialCipher">
+            <summary>Authenticated credential encryption. Purpose must be bound during protect and checked during unprotect.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.ConfigUtil.IConnectionCredentialKeyProvider">
+            <summary>Host-owned secret key ring; never persist its key material in the connection store.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.ConfigUtil.IConnectionProperties">
             <summary>
@@ -1170,6 +1185,43 @@
             <summary>
             Gets or sets a value indicating whether the token needs to be refreshed.
             </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.ConfigUtil.MigrationExecutionClaim">
+            <summary>An immutable observation, not authority to change execution progress.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.ConfigUtil.IMigrationExecutionLease">
+            <summary>Disposal releases the owner handle, never silently clears durable unfinished work.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.ConfigUtil.IMigrationExecutionOwnership">
+            <summary>
+            Optional durable ownership for cooperating executors sharing one store. The host supplies
+            a canonical physical-target identity, not a credential, connection alias or runtime GUID.
+            This capability alone does not cause MigrationManager to acquire a claim.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.ConfigUtil.IMigrationExecutionStorage">
+            <summary>A captured store must retain its identity, loader and root for the entire operation.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.ConfigUtil.IMigrationExecutionStorageProvider">
+            <summary>Optional configuration capability for immutable migration storage capture.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.ConfigUtil.PersistenceWriteResult">
+            <summary>Acknowledgement of a completed storage operation, not a power-loss guarantee.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.ConfigUtil.IMigrationHistoryPersistence">
+            <summary>
+            Optional additive configuration capability. A legacy void append is not an acknowledgement.
+            Reads must distinguish missing history from corrupt/unreadable history.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.ConfigUtil.IJsonSnapshotCodec">
+            <summary>Optional loader capability for complete, stable JSON snapshots before file replacement.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.MigrationHistory.StorageFormatVersion">
+            <summary>Zero identifies a legacy history; coordinated snapshots use version one.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.ConfigUtil.MigrationRecord.PlanArtifactJson">
+            <summary>Versioned governed plan payload, when this record captures a plan artifact.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.ConfigUtil.SemVer">
             <summary>
@@ -1537,6 +1589,16 @@
             </summary>
             <returns>Dictionary mapping datasource type to capability summary</returns>
         </member>
+        <member name="T:TheTechIdea.Beep.DataBase.EntityMetadataSnapshot">
+            <summary>Creates an owned, mutable copy of supported entity metadata without event subscribers.</summary>
+            <remarks>
+            Preserves order, identities, null collections and shared references (including primary keys).
+            Supports the built-in metadata models, scalar option values, one-dimensional arrays,
+            List&lt;T&gt; and Dictionary&lt;string, object&gt; with built-in comparers. Derived/custom values,
+            cycles and graphs exceeding 64 levels or 10,000 visited values are rejected.
+            Callers must synchronize capture against concurrent mutation and keep execution copies private.
+            </remarks>
+        </member>
         <member name="P:TheTechIdea.Beep.DataBase.EntityStructure.Indexes">
             <summary>
             Index descriptors declared on this entity. Populated by callers (e.g. the
@@ -1545,12 +1607,18 @@
             into <c>applyIndexes=true</c>.
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.DataBase.EntityStructure.Clone">
+            <summary>Legacy shallow copy. Use EntityMetadataSnapshot.Capture for owned run metadata.</summary>
+        </member>
         <member name="P:TheTechIdea.Beep.DataBase.EntityField.IsUnicode">
             <summary>
             Whether a string column should use a Unicode type (e.g. SQL Server <c>nvarchar</c>) rather
             than a non-Unicode one (<c>varchar</c>). Defaults true to preserve historical DDL; set false
             via EF-Core <c>[Unicode(false)]</c>. Only affects providers that distinguish the two.
             </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.EntityField.Clone">
+            <summary>Copies field values without retaining the source's event subscribers.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.DataBase.EntityIndex">
             <summary>
@@ -1606,6 +1674,12 @@
         </member>
         <member name="E:TheTechIdea.Beep.DataBase.IInMemoryDB.StateChanged">
             <summary>Raised whenever any state flag (IsCreated / IsLoaded / IsSaved / IsSynced) flips.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.DataBase.IParameterizedScalarDataSource">
+            <summary>Optional scalar execution contract; bind every definition parameter as data.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.DataBase.IUpsertDataSource">
+            <summary>Optional native upsert capability. A failed update alone never implies a missing row.</summary>
         </member>
         <member name="P:TheTechIdea.Beep.DataBase.RelationShipKeys.OnDeleteBehavior">
             <summary>
@@ -2061,8 +2135,8 @@
         </member>
         <member name="T:TheTechIdea.Beep.Editor.BeepSync.DqPolicy">
             <summary>
-            Policy that controls which Data Quality gate rules are evaluated on each batch
-            before records are written to the destination.
+            Policy for per-record post-transform/pre-write Data Quality gates.
+            Threshold admission is captured separately; default integration retains legacy compatibility.
             Stored on <see cref="P:TheTechIdea.Beep.Editor.DataSyncSchema.DqPolicy"/>.
             </summary>
         </member>
@@ -2078,18 +2152,27 @@
             Rules are applied in order; the first failure routes the record to the reject channel.
             </summary>
         </member>
+        <member name="P:TheTechIdea.Beep.Editor.BeepSync.DqPolicy.RecordFailureMode">
+            <summary>Required lookup/evaluation failures deny a row; Advisory failures produce warnings.</summary>
+        </member>
         <member name="P:TheTechIdea.Beep.Editor.BeepSync.DqPolicy.BatchThresholdRuleKey">
             <summary>
-            Rule key evaluated at the end of each batch to decide whether
-            the run should be aborted due to a high reject rate.
+            Rule key evaluated once after an attempt's admitted imports (both directions),
+            including partial failures. Outputs must contain action: ContinueRun or AbortRun.
             Defaults to <c>sync.dq.batch-threshold</c>.
             </summary>
         </member>
+        <member name="P:TheTechIdea.Beep.Editor.BeepSync.DqPolicy.BatchThresholdEnabled">
+            <summary>Explicit opt-out for record-only policies; enabled thresholds require a rule by default.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.BeepSync.DqPolicy.ThresholdFailureMode">
+            <summary>Required decisions/errors block completion; Advisory decisions/errors produce counted evidence.</summary>
+        </member>
         <member name="P:TheTechIdea.Beep.Editor.BeepSync.DqPolicy.MaxRejectRatePercent">
             <summary>
-            Maximum percentage of records that may be rejected before the batch-threshold
-            rule triggers an <c>AbortRun</c> action (0–100; 0 = unlimited).
-            Only used as a fallback when the rule engine is unavailable.
+            Finite 0-100 limit. Reject rate is quality-rejected rows / attempted import rows,
+            combined across admitted directions. Empty attempts have rate zero.
+            Exceeding this limit or an AbortRun action rejects the threshold decision.
             </summary>
         </member>
         <member name="P:TheTechIdea.Beep.Editor.BeepSync.DqPolicy.RejectChannelDataSourceName">
@@ -2105,10 +2188,12 @@
         </member>
         <member name="P:TheTechIdea.Beep.Editor.BeepSync.DqPolicy.FillDefaultsBeforeEval">
             <summary>
-            When <c>true</c>, the <see cref="!:SyncIntegrationContext.DefaultsManager"/> is
-            invoked to fill missing destination fields <em>before</em> DQ rules are evaluated.
-            Requires <see cref="P:TheTechIdea.Beep.Editor.BeepSync.SyncDefaultsPolicy.ApplyOnInsert"/> to also be set.
+            Retained compatibility property, not an additional default stage.
+            Record admission observes the result of the configured import transformation/default pipeline.
             </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.BeepSync.ISyncPersistenceAcknowledgement">
+            <summary>Optional acknowledged/cancellable sync storage; acknowledgement is not a provider transaction guarantee.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.BeepSync.SyncCiGateResult">
             <summary>
@@ -2234,8 +2319,8 @@
         </member>
         <member name="P:TheTechIdea.Beep.Editor.BeepSync.RetryPolicy.CheckpointEnabled">
             <summary>
-            When <c>true</c>, a checkpoint is saved after each successfully committed batch,
-            enabling mid-run resume on transient failures.
+            When <c>true</c>, require acknowledged run checkpoints before importing and at completion.
+            Offset replay still requires explicit provider ordering/idempotency and reconciliation.
             </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.BeepSync.SharedDataProject">
@@ -2350,10 +2435,13 @@
             mapping drift notice, etc.).
             </summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Editor.BeepSync.SyncBatchThresholdResult">
+            <summary>Captured, payload-free attempt threshold evidence, not provider rollback or replay authority.</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.BeepSync.SyncCheckpoint">
             <summary>
-            Checkpoint artifact persisted after each successful batch during a sync run.
-            Enables partial-resume and idempotent replay without re-processing records already written.
+            Run checkpoint persisted before provider execution and at completion.
+            Storage alone does not establish safe offset replay or provider idempotency.
             </summary>
         </member>
         <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncCheckpoint.RunId">
@@ -2361,6 +2449,15 @@
         </member>
         <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncCheckpoint.SchemaId">
             <summary>Schema Id this checkpoint belongs to.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncCheckpoint.SchemaFingerprint">
+            <summary>Versioned sync context identity. Missing/changed identity is not safe execution evidence.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncCheckpoint.RequiresReconciliation">
+            <summary>Provider state must be reconciled before replaying uncertain or acknowledged partial work.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncCheckpoint.FailureEvidence">
+            <summary>Optional typed failed-run evidence; legacy missing evidence never establishes safe replay.</summary>
         </member>
         <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncCheckpoint.ProcessedOffset">
             <summary>Number of records successfully processed at the time this checkpoint was saved.</summary>
@@ -2380,7 +2477,7 @@
         <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncCheckpoint.Status">
             <summary>
             Lifecycle state of this checkpoint.
-            Values: <c>"InProgress"</c>, <c>"Completed"</c>, <c>"Failed"</c>, <c>"Stale"</c>.
+            Values: <c>"InProgress"</c>, <c>"Running"</c>, <c>"Completed"</c>, <c>"Failed"</c>, <c>"Stale"</c>.
             </summary>
         </member>
         <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncCheckpoint.AttemptCount">
@@ -2401,8 +2498,17 @@
         <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncCheckpoint.LastProcessedKeyValue">
             <summary>
             Primary-key value of the last successfully written record in this run.
-            Used as the idempotency anchor when resuming from a partial batch.
+            Storage preserves its type; the current sync translator does not publish or replay this key.
             </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.BeepSync.SyncCheckpointFailureResult">
+            <summary>Provider acknowledgements retained when mandatory run completion cannot be persisted.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.BeepSync.SyncDiagnosticFailureEventArgs">
+            <summary>Non-fatal diagnostic failure; contains no raw exception, credentials or row data.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.BeepSync.SyncFailureEvidence">
+            <summary>Versioned acknowledgement evidence; not ordered replay offsets or transaction commits.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.BeepSync.SyncMetrics">
             <summary>
@@ -2759,7 +2865,7 @@
             <summary>User or process that initiated the run.</summary>
         </member>
         <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncReconciliationReport.SourceRowsScanned">
-            <summary>Total rows read from the source entity.</summary>
+            <summary>Rows attempted by admitted imports, combined across directions; not all materialized source rows.</summary>
         </member>
         <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncReconciliationReport.DestRowsWritten">
             <summary>Total rows successfully written to the destination entity.</summary>
@@ -2790,8 +2896,8 @@
         </member>
         <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncReconciliationReport.RunAbortedByThreshold">
             <summary>
-            <c>true</c> when the batch-threshold rule triggered an AbortRun action
-            and the run was halted before all source rows were processed.
+            <c>true</c> when a required attempt threshold denied completion,
+            including numeric rejection and evaluation failure. Earlier writes are not rolled back.
             </summary>
         </member>
         <member name="P:TheTechIdea.Beep.Editor.BeepSync.SyncReconciliationReport.DqFailures">
@@ -3268,6 +3374,9 @@
         <member name="P:TheTechIdea.Beep.Editor.CommitResult.Results">
             <summary>Per-item commit results.</summary>
         </member>
+        <member name="P:TheTechIdea.Beep.Editor.CommitResult.NotificationErrors">
+            <summary>Consumer notification errors after writes committed; not provider failures.</summary>
+        </member>
         <member name="P:TheTechIdea.Beep.Editor.CommitResult.AllSucceeded">
             <summary>True if ALL items committed successfully.</summary>
         </member>
@@ -3677,6 +3786,9 @@
             SHOW_ALERT('alert_name')). Returns <see cref="F:TheTechIdea.Beep.Editor.Forms.Models.AlertResult.None"/>
             when no alert with that name has been created.
             </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ICoordinatedBlockSave">
+            <summary>Optional dirty-state helper contract preserving one outcome per requested block.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IDirtyStateManager">
             <summary>
@@ -4242,6 +4354,18 @@
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormMenuManager.FindItem(System.String)">
             <summary>The menu item with this id anywhere in the tree, or null.</summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormsEditorOutcomes">
+            <summary>Optional captured-record outcomes for platform-neutral editor popups.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IObservableSecurityPolicy">
+            <summary>Optional helper notification. Publish outside policy monitors and isolate observer failures.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormsPolicyNotifications">
+            <summary>Optional manager feed for host-owned, revision-checked UI reconciliation.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormsQueryOutcomes">
+            <summary>Optional managed query outcome/cancellation capability; not a raw SQL entry point.</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormRegistry">
             <summary>
             Shared registry of all active form managers.
@@ -4346,6 +4470,34 @@
         <member name="E:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISharedBlockManager.SharedBlockChanged">
             <summary>Raised when any caller notifies that a shared block's data has changed.</summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IOwnedFormMessageSubscriptions">
+            <summary>Optional bus capability for detaching exactly one owner's handler.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IOwnedUnitOfWorkEventSubscriptions">
+            <summary>Optional ownership of one event translation subscription, independent of block-name lookup.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IOwnedUnitOfWorkEventSubscriptions.SubscribeOwned(TheTechIdea.Beep.Editor.IUnitofWork,System.String)">
+            <summary>
+            Attaches a complete subscription or unwinds attempted attachments and throws.
+            The returned lease retires only its own delegates and captured source.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IPreparedBlockItems">
+            <summary>Optional preparation of block items without changing the live item store.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IBlockItemsRegistration.Commit(System.Action)">
+            <summary>
+            Publishes items and the caller's owned-memory registration action together.
+            The action must not invoke providers, helpers or observers. A thrown action
+            restores the previous item store. Dispose removes only this lease's published items.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IGatedUnitOfWorkEventSubscriptions">
+            <summary>Optional subscription admission tied to a prepared registration's owned state.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IGatedUnitOfWorkEventSubscriptions.SubscribeOwned(TheTechIdea.Beep.Editor.IUnitofWork,System.String,System.Func{System.Boolean})">
+            <summary>The nonthrowing predicate is evaluated outside helper ownership monitors.</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IPropertyClassManager">
             <summary>
             Registers named <see cref="T:TheTechIdea.Beep.Editor.UOWManager.Models.PropertyClass"/> bundles and applies them to
@@ -4407,6 +4559,10 @@
             Display the large-text editor popup and return whether the user
             committed (OK) or discarded (Cancel) their edit.
             Corresponds to Oracle Forms EDIT_TEXTITEM built-in.
+            The provider owns UI dispatch, dialog dismissal and cancellation acknowledgement.
+            The manager passes a per-request definition copy and awaits physical completion,
+            including after close. Providers are borrowed; the manager does not dispose them.
+            Do not read mutable manager CurrentItem when applying a dialog result.
             </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ISequenceProvider">
@@ -4483,6 +4639,18 @@
         </member>
         <member name="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.TimerFiredEventArgs.FiredAt">
             <summary>Gets the timestamp when the timer fired.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IQuerySecurityPublication">
+            <summary>Optional revision gate for publishing an already prepared query's owned state.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IQuerySecurityPublication.TryPublishQuery(System.Int64,System.Action)">
+            <summary>
+            Reject a changed revision without invoking the action. The action must only publish owned
+            memory; user triggers, providers, metadata getters and notifications belong outside the gate.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IQuerySecuritySnapshotProvider">
+            <summary>Optional coherent snapshot capability; every context/policy change advances the revision.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IRecordGroupRegistry">
             <summary>
@@ -9243,6 +9411,9 @@
         <member name="M:TheTechIdea.Beep.Editor.Forms.Hosts.IFieldPresenter.ApplyMetadata(System.Object,System.Object)">
             <summary>Factory: applies metadata (label, prompt, format) to the platform control.</summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Editor.Forms.Hosts.IFormsBindingTargets">
+            <summary>Optional manager capability for generation-bound adapter work; not a replacement host.</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.Forms.Hosts.IFormsBootstrapper">
             <summary>
             Populates block definitions with <c>EntityStructure</c> metadata from a live datasource.
@@ -9283,11 +9454,36 @@
             (plan §3.3). This is the lossless entry point.
             </remarks>
         </member>
+        <member name="T:TheTechIdea.Beep.Editor.Forms.Hosts.IFormsDispatcher">
+            <summary>Optional adapter-owned UI affinity. No platform dispatcher type is required.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Forms.Hosts.IFormsDispatcher.InvokeAsync(System.Action,System.Threading.CancellationToken)">
+            <summary>
+            Executes once on the UI context, or acknowledges cancellation without executing.
+            The task must not complete while an action can still execute. Already running actions
+            finish before acknowledgement. Dispatch in submission order, not fire-and-forget.
+            </summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.Forms.Hosts.IFormsNotificationService">
             <summary>
             Message notification service shared by WPF and WinForms.
             Publishes messages into a <see cref="T:TheTechIdea.Beep.Editor.Forms.Models.BeepViewState"/> for UI consumption.
             </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Forms.Hosts.IOriginAwareFieldPresenter">
+            <summary>Optional origin/revision protocol for presenters which defer ValueChanged delivery.</summary>
+        </member>
+        <member name="E:TheTechIdea.Beep.Editor.Forms.Hosts.IOriginAwareFieldPresenter.ValueChangedWithOrigin">
+            <summary>User edits use Guid.Empty/zero; programmatic changes preserve the supplied stamp.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Forms.Models.SecurityPolicyChangedEventArgs">
+            <summary>Immutable policy publication evidence; carries no principal or record values.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Forms.Models.QuerySecuritySnapshot">
+            <summary>Owned query authorization and restrictions captured at one policy revision.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Forms.Models.QuerySecuritySnapshot.#ctor(System.Int64,System.Boolean,System.String,System.Collections.Generic.IReadOnlyDictionary{System.String,System.Object},System.Int64)">
+            <summary>Read authorization changes include principal, roles and block/row policies, not field-only presentation rules.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.Forms.Models.AlertStyle">
             <summary>
@@ -10044,6 +10240,15 @@
         <member name="P:TheTechIdea.Beep.Editor.Forms.Models.ClientInfo.LastModified">
             <summary>Timestamp of the last client-info change.</summary>
         </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.DetailBlockSynchronizationResult.ProviderMayHavePublished">
+            <summary>Legacy Get was invoked, or a staged read published. Not proof of database writes.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.DetailBlockSynchronizationResult.RecordsPublished">
+            <summary>True only when the prepared read confirmed its live-record publication.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Forms.Models.DetailSynchronizationResult">
+            <summary>Captured detail outcomes with capability-dependent publication evidence, not a database transaction.</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.Forms.Models.EditorDefinition">
             <summary>
             A named, reusable Editor object (Oracle Forms EDITOR) — a larger popup
@@ -10104,12 +10309,42 @@
         <member name="P:TheTechIdea.Beep.Editor.Forms.Models.EditorResult.Value">
             <summary>Gets or sets the edited text. Only meaningful when <see cref="P:TheTechIdea.Beep.Editor.Forms.Models.EditorResult.Committed"/> is true.</summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Editor.Forms.Models.FormBindingTarget">
+            <summary>Immutable public identity; private captured evidence belongs to the issuing manager.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Forms.Models.FormViewDeliveryResult">
+            <summary>UI/edit acknowledgement, not database durability or atomic multi-field delivery.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.FormBlockCommitResult.Reconciliation">
+            <summary>Present only when provider reconciliation is required; never blindly replay.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Forms.Models.FormCommitResult">
+            <summary>Durability and notification outcomes returned through the legacy error contract.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Forms.Models.FormEditorResult">
+            <summary>Popup acknowledgement and setter evidence are distinct from accepted completion.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.FormEditorResult.Value">
+            <summary>Accepted text; withheld for rejected completion, even after possible effects.</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.Forms.Models.FormHostPlatform">
             <summary>
             Identifies the UI host platform for form rendering.
             Set by the host (WinForms/WPF) and read by the IDE to determine
             which scanner, code generator, and templates to use.
             </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Forms.Models.FormLovResult">
+            <summary>Captured manager result; helper cache/events and arbitrary setters are not transactional.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Forms.Models.FormQueryResult">
+            <summary>Read publication evidence, not database durability or permission to replay a write.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.FormQueryResult.RequestRevision">
+            <summary>Monotonic within RegistrationId, not across replacements or independent forms.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.FormQueryResult.LegacyPublicationPossible">
+            <summary>Legacy Get was invoked and can have published before late rejection.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.Forms.Models.FormCallMode">
             <summary>How a form was opened (Oracle Forms: CALL_FORM mode)</summary>
@@ -10223,6 +10458,9 @@
         </member>
         <member name="P:TheTechIdea.Beep.Editor.Forms.Models.SharedBlockChangedEventArgs.ChangedAt">
             <summary>Gets or sets when the change occurred.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Forms.Models.FormsCleanupFailure">
+            <summary>A failed teardown action; later actions are still attempted.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.Forms.Models.QueryCriterion">
             <summary>
@@ -11027,6 +11265,9 @@
         </member>
         <member name="P:TheTechIdea.Beep.Editor.Forms.Models.SecurityViolationEventArgs.Timestamp">
             <summary>Gets or sets when the violation was recorded.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Forms.Models.TimerCallbackFailure">
+            <summary>An isolated timer scheduler, cleanup or observer failure.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.Forms.Models.TimerState">
             <summary>
@@ -12830,6 +13071,30 @@
         <member name="M:TheTechIdea.Beep.Editor.IDMEEditor.GetFormManager(System.String)">
             <summary>Get a specific form's unit-of-works manager by name, or null.</summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Editor.IEnlistedUnitofWork">
+            <summary>Optional capability for writes inside a caller-owned provider transaction.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.IUnitofWorkCommitStage">
+            <summary>
+            A prepared write, not a transaction owner. Complete only after provider confirmation.
+            Unknown preserves tracking and admission protection until explicit reconciliation.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Importing.ImportExecutionResult">
+            <summary>
+            Write acknowledgements, not transaction guarantees. Legacy callers still receive
+            IErrorsInfo; only a fully completed run maps to Errors.Ok.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Importing.ImportExecutionResult.RecordsTransformationFailed">
+            <summary>Pre-write transformation failures included in RecordsFailed; never provider write attempts.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Importing.ImportExecutionResult.RecordsQuarantined">
+            <summary>Rejected rows whose quarantine store acknowledged SaveAsync, not proof of a database commit.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Importing.ImportExecutionResult.TransformationAdmissionFailed">
+            <summary>Required transformation configuration failed before rows were admitted; not a fabricated row failure count.</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.Importing.BatchErrorStrategy">
             <summary>Defines how a failed batch should be handled.</summary>
         </member>
@@ -12865,6 +13130,18 @@
         <member name="T:TheTechIdea.Beep.Editor.Importing.DataImportConfiguration">
             <summary>Configuration class for data import operations.</summary>
         </member>
+        <member name="P:TheTechIdea.Beep.Editor.Importing.DataImportConfiguration.ImportRunId">
+            <summary>Optional execution identity; a fresh identity is generated per admission when absent.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Importing.DataImportConfiguration.RequireBoundMappingMetadata">
+            <summary>
+            Requires captured source/target metadata and complete, unambiguous mapping admission.
+            The target must already exist; this mode never infers or creates a mapped schema.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Importing.DataImportConfiguration.QualityRuleTimeoutMs">
+            <summary>Observed at synchronous evaluation boundaries, not forced preemption. Range 1..60000 ms.</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.Importing.ImportPerformanceMetrics">
             <summary>Performance metrics for import operations.</summary>
         </member>
@@ -12891,6 +13168,30 @@
         </member>
         <member name="T:TheTechIdea.Beep.Editor.Importing.IImportRunHistoryStore">
             <summary>Contract for persisting and querying import run history records.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Importing.ImportRecordAdmissionResult">
+            <summary>Closed, payload-free record admission outcome. Rejection is never an uncertain provider write.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Importing.IImportRecordAdmission">
+            <summary>Optional dedicated post-transform/pre-write gate, not a transformation callback.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Importing.ImportRejectRecovery">
+            <summary>Versioned reject identity and recovery evidence. No CLR type names or inferred replay offsets.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Importing.IImportRejectRecoveryStore">
+            <summary>Optional atomic claim/triage capability. Task completion must acknowledge persisted transitions.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Importing.IImportReplayDataSource">
+            <summary>Optional host/provider-backed idempotent insert. Providers own replay-key uniqueness and commit semantics.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Importing.ImportTransformationResult">
+            <summary>Admission evidence only; it does not undo mutations made by a callback.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Importing.IDataImportTransformationOutcome">
+            <summary>Optional typed transformation outcome without changing legacy helper signatures.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Importing.ImportTransformationException">
+            <summary>Safe legacy adapter failure, without a raw row value or inner exception.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.UOW.Interfaces.IDefaultValueResolver">
             <summary>
@@ -13251,6 +13552,29 @@
         <member name="T:TheTechIdea.Beep.Editor.UOW.Models.QueryHistoryEntry">
             <summary>Records a single query execution for audit/debug purposes.</summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Editor.ISafeWriteRetry">
+            <summary>
+            Optional provider/UoW failure guarantee: no durable effects, unresolved transaction
+            or accepted tracking. Text messages alone do not establish safe replay.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.IStagedUnitofWorkRead">
+            <summary>Optional read capability. Preparation does not replace live records.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.IUnitofWorkReadStage">
+            <summary>
+            Owns an unpublished candidate and read admission until disposed. No live collection is exposed.
+            Publication is single-use; rejection/disposal before publication preserves the prior records.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.IUnitofWorkReadStage.Publish(System.Action{System.Action})">
+            <summary>
+            The authorizer must synchronously invoke the supplied owned-memory action exactly once on its calling thread,
+            or throw without invoking it. It may gate that action on policy/registration identity.
+            Do not retain the action or run observers/providers inside its publication monitors.
+            After publication, observer failures are reported separately, never as an unpublished read.
+            </summary>
+        </member>
         <member name="E:TheTechIdea.Beep.Editor.IUnitofWork`1.CurrentChanged">
             <summary>Fires when the current record changes (current-record pointer moved).</summary>
         </member>
@@ -13281,6 +13605,28 @@
         </member>
         <member name="E:TheTechIdea.Beep.Editor.IUnitofWork.ItemChanged">
             <summary>Fires when a field changes on a tracked item.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.IUnitofWorkReadBufferIdentity">
+            <summary>Optional opaque identity for the current read buffer, not its row contents.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.IUnitofWorkReadBufferIdentity.RequiresReadAuthorization">
+            <summary>True when local read scope forbids trusting a preloaded buffer without a managed receipt.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.IUnitofWorkReadBufferStage">
+            <summary>
+            Optional stage receipt. The stable opaque identity is available before publication;
+            successful publication installs it on the owning UoW before any observers run.
+            It must not expose candidate rows. Replacing/clearing the buffer invalidates it.
+            </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.IUnitofWorkRecordRevision">
+            <summary>
+            Optional canonical revision: each observed cursor/item/structural change advances once,
+            before callbacks. Repeated audit delivery of that same item change does not advance it.
+            A supported but retired source returns false, never downgrades its support identity.
+            This is not a mutation lock
+            or a guarantee that arbitrary external edits produce notifications.
+            </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.Mapping.Models.MappingKpiSnapshot">
             <summary>
@@ -13342,6 +13688,9 @@
             or computes everything; consumers such as the Setup wizard only need to know that
             a plan exists and survives across steps.
             </remarks>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Migration.MigrationEntitySnapshot">
+            <summary>Captured desired schema and observed baseline for a governed operation.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.Migration.MigrationExecutionPolicy">
             <summary>
@@ -14313,6 +14662,25 @@
             Returns a CommitResult with per-item success/failure details.
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.CommitAllAsync(System.Func{`0,System.Threading.Tasks.Task{TheTechIdea.Beep.ConfigUtil.IErrorsInfo}},System.Func{`0,System.Threading.Tasks.Task{TheTechIdea.Beep.ConfigUtil.IErrorsInfo}},System.Func{`0,System.Threading.Tasks.Task{TheTechIdea.Beep.ConfigUtil.IErrorsInfo}},TheTechIdea.Beep.Editor.CommitOrder,System.Boolean)">
+            <summary>
+            When acceptChanges is false, keep dirty state and AfterSave pending until
+            AcceptCommit is called after the enclosing database transaction commits.
+            Always call AcceptCommit or DiscardCommit to release the pending result.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.AcceptCommit(TheTechIdea.Beep.Editor.CommitResult)">
+            <summary>Accept acknowledged writes only after their enclosing transaction committed.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.DiscardCommit(TheTechIdea.Beep.Editor.CommitResult)">
+            <summary>Release deferred acknowledgements after rollback without accepting dirty state.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.ConfirmGeneratedValues(TheTechIdea.Beep.Editor.CommitResult,System.Collections.Generic.IEnumerable{System.String})">
+            <summary>Record provider-generated identity values before the enclosing commit.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.ConfirmGeneratedValue(TheTechIdea.Beep.Editor.CommitResult,`0,System.String,System.Object)">
+            <summary>Record an identity value captured immediately after the provider wrote the item.</summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.GetPendingChanges">
             <summary>Returns all pending (unsaved) changes grouped by Added, Modified, and Deleted.</summary>
         </member>
@@ -14356,7 +14724,7 @@
         </member>
         <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.AcceptChanges(`0)">
             <summary>
-            Marks a single item as Unchanged and clears its original-value snapshot.
+            Marks a single item as Unchanged and retains its accepted-value baseline.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.ObservableBindingList`1.RejectChanges">
@@ -15798,6 +16166,9 @@
             AppFilter.FieldName was injected verbatim. Escaping the closing delimiter also stops a
             name from terminating its own quoting early.
             </remarks>
+        </member>
+        <member name="M:TheTechIdea.Beep.Extensions.DataSourceAppFilterExtensions.ParseCollectionFilterValues(System.String)">
+            <summary>Decodes delimited filter values, preserving quoted commas and empty strings.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.FileManager.Attributes.FileReaderAttribute">
             <summary>
@@ -18859,6 +19230,9 @@
         </member>
         <member name="P:TheTechIdea.Beep.Pipelines.Models.PipelineTriggerArgs.Parameters">
             <summary>Optional parameters the scheduler adds to the run context.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Pipelines.Models.PipelineWriteException">
+            <summary>A failed sink write with explicit batch replay safety.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Pipelines.Models.QualityGateRule">
             <summary>

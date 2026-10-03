@@ -183,7 +183,7 @@ namespace TheTechIdea.Beep.Pipelines.Engine
                         var batchToWrite = new List<PipelineRecord>(batch);
                         batch.Clear();
 
-                        await retry.ExecuteAsync(() => sink.WriteBatchAsync(batchToWrite, ctx, token)).ConfigureAwait(false);
+                        await retry.ExecuteAsync(() => sink.WriteBatchAsync(batchToWrite, ctx, token), token).ConfigureAwait(false);
                         batchOffset += batchToWrite.Count;
 
                         // ── Stop-on-error threshold ──────────────────────
@@ -205,7 +205,7 @@ namespace TheTechIdea.Beep.Pipelines.Engine
                 // Flush remaining records
                 if (batch.Count > 0)
                 {
-                    await retry.ExecuteAsync(() => sink.WriteBatchAsync(batch, ctx, token)).ConfigureAwait(false);
+                    await retry.ExecuteAsync(() => sink.WriteBatchAsync(batch, ctx, token), token).ConfigureAwait(false);
                     batchOffset += batch.Count;
 
                     // ── Stop-on-error threshold (final batch) ────────────

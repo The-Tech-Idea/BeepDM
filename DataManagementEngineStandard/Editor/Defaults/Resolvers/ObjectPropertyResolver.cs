@@ -440,6 +440,7 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
 
         private object GetTargetObject(IPassedArgs parameters)
         {
+            if (RequiredDefaultResolution.Current != null) return parameters?.ReturnData;
             // Try to get from Objects array first
             var objects = GetParameterValue<object[]>(parameters, "Objects");
             if (objects != null && objects.Length > 0)

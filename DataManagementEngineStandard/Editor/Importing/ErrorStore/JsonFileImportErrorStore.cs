@@ -6,6 +6,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using TheTechIdea.Beep.Services;
+using TheTechIdea.Beep.Editor.Importing.Storage;
 
 namespace TheTechIdea.Beep.Editor.Importing.ErrorStore
 {
@@ -14,83 +15,62 @@ namespace TheTechIdea.Beep.Editor.Importing.ErrorStore
     /// Files written to <c>&lt;BeepRoot&gt;/Importing/Errors/&lt;contextKey&gt;.errors.jsonl</c>.
     /// Fully functional without a local database driver — the zero-config fallback.
     /// </summary>
-    public sealed class JsonFileImportErrorStore : IImportErrorStore
+    public sealed partial class JsonFileImportErrorStore : IImportErrorStore, IImportRejectRecoveryStore
     {
-        private readonly string _folder;
-        private readonly SemaphoreSlim _lock = new(1, 1);
+        private readonly ImportJsonLinesStore<ImportErrorRecord> _store;
 
-        public JsonFileImportErrorStore()
+        public JsonFileImportErrorStore() : this(Path.Combine(EnvironmentService.CreateAppfolder("Importing"), "Errors"))
         {
-            var root = EnvironmentService.CreateAppfolder("Importing");
-            _folder  = Path.Combine(root, "Errors");
-            Directory.CreateDirectory(_folder);
         }
 
-        public async Task SaveAsync(ImportErrorRecord record, CancellationToken token = default)
+        public JsonFileImportErrorStore(string folder) =>
+            _store = new ImportJsonLinesStore<ImportErrorRecord>(folder, ".errors.jsonl", record => record.ContextKey,
+                ValidateRecord, ValidateIdentities, ValidateJson);
+
+        public Task SaveAsync(ImportErrorRecord record, CancellationToken token = default)
         {
-            await _lock.WaitAsync(token).ConfigureAwait(false);
-            try
+            ArgumentNullException.ThrowIfNull(record);
+            if (record.Recovery == null) return _store.AppendAsync(record, token);
+            if (record.Recovery.State != ImportRejectState.Pending || record.Recovery.Revision != 0 || record.Replayed)
+                throw Invalid();
+            // Managed records use the closed typed destination snapshot, not arbitrary RawRecord serialization.
+            var snapshot = new ImportErrorRecord
             {
-                var line = JsonSerializer.Serialize(record) + Environment.NewLine;
-                await File.AppendAllTextAsync(GetPath(record.ContextKey), line, token).ConfigureAwait(false);
-            }
-            finally { _lock.Release(); }
+                ContextKey = record.ContextKey, OccurredAt = record.OccurredAt, BatchNumber = record.BatchNumber,
+                RecordIndex = record.RecordIndex, RuleName = record.RuleName, Reason = record.Reason,
+                Recovery = record.Recovery, TriageNote = record.TriageNote
+            };
+            return _store.AppendAsync(snapshot, token);
         }
 
         public async Task<IReadOnlyList<ImportErrorRecord>> LoadAsync(string contextKey, CancellationToken token = default)
         {
-            var path = GetPath(contextKey);
-            if (!File.Exists(path)) return Array.Empty<ImportErrorRecord>();
-
-            var lines = await File.ReadAllLinesAsync(path, token).ConfigureAwait(false);
-            return lines
-                .Where(l => !string.IsNullOrWhiteSpace(l))
-                .Select(l => JsonSerializer.Deserialize<ImportErrorRecord>(l)!)
-                .ToList();
+            return await _store.ReadAsync(contextKey, token).ConfigureAwait(false);
         }
 
         public async Task<IReadOnlyList<ImportErrorRecord>> LoadPendingAsync(string contextKey, CancellationToken token = default)
         {
             var all = await LoadAsync(contextKey, token).ConfigureAwait(false);
-            return all.Where(r => !r.Replayed).ToList();
+            return all.Where(r => !r.Replayed && (r.Recovery == null || r.Recovery.State == ImportRejectState.Pending ||
+                r.Recovery.State == ImportRejectState.Prepared)).ToList();
         }
 
-        public async Task MarkReplayedAsync(string contextKey, int batchNumber, int recordIndex, CancellationToken token = default)
+        public Task MarkReplayedAsync(string contextKey, int batchNumber, int recordIndex, CancellationToken token = default) =>
+            _store.MutateAsync(contextKey, all =>
         {
-            await _lock.WaitAsync(token).ConfigureAwait(false);
-            try
-            {
-                var all = (await LoadAsync(contextKey, token).ConfigureAwait(false)).ToList();
-                var rec = all.FirstOrDefault(r => r.BatchNumber == batchNumber && r.RecordIndex == recordIndex);
-                if (rec != null) { rec.Replayed = true; rec.ReplayedAt = DateTime.UtcNow; }
-
-                await RewriteAsync(GetPath(contextKey), all, token).ConfigureAwait(false);
-            }
-            finally { _lock.Release(); }
-        }
+                var matches = all.Where(r => r.BatchNumber == batchNumber && r.RecordIndex == recordIndex).ToArray();
+                if (matches.Length != 1 || matches[0].Recovery != null) throw Invalid();
+                matches[0].Replayed = true; matches[0].ReplayedAt = DateTime.UtcNow;
+        }, token);
 
         public async Task ClearAsync(string contextKey, CancellationToken token = default)
         {
-            await _lock.WaitAsync(token).ConfigureAwait(false);
-            try
+            // Validate terminal ownership inside the same mutation lease as deletion.
+            await _store.ClearValidatedAsync(contextKey, all =>
             {
-                var path = GetPath(contextKey);
-                if (File.Exists(path)) File.Delete(path);
-            }
-            finally { _lock.Release(); }
-        }
-
-        // ------------------------------------------------------------------
-        private string GetPath(string contextKey)
-        {
-            var safe = string.Join("_", contextKey.Split(Path.GetInvalidFileNameChars()));
-            return Path.Combine(_folder, $"{safe}.errors.jsonl");
-        }
-
-        private static async Task RewriteAsync(string path, IEnumerable<ImportErrorRecord> records, CancellationToken token)
-        {
-            var lines = records.Select(r => JsonSerializer.Serialize(r));
-            await File.WriteAllLinesAsync(path, lines, token).ConfigureAwait(false);
+                if (all.Any(record => record.Recovery != null && record.Recovery.State != ImportRejectState.Acknowledged &&
+                    record.Recovery.State != ImportRejectState.ReconciledApplied && record.Recovery.State != ImportRejectState.Dismissed)) throw Invalid();
+            }, token).ConfigureAwait(false);
         }
     }
 }

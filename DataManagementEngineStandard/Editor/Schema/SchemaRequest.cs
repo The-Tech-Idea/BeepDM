@@ -45,6 +45,11 @@ namespace TheTechIdea.Beep.Editor.Schema
         public bool DestinationExisted    { get; init; }
         public IReadOnlyList<string> MissingDestinationFields { get; init; } = new List<string>();
         public SchemaSnapshot? DestinationSnapshot { get; init; }
+        /// <summary>Caller-owned captures; not provider-owned live structures.</summary>
+        public EntityStructure? SourceEntityStructure { get; init; }
+        public EntityStructure? DestinationEntityStructure { get; init; }
+        public IDataSource? SourceData { get; init; }
+        public IDataSource? DestinationData { get; init; }
     }
 
     /// <summary>Output of <see cref="SyncSchemaPreflight.BuildSyncDraftAsync"/>.</summary>

@@ -211,6 +211,7 @@ namespace TheTechIdea.Beep.Editor.Migration
     /// </summary>
     public class MigrationPlanOperation
     {
+        public MigrationEntitySnapshot SchemaSnapshot { get; set; }
         public string EntityName { get; set; } = string.Empty;
         public string EntityTypeName { get; set; } = string.Empty;
         public MigrationPlanOperationKind Kind { get; set; } = MigrationPlanOperationKind.None;
@@ -253,6 +254,13 @@ namespace TheTechIdea.Beep.Editor.Migration
     /// </summary>
     public class MigrationPlanArtifact : IMigrationPlanArtifact
     {
+        public PersistenceWriteStatus PlanPersistenceStatus { get; set; } = PersistenceWriteStatus.Unsupported;
+        public string PlanPersistenceErrorCode { get; set; } = string.Empty;
+        // Zero denotes a legacy artifact; only the current format can be applied.
+        public int PlanHashVersion { get; set; }
+        public string TargetFingerprint { get; set; } = string.Empty;
+        public MigrationExecutionPolicy ExecutionPolicy { get; set; } = new MigrationExecutionPolicy();
+        public MigrationPolicyOptions GovernancePolicy { get; set; } = new MigrationPolicyOptions();
         public string PlanId { get; set; } = Guid.NewGuid().ToString("N");
         public string PlanHash { get; set; } = string.Empty;
         public DateTime CreatedOnUtc { get; set; } = DateTime.UtcNow;
@@ -309,6 +317,7 @@ namespace TheTechIdea.Beep.Editor.Migration
 
     public class MigrationPolicyOptions
     {
+        public string ApprovedPlanHash { get; set; } = string.Empty;
         public MigrationEnvironmentTier EnvironmentTier { get; set; } = MigrationEnvironmentTier.Development;
         public bool RequireApprovalForHighRisk { get; set; } = true;
         public bool RequireApprovalForCriticalRisk { get; set; } = true;
@@ -446,6 +455,12 @@ namespace TheTechIdea.Beep.Editor.Migration
 
     public class MigrationExecutionCheckpoint
     {
+        public bool CompensationCompleted { get; set; }
+        public List<MigrationCompensationStep> CompensationSteps { get; set; } = new();
+        public string OwnershipTargetKey { get; set; }
+        public string OwnershipStoreIdentity { get; set; }
+        public bool RequiresReconciliation { get; set; }
+        public MigrationPlanArtifact ApprovedPlan { get; set; }
         public string ExecutionToken { get; set; } = Guid.NewGuid().ToString("N");
         public string CorrelationId { get; set; } = Guid.NewGuid().ToString("N");
         public string PlanId { get; set; } = string.Empty;
@@ -463,6 +478,13 @@ namespace TheTechIdea.Beep.Editor.Migration
 
     public class MigrationExecutionResult : IMigrationExecutionResult
     {
+        public MigrationAdmissionStatus? OwnershipAdmissionStatus { get; set; }
+        public string OwnershipClaimId { get; set; }
+        public bool OwnershipFinished { get; set; }
+        public PersistenceWriteStatus OwnershipPersistenceStatus { get; set; } = PersistenceWriteStatus.Unsupported;
+        public bool CheckpointPersisted { get; set; }
+        public bool RequiresReconciliation { get; set; }
+        public PersistenceWriteStatus CheckpointPersistenceStatus { get; set; } = PersistenceWriteStatus.Unsupported;
         public string ExecutionToken { get; set; } = string.Empty;
         public bool ResumedFromCheckpoint { get; set; }
         public bool Success { get; set; }
@@ -540,11 +562,25 @@ namespace TheTechIdea.Beep.Editor.Migration
 
     public class MigrationRollbackResult
     {
+        public List<string> ManualActions { get; set; } = new();
+        public MigrationAdmissionStatus? OwnershipAdmissionStatus { get; set; }
+        public bool RequiresReconciliation { get; set; }
+        public bool RequiresOperatorIntervention { get; set; }
+        public int AppliedCount { get; set; }
+        public string OwnershipClaimId { get; set; }
+        public bool OwnershipFinished { get; set; }
+        public PersistenceWriteStatus OwnershipPersistenceStatus { get; set; } = PersistenceWriteStatus.Unsupported;
         public string ExecutionToken { get; set; } = string.Empty;
         public bool DryRun { get; set; } = true;
         public bool Success { get; set; }
         public string Message { get; set; } = string.Empty;
         public List<string> ExecutedActions { get; set; } = new List<string>();
+    }
+
+    public class MigrationCompensationStep
+    {
+        public int Sequence { get; set; }
+        public MigrationExecutionStepStatus Status { get; set; }
     }
 
     public enum MigrationDiagnosticSeverity

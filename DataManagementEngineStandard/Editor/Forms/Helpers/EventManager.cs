@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Editor.UOWManager.Interfaces;
@@ -10,12 +11,12 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
 {
     /// <summary>
     /// Event management helper for UnitofWorksManager.
-    /// Subscribes to all 17 IUnitofWork DML/lifecycle events and translates
+    /// Subscribes to available IUnitofWork DML/lifecycle events and translates
     /// them into FormsManager's event pipeline (DMLTriggerEventArgs,
     /// RecordTriggerEventArgs, ValidationTriggerEventArgs).
-    /// Handler delegates are stored so Unsubscribe can remove every one.
+    /// Handler delegates and captured sources are owned by disposable leases.
     /// </summary>
-    public class EventManager : IEventManager
+    public class EventManager : IEventManager, IGatedUnitOfWorkEventSubscriptions
     {
         #region Fields
         private readonly IDMEEditor _dmeEditor;
@@ -69,138 +70,128 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         /// </summary>
         public void SubscribeToUnitOfWorkEvents(IUnitofWork unitOfWork, string blockName)
         {
-            if (unitOfWork == null || string.IsNullOrWhiteSpace(blockName))
-                return;
+            if (unitOfWork == null || string.IsNullOrWhiteSpace(blockName)) return;
+            var next = PrepareSubscription(unitOfWork, blockName);
+            StoredHandlers previous;
+            lock (_lockObject)
+            {
+                _subscriptions.TryGetValue(blockName, out previous);
+                if (previous != null) previous.Active = false;
+                _subscriptions[blockName] = next;
+            }
+            previous?.Dispose();
+        }
 
+        /// <summary>Creates an independent lease, without changing legacy block-name subscriptions.</summary>
+        public IDisposable SubscribeOwned(IUnitofWork unitOfWork, string blockName) =>
+            PrepareSubscription(unitOfWork, blockName);
+
+        public IDisposable SubscribeOwned(IUnitofWork unitOfWork, string blockName, Func<bool> canDispatch) =>
+            PrepareSubscription(unitOfWork, blockName, canDispatch ?? throw new ArgumentNullException(nameof(canDispatch)));
+
+        private StoredHandlers PrepareSubscription(IUnitofWork unitOfWork, string blockName, Func<bool> canDispatch = null)
+        {
+            if (unitOfWork == null) throw new ArgumentNullException(nameof(unitOfWork));
+            if (string.IsNullOrWhiteSpace(blockName)) throw new ArgumentNullException(nameof(blockName));
+            var handlers = new StoredHandlers(blockName, canDispatch);
             try
             {
-                var handlers = new StoredHandlers();
+                handlers.PreInsert = (s, e) => { if (handlers.CanDispatch) HandlePreInsert(blockName, s, e); };
+                handlers.PostInsert = (s, e) => { if (handlers.CanDispatch) HandlePostInsert(blockName, s, e); };
+                handlers.PreUpdate = (s, e) => { if (handlers.CanDispatch) HandlePreUpdate(blockName, s, e); };
+                handlers.PostUpdate = (s, e) => { if (handlers.CanDispatch) HandlePostUpdate(blockName, s, e); };
+                handlers.PreDelete = (s, e) => { if (handlers.CanDispatch) HandlePreDelete(blockName, s, e); };
+                handlers.PostDelete = (s, e) => { if (handlers.CanDispatch) HandlePostDelete(blockName, s, e); };
+                handlers.PreCreate = (s, e) => { if (handlers.CanDispatch) HandlePreCreate(blockName, s, e); };
+                handlers.PostCreate = (s, e) => { if (handlers.CanDispatch) HandlePostCreate(blockName, s, e); };
+                handlers.PreQuery = (s, e) => { if (handlers.CanDispatch) HandlePreQuery(blockName, s, e); };
+                handlers.PostQuery = (s, e) => { if (handlers.CanDispatch) HandlePostQuery(blockName, s, e); };
+                handlers.PreCommit = (s, e) => { if (handlers.CanDispatch) HandlePreCommit(blockName, s, e); };
+                handlers.PostCommit = (s, e) => { if (handlers.CanDispatch) HandlePostCommit(blockName, s, e); };
+                handlers.PostEdit = (s, e) => { if (handlers.CanDispatch) HandlePostEdit(blockName, s, e); };
+                handlers.OnItemReverted = (s, e) => { if (handlers.CanDispatch) HandleItemReverted(blockName, s, e); };
 
-                handlers.PreInsert = (s, e) => HandlePreInsert(blockName, s, e);
-                handlers.PostInsert = (s, e) => HandlePostInsert(blockName, s, e);
-                handlers.PreUpdate = (s, e) => HandlePreUpdate(blockName, s, e);
-                handlers.PostUpdate = (s, e) => HandlePostUpdate(blockName, s, e);
-                handlers.PreDelete = (s, e) => HandlePreDelete(blockName, s, e);
-                handlers.PostDelete = (s, e) => HandlePostDelete(blockName, s, e);
-                handlers.PreCreate = (s, e) => HandlePreCreate(blockName, s, e);
-                handlers.PostCreate = (s, e) => HandlePostCreate(blockName, s, e);
-                handlers.PreQuery = (s, e) => HandlePreQuery(blockName, s, e);
-                handlers.PostQuery = (s, e) => HandlePostQuery(blockName, s, e);
-                handlers.PreCommit = (s, e) => HandlePreCommit(blockName, s, e);
-                handlers.PostCommit = (s, e) => HandlePostCommit(blockName, s, e);
-                handlers.PostEdit = (s, e) => HandlePostEdit(blockName, s, e);
-                handlers.OnItemReverted = (s, e) => HandleItemReverted(blockName, s, e);
+                handlers.PreBatchInsert = (s, e) => { if (handlers.CanDispatch) HandlePreBatchInsert(blockName, s, e); };
+                handlers.PostBatchInsert = (s, e) => { if (handlers.CanDispatch) HandlePostBatchInsert(blockName, s, e); };
+                handlers.PreBatchUpdate = (s, e) => { if (handlers.CanDispatch) HandlePreBatchUpdate(blockName, s, e); };
+                handlers.PostBatchUpdate = (s, e) => { if (handlers.CanDispatch) HandlePostBatchUpdate(blockName, s, e); };
+                handlers.PreBatchDelete = (s, e) => { if (handlers.CanDispatch) HandlePreBatchDelete(blockName, s, e); };
+                handlers.PostBatchDelete = (s, e) => { if (handlers.CanDispatch) HandlePostBatchDelete(blockName, s, e); };
+                handlers.PreRollback = (s, e) => { if (handlers.CanDispatch) HandlePreRollback(blockName, s, e); };
+                handlers.PostRollback = (s, e) => { if (handlers.CanDispatch) HandlePostRollback(blockName, s, e); };
 
-                handlers.PreBatchInsert = (s, e) => HandlePreBatchInsert(blockName, s, e);
-                handlers.PostBatchInsert = (s, e) => HandlePostBatchInsert(blockName, s, e);
-                handlers.PreBatchUpdate = (s, e) => HandlePreBatchUpdate(blockName, s, e);
-                handlers.PostBatchUpdate = (s, e) => HandlePostBatchUpdate(blockName, s, e);
-                handlers.PreBatchDelete = (s, e) => HandlePreBatchDelete(blockName, s, e);
-                handlers.PostBatchDelete = (s, e) => HandlePostBatchDelete(blockName, s, e);
-                handlers.PreRollback = (s, e) => HandlePreRollback(blockName, s, e);
-                handlers.PostRollback = (s, e) => HandlePostRollback(blockName, s, e);
+                handlers.CurrentChanged = (s, e) => { if (handlers.CanDispatch) HandleCurrentChanged(blockName, s, e); };
 
-                handlers.CurrentChanged = (s, e) => HandleCurrentChanged(blockName, s, e);
 
-                unitOfWork.PreInsert += handlers.PreInsert;
-                unitOfWork.PostInsert += handlers.PostInsert;
-                unitOfWork.PreUpdate += handlers.PreUpdate;
-                unitOfWork.PostUpdate += handlers.PostUpdate;
-                unitOfWork.PreDelete += handlers.PreDelete;
-                unitOfWork.PostDelete += handlers.PostDelete;
-                unitOfWork.PreCreate += handlers.PreCreate;
-                unitOfWork.PostCreate += handlers.PostCreate;
-                unitOfWork.PreQuery += handlers.PreQuery;
-                unitOfWork.PostQuery += handlers.PostQuery;
-                unitOfWork.PreCommit += handlers.PreCommit;
-                unitOfWork.PostCommit += handlers.PostCommit;
-                unitOfWork.PostEdit += handlers.PostEdit;
-
-                // Optional events only on IUnitofWork<T>, not on non-generic base.
-                // Use string names to avoid compile-time binding to the missing member.
-                TrySubscribe(unitOfWork, "OnItemReverted",
+                Attach(handlers, () => unitOfWork.PreInsert += handlers.PreInsert, () => unitOfWork.PreInsert -= handlers.PreInsert);
+                Attach(handlers, () => unitOfWork.PostInsert += handlers.PostInsert, () => unitOfWork.PostInsert -= handlers.PostInsert);
+                Attach(handlers, () => unitOfWork.PreUpdate += handlers.PreUpdate, () => unitOfWork.PreUpdate -= handlers.PreUpdate);
+                Attach(handlers, () => unitOfWork.PostUpdate += handlers.PostUpdate, () => unitOfWork.PostUpdate -= handlers.PostUpdate);
+                Attach(handlers, () => unitOfWork.PreDelete += handlers.PreDelete, () => unitOfWork.PreDelete -= handlers.PreDelete);
+                Attach(handlers, () => unitOfWork.PostDelete += handlers.PostDelete, () => unitOfWork.PostDelete -= handlers.PostDelete);
+                Attach(handlers, () => unitOfWork.PreCreate += handlers.PreCreate, () => unitOfWork.PreCreate -= handlers.PreCreate);
+                Attach(handlers, () => unitOfWork.PostCreate += handlers.PostCreate, () => unitOfWork.PostCreate -= handlers.PostCreate);
+                Attach(handlers, () => unitOfWork.PreQuery += handlers.PreQuery, () => unitOfWork.PreQuery -= handlers.PreQuery);
+                Attach(handlers, () => unitOfWork.PostQuery += handlers.PostQuery, () => unitOfWork.PostQuery -= handlers.PostQuery);
+                Attach(handlers, () => unitOfWork.PreCommit += handlers.PreCommit, () => unitOfWork.PreCommit -= handlers.PreCommit);
+                Attach(handlers, () => unitOfWork.PostCommit += handlers.PostCommit, () => unitOfWork.PostCommit -= handlers.PostCommit);
+                Attach(handlers, () => unitOfWork.PostEdit += handlers.PostEdit, () => unitOfWork.PostEdit -= handlers.PostEdit);
+                TrySubscribe(handlers, unitOfWork, "OnItemReverted",
                     () => ((dynamic)unitOfWork).OnItemReverted += handlers.OnItemReverted,
                     () => ((dynamic)unitOfWork).OnItemReverted -= handlers.OnItemReverted);
-                TrySubscribe(unitOfWork, "PreBatchInsert",
+                TrySubscribe(handlers, unitOfWork, "PreBatchInsert",
                     () => ((dynamic)unitOfWork).PreBatchInsert += handlers.PreBatchInsert,
                     () => ((dynamic)unitOfWork).PreBatchInsert -= handlers.PreBatchInsert);
-                TrySubscribe(unitOfWork, "PostBatchInsert",
+                TrySubscribe(handlers, unitOfWork, "PostBatchInsert",
                     () => ((dynamic)unitOfWork).PostBatchInsert += handlers.PostBatchInsert,
                     () => ((dynamic)unitOfWork).PostBatchInsert -= handlers.PostBatchInsert);
-                TrySubscribe(unitOfWork, "PreBatchUpdate",
+                TrySubscribe(handlers, unitOfWork, "PreBatchUpdate",
                     () => ((dynamic)unitOfWork).PreBatchUpdate += handlers.PreBatchUpdate,
                     () => ((dynamic)unitOfWork).PreBatchUpdate -= handlers.PreBatchUpdate);
-                TrySubscribe(unitOfWork, "PostBatchUpdate",
+                TrySubscribe(handlers, unitOfWork, "PostBatchUpdate",
                     () => ((dynamic)unitOfWork).PostBatchUpdate += handlers.PostBatchUpdate,
                     () => ((dynamic)unitOfWork).PostBatchUpdate -= handlers.PostBatchUpdate);
-                TrySubscribe(unitOfWork, "PreBatchDelete",
+                TrySubscribe(handlers, unitOfWork, "PreBatchDelete",
                     () => ((dynamic)unitOfWork).PreBatchDelete += handlers.PreBatchDelete,
                     () => ((dynamic)unitOfWork).PreBatchDelete -= handlers.PreBatchDelete);
-                TrySubscribe(unitOfWork, "PostBatchDelete",
+                TrySubscribe(handlers, unitOfWork, "PostBatchDelete",
                     () => ((dynamic)unitOfWork).PostBatchDelete += handlers.PostBatchDelete,
                     () => ((dynamic)unitOfWork).PostBatchDelete -= handlers.PostBatchDelete);
-                TrySubscribe(unitOfWork, "PreRollback",
+                TrySubscribe(handlers, unitOfWork, "PreRollback",
                     () => ((dynamic)unitOfWork).PreRollback += handlers.PreRollback,
                     () => ((dynamic)unitOfWork).PreRollback -= handlers.PreRollback);
-                TrySubscribe(unitOfWork, "PostRollback",
+                TrySubscribe(handlers, unitOfWork, "PostRollback",
                     () => ((dynamic)unitOfWork).PostRollback += handlers.PostRollback,
                     () => ((dynamic)unitOfWork).PostRollback -= handlers.PostRollback);
-
-                unitOfWork.CurrentChanged += handlers.CurrentChanged;
-
-                lock (_lockObject)
-                {
-                    _subscriptions[blockName] = handlers;
-                }
-
+                Attach(handlers, () => unitOfWork.CurrentChanged += handlers.CurrentChanged,
+                    () => unitOfWork.CurrentChanged -= handlers.CurrentChanged);
                 LogOperation($"Subscribed to all events for block '{blockName}'");
+                handlers.Active = true;
+                return handlers;
             }
-            catch (Exception ex)
+            catch (Exception failure)
             {
-                LogError($"Error subscribing to events for block '{blockName}'", ex);
+                try { handlers.Dispose(); }
+                catch (Exception cleanup)
+                {
+                    throw new AggregateException($"Subscription and rollback failed for block '{blockName}'.", failure, cleanup);
+                }
+                throw;
             }
         }
 
-        /// <summary>
-        /// Removes every event handler previously subscribed for the block.
-        /// Safe to call on already-unsubscribed blocks (no-op).
-        /// </summary>
+        /// <summary>Retires the legacy name-keyed subscription using its captured source.</summary>
         public void UnsubscribeFromUnitOfWorkEvents(IUnitofWork unitOfWork, string blockName)
         {
-            if (unitOfWork == null || string.IsNullOrWhiteSpace(blockName))
-                return;
-
-            StoredHandlers? handlers;
+            if (unitOfWork == null || string.IsNullOrWhiteSpace(blockName)) return;
+            StoredHandlers handlers;
             lock (_lockObject)
             {
-                if (!_subscriptions.Remove(blockName, out handlers))
-                    return;
+                if (!_subscriptions.Remove(blockName, out handlers)) return;
+                handlers.Active = false;
             }
-
-            try
-            {
-                unitOfWork.PreInsert -= handlers.PreInsert;
-                unitOfWork.PostInsert -= handlers.PostInsert;
-                unitOfWork.PreUpdate -= handlers.PreUpdate;
-                unitOfWork.PostUpdate -= handlers.PostUpdate;
-                unitOfWork.PreDelete -= handlers.PreDelete;
-                unitOfWork.PostDelete -= handlers.PostDelete;
-                unitOfWork.PreCreate -= handlers.PreCreate;
-                unitOfWork.PostCreate -= handlers.PostCreate;
-                unitOfWork.PreQuery -= handlers.PreQuery;
-                unitOfWork.PostQuery -= handlers.PostQuery;
-                unitOfWork.PreCommit -= handlers.PreCommit;
-                unitOfWork.PostCommit -= handlers.PostCommit;
-                unitOfWork.PostEdit -= handlers.PostEdit;
-
-                unitOfWork.CurrentChanged -= handlers.CurrentChanged;
-
-                LogOperation($"Unsubscribed from events for block '{blockName}'");
-            }
-            catch (Exception ex)
-            {
-                LogError($"Error unsubscribing from events for block '{blockName}'", ex);
-            }
+            handlers.Dispose();
+            LogOperation($"Unsubscribed from events for block '{blockName}'");
         }
 
         public void TriggerBlockEnter(string blockName)
@@ -446,8 +437,32 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         /// remove every one. Each delegate is a named field so -= works.
         /// Also stores optional cleanup actions for events not on the base interface.
         /// </summary>
-        private sealed class StoredHandlers
+        private sealed class StoredHandlers : IDisposable
         {
+            private readonly string _blockName;
+            private readonly Func<bool> _canDispatch;
+            private int _retired;
+            public volatile bool Active;
+            public readonly List<Action> Cleanup = new();
+            public StoredHandlers(string blockName, Func<bool> canDispatch)
+            { _blockName = blockName; _canDispatch = canDispatch; }
+
+            public bool CanDispatch => Active && (_canDispatch?.Invoke() ?? true);
+
+            public void Dispose()
+            {
+                if (Interlocked.Exchange(ref _retired, 1) != 0) return;
+                Active = false;
+                var failures = new List<Exception>();
+                foreach (var cleanup in Cleanup)
+                {
+                    try { cleanup(); }
+                    catch (Exception ex) { failures.Add(ex); }
+                }
+                Cleanup.Clear();
+                if (failures.Count > 0)
+                    throw new AggregateException($"Event teardown failed for block '{_blockName}'.", failures);
+            }
             public EventHandler<UnitofWorkParams> PreInsert = null!;
             public EventHandler<UnitofWorkParams> PostInsert = null!;
             public EventHandler<UnitofWorkParams> PreUpdate = null!;
@@ -474,16 +489,21 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         }
 
         /// <summary>
-        /// Subscribes to an optional event that may not exist on the non-generic
-        /// IUnitofWork interface. Stores the cleanup action for unsubscribe.
+        /// Captures cleanup even if the add accessor mutates its source and then throws.
         /// </summary>
-        private static void TrySubscribe(IUnitofWork unitOfWork, string eventName, Action subscribe, Action unsubscribe)
+        private static void Attach(StoredHandlers handlers, Action subscribe, Action unsubscribe)
         {
-            try { subscribe(); }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"[EventManager] Optional event '{eventName}' not available on this IUnitofWork instance: {ex.Message}");
-            }
+            // Record before invoking: an accessor can attach and then throw.
+            handlers.Cleanup.Add(unsubscribe);
+            subscribe();
+        }
+
+        private static void TrySubscribe(StoredHandlers handlers, IUnitofWork unitOfWork,
+            string eventName, Action subscribe, Action unsubscribe)
+        {
+            // Missing optional events are expected; present but failing accessors are not.
+            if (unitOfWork.GetType().GetEvent(eventName) == null) return;
+            Attach(handlers, subscribe, unsubscribe);
         }
 
         private void LogOperation(string message)

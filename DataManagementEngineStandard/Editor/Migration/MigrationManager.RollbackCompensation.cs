@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.Core;
+using System.Threading;
 
 namespace TheTechIdea.Beep.Editor.Migration
 {
@@ -22,8 +23,10 @@ namespace TheTechIdea.Beep.Editor.Migration
 
             var sequence = 1;
             var dataSourceCategory = plan.DataSourceCategory;
-            foreach (var operation in plan.Operations.Where(item => item != null))
+            for (var operationIndex = 0; operationIndex < plan.Operations.Count; operationIndex++)
             {
+                var operation = plan.Operations[operationIndex];
+                if (operation == null) continue;
                 var isRelationalOp = operation.Kind == MigrationPlanOperationKind.AddForeignKey ||
                                      operation.Kind == MigrationPlanOperationKind.DropForeignKey ||
                                      operation.Kind == MigrationPlanOperationKind.CreateIndex ||
@@ -49,7 +52,7 @@ namespace TheTechIdea.Beep.Editor.Migration
                 var action = new MigrationCompensationAction
                 {
                     ActionId = $"comp-{sequence}",
-                    Sequence = sequence,
+                    Sequence = operationIndex + 1,
                     EntityName = operation.EntityName,
                     OperationKind = operation.Kind,
                     IsHighRisk = operation.RiskLevel == MigrationPlanRiskLevel.High ||
@@ -175,6 +178,80 @@ namespace TheTechIdea.Beep.Editor.Migration
 
         public MigrationRollbackResult RollbackFailedExecution(string executionToken, bool dryRun = true)
         {
+            if (dryRun) return RollbackFailedExecutionCore(executionToken, true);
+            var result = new MigrationRollbackResult { ExecutionToken = executionToken ?? string.Empty, DryRun = false };
+            if (string.IsNullOrWhiteSpace(executionToken)) { result.Message = "Execution token is required."; return result; }
+            if (!BeginOperation(out var scope))
+            { result.OwnershipAdmissionStatus = MigrationAdmissionStatus.Busy; result.Message = "A migration operation is already active."; return result; }
+            var previous = _executionScope.Value;
+            _executionScope.Value = scope;
+            try
+            {
+                CaptureStorage(scope);
+                var observed = TryLoadPersistedCheckpoint(executionToken);
+                if (observed?.ApprovedPlan == null || !ValidatePlanIntent(observed.ApprovedPlan, out _) ||
+                    !ValidateCheckpointIntent(observed, observed.ApprovedPlan))
+                { result.Message = "Rollback checkpoint intent is missing, legacy or changed."; return result; }
+                var admission = Acquire(scope, executionToken.Trim(), observed.PlanHash, CancellationToken.None);
+                result.OwnershipAdmissionStatus = admission.Status;
+                if (admission.Status != MigrationAdmissionStatus.Acquired)
+                {
+                    result.RequiresReconciliation = result.RequiresOperatorIntervention = admission.Status == MigrationAdmissionStatus.RequiresReconciliation;
+                    result.Message = "Compensation target admission was denied (" + admission.Status + ").";
+                    return result;
+                }
+                var checkpoint = TryLoadPersistedCheckpoint(executionToken);
+                if (!CheckpointScopeMatches(checkpoint) || checkpoint.PlanHash != observed.PlanHash ||
+                    !ValidatePlanIntent(checkpoint.ApprovedPlan, out _) || !ValidateCheckpointIntent(checkpoint, checkpoint.ApprovedPlan))
+                { result.RequiresReconciliation = result.RequiresOperatorIntervention = true; result.Message = "Compensation checkpoint scope or intent changed."; return result; }
+                scope.Checkpoint = checkpoint;
+                scope.TargetFingerprint = checkpoint.ApprovedPlan.TargetFingerprint;
+                if (checkpoint.CompensationCompleted)
+                { result.Success = true; result.Message = "Compensation is already acknowledged; no actions repeated."; return result; }
+                if (checkpoint.RequiresReconciliation || checkpoint.Steps.Any(s => s.Status == MigrationExecutionStepStatus.Running) ||
+                    checkpoint.CompensationSteps.Any(s => s.Status == MigrationExecutionStepStatus.Running))
+                { result.RequiresReconciliation = result.RequiresOperatorIntervention = true; result.Message = "Reconcile uncertain provider effects before compensation."; return result; }
+                scope.Provider = _editor.GetMigrationProvider(scope.Source);
+                scope.ProviderCaptured = true;
+                result = RollbackFailedExecutionCore(executionToken, false, checkpoint);
+            }
+            catch (MigrationCheckpointPersistenceException ex)
+            {
+                result.RequiresReconciliation = result.RequiresOperatorIntervention = ex.RequiresReconciliation || scope.ProviderInvoked;
+                result.Message = "Compensation checkpoint was not acknowledged; preserve evidence.";
+            }
+            catch (Exception ex)
+            {
+                result.RequiresReconciliation = result.RequiresOperatorIntervention = scope.ProviderInvoked || scope.Lease != null && !scope.ClaimValidated;
+                result.Message = "Compensation stopped (" + ex.GetType().Name + ").";
+            }
+            finally
+            {
+                if (scope.Lease != null)
+                {
+                    var completion = new MigrationExecutionResult { Success = result.Success, RequiresReconciliation = result.RequiresReconciliation,
+                        RequiresOperatorIntervention = result.RequiresOperatorIntervention, Checkpoint = scope.Checkpoint,
+                        AppliedCount = scope.AcknowledgedCount, Message = result.Message };
+                    CompleteExecutionOwnership(scope, completion);
+                    result.Success = completion.Success;
+                    result.Message = completion.Message;
+                    result.RequiresReconciliation = completion.RequiresReconciliation;
+                    result.RequiresOperatorIntervention = completion.RequiresOperatorIntervention;
+                    result.AppliedCount = completion.AppliedCount;
+                    result.OwnershipAdmissionStatus = completion.OwnershipAdmissionStatus;
+                    result.OwnershipClaimId = completion.OwnershipClaimId;
+                    result.OwnershipFinished = completion.OwnershipFinished;
+                    result.OwnershipPersistenceStatus = completion.OwnershipPersistenceStatus;
+                }
+                _executionScope.Value = previous;
+                lock (_bindingGate) _operationActive = false;
+            }
+            return result;
+        }
+
+        private MigrationRollbackResult RollbackFailedExecutionCore(string executionToken, bool dryRun,
+            MigrationExecutionCheckpoint capturedCheckpoint = null)
+        {
             var result = new MigrationRollbackResult
             {
                 ExecutionToken = executionToken ?? string.Empty,
@@ -189,13 +266,22 @@ namespace TheTechIdea.Beep.Editor.Migration
                 return result;
             }
 
-            if (!ExecutionCheckpoints.TryGetValue(executionToken.Trim(), out var checkpoint))
+            var checkpoint = capturedCheckpoint ?? GetExecutionCheckpoint(executionToken);
+            if (checkpoint == null)
             {
                 result.Success = false;
                 result.Message = $"Checkpoint '{executionToken}' was not found.";
                 RecordDiagnostic(executionToken, string.Empty, "rollback-checkpoint-missing", MigrationDiagnosticSeverity.Error, string.Empty, result.Message, "Use a valid execution token from a failed run.");
                 return result;
             }
+
+            var plan = checkpoint.ApprovedPlan;
+            if (plan == null || !ValidatePlanIntent(plan, out _) || !ValidateCheckpointIntent(checkpoint, plan))
+            {
+                result.Message = "Rollback checkpoint intent is legacy, changed or targets a different datasource. Reconcile before compensation.";
+                return result;
+            }
+            plan = CopyExecutionPlan(plan);
 
             AddAuditEvent(CreateAuditEvent(
                 executionToken: checkpoint.ExecutionToken,
@@ -208,15 +294,11 @@ namespace TheTechIdea.Beep.Editor.Migration
                 result: "Started",
                 notes: "Rollback/compensation flow started."));
 
-            if (!ExecutionPlans.TryGetValue(executionToken.Trim(), out var plan))
-            {
-                plan = BuildPlanFromCheckpoint(checkpoint);
-                ExecutionPlans[executionToken.Trim()] = plan;
-            }
-
-            plan.CompensationPlan ??= BuildCompensationPlan(plan);
+            plan.CompensationPlan = BuildCompensationPlan(plan);
             var actions = plan.CompensationPlan.Actions
-                .OrderBy(action => action.Sequence)
+                .Where(action => checkpoint.Steps.Any(s => s.Sequence == action.Sequence &&
+                    s.Status is MigrationExecutionStepStatus.Completed or MigrationExecutionStepStatus.Failed or MigrationExecutionStepStatus.Running))
+                .OrderByDescending(action => action.Sequence)
                 .ToList();
 
             if (actions.Count == 0)
@@ -239,6 +321,16 @@ namespace TheTechIdea.Beep.Editor.Migration
                     continue;
                 }
 
+                var forward = checkpoint.Steps.Single(s => s.Sequence == action.Sequence);
+                if (forward.Status != MigrationExecutionStepStatus.Completed)
+                {
+                    result.ManualActions.Add($"{action.ActionId}: reconcile uncertain forward effects before compensation.");
+                    result.RequiresReconciliation = result.RequiresOperatorIntervention = true;
+                    continue;
+                }
+                var compensation = checkpoint.CompensationSteps.SingleOrDefault(s => s.Sequence == action.Sequence);
+                if (compensation?.Status == MigrationExecutionStepStatus.Completed) continue;
+
                 if (action.RollbackMode == MigrationRollbackMode.ReversibleDdl)
                 {
                     IErrorsInfo dropResult = null;
@@ -249,12 +341,11 @@ namespace TheTechIdea.Beep.Editor.Migration
                         case MigrationPlanOperationKind.CreateEntity:
                             if (!string.IsNullOrWhiteSpace(action.EntityName))
                             {
-                                dropResult = DropEntity(action.EntityName);
+                                dropResult = ExecuteCompensationAction(checkpoint, action, () => DropEntity(action.EntityName));
                                 executed = true;
                             }
                             break;
 
-                        case MigrationPlanOperationKind.DropForeignKey:
                         case MigrationPlanOperationKind.AddForeignKey:
                             // For both FK ops the rollback direction is "drop the
                             // constraint" (the forward op added it; the reverse
@@ -264,22 +355,40 @@ namespace TheTechIdea.Beep.Editor.Migration
                             if (!string.IsNullOrWhiteSpace(action.EntityName) &&
                                 !string.IsNullOrWhiteSpace(action.TargetName))
                             {
-                                dropResult = DropForeignKey(action.EntityName, action.TargetName);
+                                dropResult = ExecuteCompensationAction(checkpoint, action, () => DropForeignKey(action.EntityName, action.TargetName));
                                 executed = true;
                             }
                             break;
 
                         case MigrationPlanOperationKind.CreateIndex:
-                        case MigrationPlanOperationKind.DropIndex:
                             // For both index ops the rollback direction is "drop
                             // the index". The plan op's TargetName is the actual
                             // index name (not the synthetic step-N identifier).
                             if (!string.IsNullOrWhiteSpace(action.EntityName) &&
                                 !string.IsNullOrWhiteSpace(action.TargetName))
                             {
-                                dropResult = DropIndex(action.EntityName, action.TargetName);
+                                dropResult = ExecuteCompensationAction(checkpoint, action, () => DropIndex(action.EntityName, action.TargetName));
                                 executed = true;
                             }
+                            break;
+
+                        case MigrationPlanOperationKind.DropForeignKey:
+                        case MigrationPlanOperationKind.DropIndex:
+                            var inverse = CopyExecutionPlan(plan);
+                            var operation = inverse.Operations[action.Sequence - 1];
+                            var original = operation.SchemaSnapshot?.ExpectedSchema;
+                            var hasDefinition = action.OperationKind == MigrationPlanOperationKind.DropIndex
+                                ? original?.Indexes?.Any(i => i != null && i.Name == action.TargetName && i.Columns?.Count > 0) == true
+                                : original?.Relations?.Any(r => r != null && r.RalationName == action.TargetName &&
+                                    !string.IsNullOrWhiteSpace(r.EntityColumnID) && !string.IsNullOrWhiteSpace(r.RelatedEntityColumnID)) == true;
+                            if (!hasDefinition) break;
+                            operation.SchemaSnapshot.DesiredSchema = CopySnapshot(original);
+                            operation.Kind = action.OperationKind == MigrationPlanOperationKind.DropIndex
+                                ? MigrationPlanOperationKind.CreateIndex : MigrationPlanOperationKind.AddForeignKey;
+                            var inverseStep = new MigrationExecutionStep { Sequence = action.Sequence, EntityName = action.EntityName,
+                                OperationKind = operation.Kind, TargetName = action.TargetName };
+                            dropResult = ExecuteCompensationAction(checkpoint, action, () => ExecuteStep(inverseStep, inverse));
+                            executed = true;
                             break;
                     }
 
@@ -292,23 +401,34 @@ namespace TheTechIdea.Beep.Editor.Migration
                         else
                         {
                             failed.Add($"{action.ActionId}: {dropResult.Message}");
+                            break;
                         }
                     }
                     else
                     {
-                        result.ExecutedActions.Add($"{action.ActionId} requires manual compensation: {action.CompensationPlaybook}");
+                        result.ManualActions.Add($"{action.ActionId} requires manual compensation: {action.CompensationPlaybook}");
                     }
                 }
                 else
                 {
-                    result.ExecutedActions.Add($"{action.ActionId} requires manual compensation: {action.CompensationPlaybook}");
+                    result.ManualActions.Add($"{action.ActionId} requires manual compensation: {action.CompensationPlaybook}");
                 }
             }
 
-            result.Success = failed.Count == 0;
+            result.RequiresOperatorIntervention |= result.ManualActions.Count > 0;
+            result.Success = failed.Count == 0 && (dryRun || result.ManualActions.Count == 0);
+            if (!dryRun && _executionScope.Value.ProviderInvoked)
+            {
+                checkpoint.CompensationCompleted = result.Success;
+                checkpoint.HasFailed = true;
+                checkpoint.IsCompleted = false;
+                checkpoint.RequiresReconciliation = true;
+                checkpoint.FailureCategory = result.Success ? "Compensated" : "CompensationIncomplete";
+                PersistExecutionCheckpoint(checkpoint);
+            }
             result.Message = result.Success
                 ? (dryRun ? "Rollback dry-run completed." : "Rollback/compensation completed.")
-                : $"Rollback encountered {failed.Count} failure(s): {string.Join("; ", failed)}";
+                : $"Rollback has {failed.Count} failure(s) and {result.ManualActions.Count} manual action(s); recovery is not complete.";
             RecordDiagnostic(
                 checkpoint.ExecutionToken,
                 checkpoint.CorrelationId,
@@ -327,6 +447,28 @@ namespace TheTechIdea.Beep.Editor.Migration
                 executedBy: Environment.UserName,
                 result: result.Success ? "Success" : "Failure",
                 notes: result.Message));
+            return result;
+        }
+
+        private IErrorsInfo ExecuteCompensationAction(MigrationExecutionCheckpoint checkpoint,
+            MigrationCompensationAction action, Func<IErrorsInfo> execute)
+        {
+            var scope = _executionScope.Value;
+            if (CaptureTargetFingerprint() != scope.TargetFingerprint)
+                throw new InvalidOperationException("Migration target changed during compensation.");
+            var step = checkpoint.CompensationSteps.SingleOrDefault(s => s.Sequence == action.Sequence);
+            if (step == null) { step = new MigrationCompensationStep { Sequence = action.Sequence }; checkpoint.CompensationSteps.Add(step); }
+            step.Status = MigrationExecutionStepStatus.Running;
+            try { PersistExecutionCheckpoint(checkpoint); }
+            catch { step.Status = MigrationExecutionStepStatus.Pending; throw; }
+            scope.ProviderInvoked = true;
+            var result = execute();
+            step.Status = IsStepSuccess(result) ? MigrationExecutionStepStatus.Completed : MigrationExecutionStepStatus.Failed;
+            if (IsStepSuccess(result)) scope.AcknowledgedCount++;
+            checkpoint.HasFailed = true;
+            checkpoint.IsCompleted = false;
+            checkpoint.RequiresReconciliation = true;
+            PersistExecutionCheckpoint(checkpoint);
             return result;
         }
 

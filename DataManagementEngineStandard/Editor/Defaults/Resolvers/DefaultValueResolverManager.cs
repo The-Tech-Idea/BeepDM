@@ -2,12 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading;
 using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.Editor.Defaults.Interfaces;
 using TheTechIdea.Beep.Editor.Defaults.RuleParsing;
 using TheTechIdea.Beep.Utilities;
+using TheTechIdea.Beep.Editor.Importing;
 
 namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
 {
@@ -30,8 +32,11 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
         private const    int                           _valueCacheMaxSize = 512;
 
         private readonly IDMEEditor _editor;
+        private readonly object _resolverGate = new();
 
-        public DefaultValueResolverManager(IDMEEditor editor)
+        public DefaultValueResolverManager(IDMEEditor editor) : this(editor, requiredInitialization: false) { }
+
+        internal DefaultValueResolverManager(IDMEEditor editor, bool requiredInitialization)
         {
             _editor     = editor ?? throw new ArgumentNullException(nameof(editor));
             _resolvers   = new Dictionary<string, IDefaultValueResolver>(StringComparer.OrdinalIgnoreCase);
@@ -41,7 +46,7 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
             _valueCacheKeys = new Queue<string>();
 
             // Register built-in resolvers
-            RegisterBuiltInResolvers();
+            RegisterBuiltInResolvers(requiredInitialization);
         }
 
         public void RegisterResolver(IDefaultValueResolver resolver)
@@ -57,15 +62,30 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
             if (resolver == null)
                 throw new ArgumentNullException(nameof(resolver));
 
-            _resolvers[resolver.ResolverName]  = resolver;
-            _priorities[resolver.ResolverName] = priority;
+            var name = resolver.ResolverName;
+            RegisterResolverCore(name, resolver, priority);
             _editor.AddLogMessage("DefaultValueResolverManager",
                 $"Registered resolver '{resolver.ResolverName}' at priority {priority}", DateTime.Now, -1, "", Errors.Ok);
         }
 
+        private void RegisterResolverCore(string name, IDefaultValueResolver resolver, int priority)
+        {
+            lock (_resolverGate)
+            {
+                _resolvers[name] = resolver;
+                _priorities[name] = priority;
+            }
+        }
+
         public void UnregisterResolver(string resolverName)
         {
-            if (_resolvers.Remove(resolverName))
+            bool removed;
+            lock (_resolverGate)
+            {
+                removed = _resolvers.Remove(resolverName);
+                _priorities.Remove(resolverName);
+            }
+            if (removed)
             {
                 _editor.AddLogMessage("DefaultValueResolverManager", 
                     $"Unregistered resolver '{resolverName}'", DateTime.Now, -1, "", Errors.Ok);
@@ -74,6 +94,8 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
 
         public object ResolveValue(string rule, IPassedArgs parameters)
         {
+            if (RequiredDefaultResolution.Current is { } required)
+                return DefaultsManager.GetRequiredResolverRegistry(_editor).Resolve(rule, parameters, required.Token);
             if (string.IsNullOrWhiteSpace(rule))
                 return null;
 
@@ -145,6 +167,8 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
         /// </summary>
         public object ResolveValue(string rule, Dictionary<string, object> parameters)
         {
+            if (RequiredDefaultResolution.Current is { } required)
+                return DefaultsManager.GetRequiredResolverRegistry(_editor).Resolve(rule, ConvertToPassedArgs(parameters), required.Token);
             if (string.IsNullOrWhiteSpace(rule))
                 return null;
 
@@ -191,22 +215,78 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
 
         public IReadOnlyDictionary<string, IDefaultValueResolver> GetResolvers()
         {
-            return _resolvers;
+            lock (_resolverGate) return new Dictionary<string, IDefaultValueResolver>(_resolvers, StringComparer.OrdinalIgnoreCase);
         }
 
         public IDefaultValueResolver GetResolverForRule(string rule)
         {
-            return _resolvers
-                .Where(kvp => kvp.Value.CanHandle(rule))
-                .OrderBy(kvp => _priorities.TryGetValue(kvp.Key, out var p) ? p : 100)
-                .Select(kvp => kvp.Value)
-                .FirstOrDefault();
+            if (RequiredDefaultResolution.Current != null)
+                return DefaultsManager.GetRequiredResolverRegistry(_editor).Select(rule);
+            return CaptureRequiredRegistry().Select(rule);
+        }
+
+        internal RequiredResolverRegistry CaptureRequiredRegistry()
+        {
+            (IDefaultValueResolver Resolver, int Priority)[] snapshot;
+            lock (_resolverGate)
+                snapshot = _resolvers.Select(kvp => (kvp.Value, _priorities.TryGetValue(kvp.Key, out var p) ? p : 100)).ToArray();
+            // Custom callbacks run outside registry locks.
+            return new RequiredResolverRegistry(_editor, this,
+                snapshot.OrderBy(item => item.Priority).Select(item => item.Resolver).ToArray());
+        }
+
+        internal object ResolveRequired(string rule, IPassedArgs parameters, CancellationToken token, RequiredResolverRegistry registry)
+        {
+            using var scope = new RequiredDefaultResolution(token, registry);
+            try
+            {
+                token.ThrowIfCancellationRequested();
+                if (scope.Depth > 32 || string.IsNullOrWhiteSpace(rule) || rule.Length > 16384)
+                    throw new ImportTransformationException(ImportTransformationStage.Defaults);
+                var parsed = RuleNormalizer.NormalizeRequired(rule);
+                if (!parsed.IsValid || string.IsNullOrWhiteSpace(parsed.NormalizedRule))
+                    throw new ImportTransformationException(ImportTransformationStage.Defaults);
+                if (parsed.IsLiteral) return parsed.NormalizedRule;
+                if (!RequiredDefaultResolution.HasValidEnvelope(parsed.NormalizedRule))
+                    throw new ImportTransformationException(ImportTransformationStage.Defaults);
+                var resolver = registry.Select(parsed.NormalizedRule);
+                if (resolver == null || scope.Failed)
+                    throw new ImportTransformationException(ImportTransformationStage.Defaults);
+                RequiredBuiltInRule.Validate(resolver, parsed.NormalizedRule);
+                // Required rows cannot share the legacy metadata-only result cache.
+                var value = resolver.ResolveValue(parsed.NormalizedRule, parameters);
+                token.ThrowIfCancellationRequested();
+                if (value == null || scope.Failed || value is double d && !double.IsFinite(d) || value is float f && !float.IsFinite(f))
+                    throw new ImportTransformationException(ImportTransformationStage.Defaults);
+                return value;
+            }
+            catch (OperationCanceledException) when (token.IsCancellationRequested) { throw; }
+            catch (Exception ex)
+            {
+                RequiredDefaultResolution.Report(failure: true);
+                token.ThrowIfCancellationRequested();
+                throw new ImportTransformationException(ImportTransformationStage.Defaults, ex.GetType().Name);
+            }
         }
 
         /// <summary>[Phase 5] Resolve with full telemetry — timing, resolver name, fingerprint.</summary>
         public ResolverExecutionResult ResolveWithTelemetry(string rule, IPassedArgs parameters)
         {
             var sw      = Stopwatch.StartNew();
+            if (RequiredDefaultResolution.Current is { } required)
+            {
+                try
+                {
+                    var value = DefaultsManager.GetRequiredResolverRegistry(_editor).Resolve(rule, parameters, required.Token);
+                    return new ResolverExecutionResult { Succeeded = true, ResolvedValue = value, Duration = sw.Elapsed };
+                }
+                catch (OperationCanceledException) when (required.Token.IsCancellationRequested) { throw; }
+                catch (Exception)
+                {
+                    RequiredDefaultResolution.Report(failure: true);
+                    return new ResolverExecutionResult { Succeeded = false, ErrorMessage = "Required defaults resolution failed.", Duration = sw.Elapsed };
+                }
+            }
             var normalized = RuleNormalizer.GetNormalizedRule(rule, out _);
             var fingerprint = ResolverExecutionResult.ComputeFingerprint(normalized);
 
@@ -322,27 +402,32 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
             _valueCacheKeys.Enqueue(key);
         }
 
-        private void RegisterBuiltInResolvers()
+        private void RegisterBuiltInResolvers(bool requiredInitialization)
         {
             try
             {
-                // Register built-in resolvers
-                RegisterResolver(new DateTimeResolver(_editor));
-                RegisterResolver(new UserContextResolver(_editor));
-                RegisterResolver(new SystemInfoResolver(_editor));
-                RegisterResolver(new GuidResolver(_editor));
-                RegisterResolver(new FormulaResolver(_editor));
-                RegisterResolver(new DataSourceResolver(_editor));
-                RegisterResolver(new ObjectPropertyResolver(_editor));
-                RegisterResolver(new ConfigurationResolver(_editor));
-                RegisterResolver(new EnvironmentResolver(_editor));
-                RegisterResolver(new ExpressionResolver(_editor));
+                var builtIns = new IDefaultValueResolver[]
+                {
+                    new DateTimeResolver(_editor), new UserContextResolver(_editor), new SystemInfoResolver(_editor),
+                    new GuidResolver(_editor), new FormulaResolver(_editor), new DataSourceResolver(_editor),
+                    new ObjectPropertyResolver(_editor), new ConfigurationResolver(_editor),
+                    new EnvironmentResolver(_editor), new ExpressionResolver(_editor)
+                };
+                foreach (var resolver in builtIns)
+                {
+                    if (requiredInitialization)
+                        RegisterResolverCore(resolver.ResolverName, resolver, resolver is IResolverCapabilities caps ? caps.Priority : 100);
+                    else RegisterResolver(resolver);
+                }
+
+                if (requiredInitialization) return;
 
                 _editor.AddLogMessage("DefaultValueResolverManager", 
                     $"Registered {_resolvers.Count} built-in resolvers", DateTime.Now, -1, "", Errors.Ok);
             }
             catch (Exception ex)
             {
+                if (requiredInitialization) throw new DefaultCatalogReadException();
                 _editor.AddLogMessage("DefaultValueResolverManager", 
                     $"Error registering built-in resolvers: {ex.Message}", DateTime.Now, -1, "", Errors.Failed);
             }

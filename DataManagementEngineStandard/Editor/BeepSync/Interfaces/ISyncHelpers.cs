@@ -261,7 +261,8 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Interfaces
     }
 
     /// <summary>
-    /// Interface for sync schema persistence
+    /// Sync schema persistence. Failed built-in writes throw; corruption is not missing state.
+    /// Checkpointed execution also requires Models-owned ISyncPersistenceAcknowledgement.
     /// </summary>
     public interface ISchemaPersistenceHelper
     {
@@ -306,9 +307,9 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Interfaces
         // ── Phase 5: Checkpoint persistence ──────────────────────────────────────
 
         /// <summary>
-        /// Persist a <see cref="SyncCheckpoint"/> for the given schema so a retry
-        /// can resume from the last known good offset.
-        /// Stored at <c>{directoryPath}/checkpoints/{checkpoint.SchemaId}.json</c>.
+        /// Persist run evidence, not a guarantee of key/offset replay.
+        /// The built-in store uses a versioned artifact with a hashed exact schema ID path.
+        /// Mandatory execution uses ISyncPersistenceAcknowledgement, not this legacy Task alone.
         /// </summary>
         Task SaveCheckpointAsync(SyncCheckpoint checkpoint);
 
@@ -319,8 +320,9 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Interfaces
         Task<SyncCheckpoint> LoadCheckpointAsync(string schemaId);
 
         /// <summary>
-        /// Delete the checkpoint file for <paramref name="schemaId"/> once a run
-        /// has completed successfully.
+        /// Explicitly remove validated checkpoint evidence for <paramref name="schemaId"/>.
+        /// Successful execution retains Completed; clear only after operator reconciliation.
+        /// Prefer the built-in run-owned clear when acting on a previously observed checkpoint.
         /// </summary>
         Task ClearCheckpointAsync(string schemaId);
     }

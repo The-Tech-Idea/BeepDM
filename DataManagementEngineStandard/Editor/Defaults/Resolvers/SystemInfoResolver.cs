@@ -61,6 +61,9 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
             if (string.IsNullOrWhiteSpace(rule))
                 return false;
 
+            if (RequiredDefaultResolution.Current != null)
+                return RequiredBuiltInRule.MatchesOperator(rule, SupportedRuleTypes);
+
             var upperRule = rule.ToUpperInvariant().Trim();
             return SupportedRuleTypes.Any(type => upperRule.Contains(type));
         }

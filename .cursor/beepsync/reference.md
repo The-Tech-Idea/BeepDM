@@ -1,276 +1,200 @@
-﻿# BeepSync Quick Reference
+# BeepSync Reference
 
----
+## Required Defaults
 
-## Phase 1 — Basic Full Sync
+Read Engine Editor/Importing/DEFAULTS-ADMISSION.md before changing defaults.
+Configuration failure is TransformationAdmissionFailed; row resolution failure
+is RecordsTransformationFailed. Required expressions normalize once with an
+editor-owned registry and no metadata-only result cache. Reported warning/error
+fallbacks deny writes without raw logs. Custom registration is retained per editor;
+run-owned defaults do not populate caller configuration. Implicit catalogs refresh
+per run; closed bounded literals and per-row byte copies retain owned intent. Both
+declared sync catalogs are captured before provider-opening validation; empty
+catalogs are not relooked up. Nonblank rules omit unused PropertyValue from captured
+SentData. Ordered resolver rosters/priorities are captured before reads/preflight
+and retained for admitted rows and both directions; fresh runs see registrations.
+Per-row SentData cannot retarget retained defaults. Nested required wrappers pin
+the same editor/roster, use admitted named definitions and keep caught failures
+sticky; telemetry omits raw diagnostic fields in that scope. Plugin internals,
+other policies and full grammar/provider qualification remain open. Do not
+generalize required semantics to legacy APIs or claim all reverse rules were pre-evaluated.
+
+Required shipped date/GUID/user/system routing matches the operator token rather
+than words in arguments. Nine exact shipped types validate outer arity/atomic keys;
+empty comma slots, extra ignored arguments and invalid environment scope names
+deny rows. Nested date calls and quoted format commas are supported. Built-in
+SEQUENCE/INCREMENT/AUTOINCREMENT remain time/hash demos and deny required rows;
+use a qualified allocator plugin instead of assuming durable/unique numbers.
+GUID zero-argument aliases/formats and custom semantic contracts remain supported.
+Read DEFAULTS-ADMISSION.md for dynamic values, shared structural helper behavior
+and remaining identity/context/platform and full provider qualification.
+
+Required-only dot parsing preserves literal quotes/empty strings, rejects missing
+segments and retains errors for legacy bare tokens; public legacy parsing is unchanged.
+Dots outside quotes/nested calls separate arguments: ADD.2.3 resolves 5; quote
+decimal arguments. COALESCE.'false'.'fallback' is the string false; IF.true.''.'else'
+is empty. EXPRESSION.'A+B' is literal, while EXPRESSION.A+B is arithmetic.
+Grouping quotes apply only to declared condition/calculation/date/logical/math-name/
+query mode/filter roles. Unknown plugin dot dialects are not rewritten. Known
+overrides receive canonical quotes/roles; numeric helpers unwrap quoted operands
+in required work. Read DEFAULTS-ADMISSION.md for exact roles and remaining semantics.
+
+Exact shipped required expression/formula resolvers parse a bounded AST before
+field reads: Boolean-only conditions, operator precedence, typed exact comparisons,
+invariant numbers and lazy branches. Bare names read flat row fields; quote labels.
+Nested custom calls retain pinned selection and required failure/cancellation.
+Unused branches are syntax-checked, not semantically prequalified. Read defaults
+admission for scalar/result bounds, Decimal/IEEE arithmetic and remaining gates.
+
+Exact shipped required datasource queries validate every filter before callbacks,
+bind closed invariant row/named values and never discard malformed filters or
+aggregate values. Quoted @Name is literal; missing/ambiguous/null bindings deny.
+Null collections deny; actual empty COUNT/EXISTS return 0/false. Typed extrema
+retain field types; numeric aggregates use required Decimal/IEEE arithmetic.
+Consumption is streaming/bounded with cancellation, root provider-status checks
+and disposal; FIRST/SCALAR/EXISTS read only one row. Scalar bytes are copied, while
+FIRST returns the actual record. Read defaults admission for limits and explicit
+query context: provider handles/status/translation/isolation remain unqualified,
+and ordinary import contexts do not implicitly pick a query datasource.
+
+Required shipped identity/scope defaults require explicit string UserEmail/UserRole
+or exact ApplicationRole context, never imported-row identity, fabricated email or
+group/generic-role substitution. Conflicting sources, invalid values and getter
+failure/cancellation deny. ENV reads only its declared scope; SYSTEMPATH is Machine
+PATH and ENV(PATH) is Process PATH. Named OS folders/Windows identity use actual
+supported APIs; no unrelated profile fallback. Host strings are not authorization
+proof and OS/host context is not captured immutably. Read defaults admission for
+native resource/platform limits and legacy/custom separation.
+
+Required shipped date plans validate known nested date syntax/offset/format roles
+before callbacks. Use Gregorian ISO yyyy-MM-dd or full second-resolution ISO
+timestamps (one-to-seven fractional digits, optional Z/signed HH:mm offset).
+No zone retains Unspecified DateTime, Z UTC DateTime, explicit offset DateTimeOffset.
+Days/hours/minutes require exact whole ticks from signed invariant decimal text;
+months/years require Int32 integers. FORMAT is invariant and bounded, not a fallback.
+Nested registry/context values must be actual DateTime/DateTimeOffset, not reparsed
+strings, DateOnly, time spans or observers. Clock leaves capture dynamic instants;
+arithmetic does not qualify named-timezone DST rules, host clock immutability or
+arbitrary plugin grammar. Legacy direct/subclass semantics remain separate.
+
+Required configuration aliases bind explicit AppSettings/AppConfig/WebConfig/
+ConnectionStrings Objects entries implementing IReadOnlyDictionary<string,string>.
+The complete selected flat map is bounded/captured before case-insensitive lookup;
+duplicate sources/keys, malformed strings/counts, callbacks/disposal and cancellation
+deny. Genuine empty strings retain value. Explicit maps never fall back. Without
+AppSettings, only APPSETTING_<key> Process values are read; use ENV(key) for bare
+variables. AppConfig/WebConfig require real host maps. Connection aliases must yield
+one real value or identical values, never conflicts. Ordinary import contexts do not
+implicitly supply maps; per-resolution capture is not immutable run configuration.
+Do not infer editor credential decryption or host keys; govern secret destinations/
+reject persistence. Read defaults admission for bounds and legacy/custom separation.
+
+## Mapped Metadata
+
+ToImportConfiguration/ToReverseImportConfiguration produce mapping definitions,
+not executable destination metadata. SyncDataAsync now captures actual provider
+structures and calls BindEntityMetadata for both directions before importing.
+Direct translator callers must bind actual source/target metadata themselves and
+keep the config private; the binding API does not resolve provider handles.
+RequireBoundMappingMetadata validates pairs, required targets and generated target
+shapes, and requires an existing target. It never infers mapped DDL even with
+creation enabled. Declared FieldSyncData types and bare type-cache seeds are not
+authority. Read Engine Editor/BeepSync/STORAGE-AND-OUTCOMES.md for exact limits.
+
+## Run And Inspect
+
+Configured DqPolicy.RuleKeys now run as dedicated post-transform/pre-write gates.
+RecordFailureMode defaults to Required; OnRecordFailure defaults to Block.
+Advisory/Warn are explicit opt-ins with warning/evaluation-failure counters.
+Quarantine requires a supplied store or complete open/provisioned named channel.
+Actual Boolean SolveRule results are required; string coercion is not pass.
+Bidirectional ImportExecutionResult combines both directions' acknowledgements and
+quality outcomes, including reverse failure/cancellation. RequiresReconciliation
+reports failed runs with earlier acknowledged/uncertain target work. Read Engine
+Editor/Importing/QUALITY-ADMISSION.md for record admission and reject-store limits.
+
+Enabled DQ defaults to a Required attempt threshold. Set BatchThresholdEnabled=false
+for record-only policies, or register BatchThresholdRuleKey with exact action outputs
+ContinueRun/AbortRun. ThresholdFailureMode is independent of RecordFailureMode;
+Advisory warnings/errors are exposed by LastRunBatchThresholdResult. Actual attempted
+rows across admitted directions form the denominator, including rejected rows;
+empty attempts have zero rate and still evaluate. Neither ContinueRun nor an
+advisory threshold can override a failed import. Read Engine Editor/BeepSync/
+THRESHOLDS-AND-FAILURE-EVIDENCE.md for semantics and compatibility.
 
 ```csharp
-// Initialize
-var syncManager = new BeepSyncManager(dmeEditor);
+using var manager = new BeepSyncManager(editor, integrationContext, storageDirectory);
+manager.AddSyncSchema(schema); // Previously configured and validated DataSyncSchema.
+manager.DiagnosticFailed += (_, failure) =>
+    diagnosticSink.Record(failure.Operation, failure.ExceptionType);
 
-// Create schema
-var schema = new DataSyncSchema
+var result = await manager.SyncDataAsync(schema, cancellationToken, progress);
+if (result is SyncCheckpointFailureResult failure)
 {
-    Id                        = Guid.NewGuid().ToString(),
-    SourceDataSourceName      = "SourceDB",
-    DestinationDataSourceName = "DestDB",
-    SourceEntityName          = "Customers",
-    DestinationEntityName     = "Customers",
-    SourceKeyField            = "CustomerId",
-    DestinationKeyField       = "CustomerId",
-    SyncType                  = "Full",
-    SyncDirection             = "OneWay",
-    BatchSize                 = 500,
-};
+    // These are provider acknowledgements, not rolled-back writes or safe replay offsets.
+    recoverySink.Record(failure.RunId, failure.RecordsAcknowledged,
+        failure.HasUncertainWrites, failure.CheckpointPersistenceStatus);
+}
+if (result.Flag != Errors.Ok) return;
 
-// Auto-map fields
-var fieldMappingHelper = new FieldMappingHelper(dmeEditor);
-schema.MappedFields = new ObservableBindingList<FieldSyncData>(
-    fieldMappingHelper.AutoMapFields("SourceDB", "Customers", "DestDB", "Customers"));
-
-// Validate then run
-syncManager.AddSyncSchema(schema);
-var validation = syncManager.ValidateSchema(schema);
-if (validation.Flag == Errors.Ok)
-    await syncManager.SyncDataAsync(schema, cancellationToken, progress);
-
-// Persist
-await syncManager.SaveSchemasAsync();
+// Explicit schema/watermark persistence, separate from the run checkpoint.
+await manager.SaveSchemasAsync(); // Throws on failure; handle at the host boundary.
 ```
 
----
+The sinks above represent host callbacks, not BeepDM APIs. Diagnostic callbacks
+are isolated from outcomes but still run synchronously and should be short.
+Failure to save schema after Completed needs reconciliation before unsafe replay.
 
-## Phase 2 — Schema Versioning & Governance
-
-```csharp
-// Attach a version snapshot before first deploy
-schema.CurrentSchemaVersion = new SyncSchemaVersion
-{
-    Version        = 1,
-    MappingVersion = "v1.0",
-    ApprovalState  = "Draft",   // Draft | Approved | Deprecated
-    ChangedBy      = "alice",
-    ChangedAt      = DateTime.UtcNow,
-    ChangeNote     = "Initial mapping",
-};
-
-// Promote approval state
-fieldMappingHelper.PromoteMappingState(schema, "Approved");
-
-// Persist versioned snapshot
-await schemaPersistenceHelper.SaveVersionedSchemaAsync(schema, schema.CurrentSchemaVersion);
-
-// Load history
-var history = await schemaPersistenceHelper.LoadSchemaVersionsAsync(schema.Id);
-
-// Diff versus persisted
-var diff = await schemaPersistenceHelper.DiffSchemaToPersistedAsync(schema);
-if (!string.IsNullOrEmpty(diff)) Console.WriteLine("Drift detected:\n" + diff);
-```
-
----
-
-## Phase 3 — Incremental Sync & CDC
-
-```csharp
-// Incremental via watermark (Append or Upsert)
-schema.SyncType       = "Incremental";
-schema.WatermarkPolicy = new WatermarkPolicy
-{
-    WatermarkField = "UpdatedAt",
-    WatermarkMode  = "Upsert",   // Append | Upsert | CDC
-    InitialValue   = "1970-01-01T00:00:00Z",
-};
-
-// CDC mode — build filter context
-schema.WatermarkPolicy.WatermarkMode = "CDC";
-// The orchestrator creates CdcFilterContext internally;
-// the source datasource must support CDC change queries.
-
-// Validate watermark before run
-var wmResult = syncManager.ValidateWatermarkPolicy(schema); // via ISyncValidationHelper
-```
-
----
-
-## Phase 4 — Bidirectional Conflict Resolution
-
-```csharp
-schema.SyncDirection = "Bidirectional";
-
-schema.ConflictPolicy = new ConflictPolicy
-{
-    Strategy            = "LastWriteWins",  // SourceWins | DestWins | LastWriteWins | Manual
-    TimestampFieldSource = "UpdatedAt",
-    TimestampFieldDest   = "UpdatedAt",
-    LogConflicts         = true,
-};
-
-// After a run, conflict evidence is available in the reconciliation report
-// schema.LastReconciliationReport.ConflictCount
-```
-
----
-
-## Phase 5 — Retry, Checkpoint & Idempotency
+## Required Checkpoints
 
 ```csharp
 schema.RetryPolicy = new RetryPolicy
 {
     MaxAttempts = 3,
-    BaseDelayMs = 2000,
-    UseJitter   = true,
-    MaxDelayMs  = 30000,
+    BaseDelayMs = 1000,
+    BackoffMode = "Exponential",
+    CheckpointEnabled = true
 };
-
-// The orchestrator persists a SyncCheckpoint after each successful batch;
-// on retry the run resumes from LastProcessedKey.
-
-// Inspect or reset checkpoint
-schema.ActiveCheckpoint = null;   // force full re-run from start
-await syncManager.SaveSchemasAsync();
 ```
 
----
+Running must be acknowledged before import. Completed must be acknowledged before
+Success/date/cursor publication. Failed mandatory completion retains counts and
+requires reconciliation; it is not retried. Null/disabled RetryPolicy means no
+equivalent durable run guarantee. Running/changed/stale partial evidence blocks
+restart. Failed/cancelled runs after acknowledged startup publish typed FailureEvidence
+with actual counts under the captured run identity. LastRunFailureCheckpointStatus
+reports publication; failed/null/throwing saves return SyncCheckpointFailureResult
+with CheckpointStage=Failure and the original ImportResult. A separate cooperative
+cleanup token preserves cancellation evidence, not a hard deadline or rollback.
+Terminal Failed snapshots cannot reopen. Setting ActiveCheckpoint=null does not
+clear authoritative disk evidence. Durable file reject replay is a separate
+operator-prepared/CAS-claimed row operation through ReplayRejectedRecordAsync.
+It applies current direction-specific quality without advancing a cursor,
+clearing a failed checkpoint or publishing Completed. Read
+`Editor/Importing/REJECT-RECOVERY.md`; native/provider-run recovery remains open.
 
-## Phase 6 — Data Quality Gates & Reconciliation
+## Acknowledged Per-Schema Save
 
 ```csharp
-schema.DqPolicy = new DqPolicy
-{
-    RuleKeys          = new List<string> { "dq.customers.email", "dq.customers.required" },
-    RejectThreshold   = 0.05,   // abort if >5 % of records fail DQ
-    QuarantineEnabled = true,
-    DefaultFillFirst  = true,   // apply DefaultsManager before DQ evaluation
-};
-
-// After run — inspect report
-var report = schema.LastReconciliationReport;
-Console.WriteLine($"Source:{report.SourceRowCount} Dest:{report.DestRowCount} " +
-                  $"Rejects:{report.RejectCount} MappingQuality:{report.MappingQualityBand}");
-
-// Mapping quality gate (checked automatically by orchestrator)
-// schema.MappingPolicy.MinQualityScore = 80;  // block sync if score < 80
+var store = new SchemaPersistenceHelper(editor, storageDirectory);
+var saved = await store.SaveSchemaAcknowledgedAsync(schema, cancellationToken);
+saved.ThrowIfNotSaved();
+var checkpoint = await store.LoadCheckpointAsync(schema.Id);
 ```
 
----
+This preserves other schemas under the complete update lease. SaveSchemas is whole
+replacement. Acknowledgement is a cooperating local-filesystem result, not a
+distributed transaction, power-loss guarantee or provider-run lock.
 
-## Phase 7 — SLO, Observability & Alerting
+## Recovery And Compatibility
 
-```csharp
-schema.SloProfile = new SloProfile
-{
-    TargetSuccessRatePct  = 99.0,
-    MaxFreshnessLagSecs   = 300,
-    MaxConflictRatePct    = 2.0,
-    AlertRuleKeys         = new List<string> { "alert.sync.highRejectRate", "alert.sync.freshness" },
-};
+Preserve original corrupt/legacy bytes before an explicit migration. Versioned
+artifacts bind exact ordinal schema IDs. Supported tagged values round-trip without
+arbitrary CLR type activation. Untagged cursor types are never guessed.
+ClearCheckpointForRunAsync rejects changed ownership; only use after the operator
+has reconciled actual provider state and authorized clearing that specific run.
 
-// After run
-var metrics = syncManager.LastSyncMetrics;              // SyncMetrics
-Console.WriteLine($"SLO tier: {metrics.SloComplianceTier}");  // Platinum | Gold | Silver | Degraded
-
-var alerts = schema.LastRunAlerts;  // List<SyncAlertRecord>
-foreach (var a in alerts)
-    Console.WriteLine($"[{a.Severity}] {a.RuleKey}: {a.Message}");
-```
-
-### SyncMetrics fields (Phase 7+)
-| Property | Description |
-|----------|-------------|
-| `SloComplianceTier` | `Platinum` / `Gold` / `Silver` / `Degraded` |
-| `RejectRate` | DQ rejects ÷ total records |
-| `ConflictRate` | Conflicts ÷ total records |
-| `FreshnessLagSeconds` | Elapsed since last watermark value |
-| `RetryCount` | Retry attempts this run |
-| `RuleEvaluationCount` | Total rule engine evaluations |
-| `MappingDriftDetected` | True when live mapping differs from checkpoint version |
-| `MappingPlanVersion` | Version string from checkpoint / schema version |
-| `CorrelationId` | Run correlation ID for log tracing |
-
----
-
-## Phase 8 — Performance, Scale & Plan Caching
-
-```csharp
-schema.PerfProfile = new SyncPerformanceProfile
-{
-    BatchSize                  = 2000,
-    MaxParallelism             = 8,
-    RulePolicyMode             = "FastPath",  // "Safe" | "FastPath"
-    DefaultsCacheTtlSeconds    = 600,
-    WarmUpDefaultsProfileOnRun = true,
-    UseParallelBatches         = true,
-    ParallelBatchQueueDepth    = 16,
-};
-
-// Resolve policy explicitly (orchestrator does this automatically)
-var policy = SyncRuleExecutionPolicies.Resolve(schema.PerfProfile.RulePolicyMode);
-// -> FastPath: MaxDepth=3, MaxExecutionMs=2000
-// -> Safe:     MaxDepth=10, MaxExecutionMs=5000
-
-// Run all schemas in parallel (bounded by max MaxParallelism across schemas)
-await syncManager.SyncAllDataParallelAsync(cancellationToken, progress);
-```
-
-### SyncPerformanceProfile fields
-| Property | Default | Description |
-|----------|---------|-------------|
-| `BatchSize` | 1000 | Records per import batch |
-| `MaxParallelism` | 4 | Max concurrent schemas in `SyncAllDataParallelAsync` |
-| `RulePolicyMode` | `"Safe"` | `"Safe"` or `"FastPath"` (see `SyncRuleExecutionPolicies`) |
-| `DefaultsCacheTtlSeconds` | 300 | Informational TTL for cached `EntityDefaultsProfile` |
-| `WarmUpDefaultsProfileOnRun` | true | Pre-fetch defaults profile before retry loop |
-| `SkipRulesOnCleanBatch` | false | Skip rule engine when batch has no DQ failures |
-| `UseParallelBatches` | true | Participate in parallel fan-out |
-| `ParallelBatchQueueDepth` | 8 | Max queued batches awaiting the semaphore |
-
----
-
-## Schema Management API
-
-```csharp
-syncManager.AddSyncSchema(schema);
-syncManager.UpdateSyncSchema(schema);
-syncManager.RemoveSyncSchema(schemaId);
-var schemas = await syncManager.LoadSchemasAsync();
-await syncManager.SaveSchemasAsync();
-
-// Sequential run — all schemas one at a time
-await syncManager.SyncAllDataAsync(token, progress);
-
-// Parallel run — bounded by PerfProfile.MaxParallelism
-await syncManager.SyncAllDataParallelAsync(token, progress);
-```
-
----
-
-## Validation API
-
-```csharp
-var result = syncManager.ValidateSchema(schema);
-var result = syncManager.ValidateDataSource("MyDB");
-var result = syncManager.ValidateEntity("MyDB", "Customers");
-var result = syncManager.ValidateSyncOperation(schema);
-var result = syncManager.ValidateWatermarkPolicy(schema);
-```
-
----
-
-## Orchestrator internal phases (per `SyncDataAsync` run)
-
-1. Preflight — datasource/entity validation, mapping quality gate
-2. Schema version drift detection
-3. Watermark / CDC filter build
-4. DQ counter reset, rule-audit subscription (Phase 7)
-5. **Phase 8**: rule policy resolution, defaults profile warmup, mapping cache invalidation
-6. Retry loop (exponential back-off with jitter)
-   - Checkpoint resume if `ActiveCheckpoint` present
-   - Translator → import config → `DataImportManager.RunImportAsync`
-   - DQ gate evaluation per record; reject / quarantine / abort
-   - Conflict resolution (bidirectional)
-   - Checkpoint persist on success
-7. Reconciliation report build
-8. SLO metric emission + alert rule evaluation
-9. Schema status + `LastSyncDate` update; `SaveSchemasAsync`
-
+Do not infer key replay, full approval hashing, transactional promotion or required
+DQ gate safety from model properties. See STORAGE-AND-OUTCOMES.md and the framework
+tracker for available behavior versus unfinished gates. Import still owns the actual
+data move; a sync retry cannot undo earlier acknowledged forward writes.

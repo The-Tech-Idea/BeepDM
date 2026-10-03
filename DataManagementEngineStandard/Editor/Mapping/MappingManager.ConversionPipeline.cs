@@ -125,7 +125,7 @@ namespace TheTechIdea.Beep.Editor.Mapping
             object destination,
             Mapping_rep_fields mapping,
             string destinationDataSource,
-            string destinationEntity)
+            string destinationEntity, bool strict = false)
         {
             if (mapping == null)
                 throw new ArgumentNullException(nameof(mapping));
@@ -151,9 +151,12 @@ namespace TheTechIdea.Beep.Editor.Mapping
             }
 
             var policy = GetConversionPolicy(destinationDataSource, destinationEntity);
+            if (strict)
+                policy = ConversionPolicies.TryGetValue(BuildEntityKey(destinationDataSource, destinationEntity), out var registered)
+                    ? registered : new MappingConversionPolicy { FailureMode = MappingConversionFailureMode.Reject };
             var transformChain = GetFieldTransformChain(destinationDataSource, destinationEntity, mapping.ToFieldName);
             var effectiveChain = MergeTransformChains(mapping.ToFieldName, rule.ExplicitTransforms, transformChain);
-            var conversion = ApplyConversionPipeline(sourceValue, destinationProperty.PropertyType, policy, effectiveChain);
+            var conversion = ApplyConversionPipeline(sourceValue, destinationProperty.PropertyType, policy, effectiveChain, strict);
 
             if (conversion.Skipped)
                 return;
@@ -189,7 +192,7 @@ namespace TheTechIdea.Beep.Editor.Mapping
             object sourceValue,
             Type targetType,
             MappingConversionPolicy policy,
-            MappingFieldTransformChain transformChain)
+            MappingFieldTransformChain transformChain, bool strict = false)
         {
             var result = new MappingConversionResult { Success = true, Value = sourceValue };
             policy ??= new MappingConversionPolicy();
@@ -238,7 +241,10 @@ namespace TheTechIdea.Beep.Editor.Mapping
                         continue;
 
                     if (!TransformRegistry.TryGetValue(step.Name.Trim(), out var transformer))
+                    {
+                        if (strict) throw new InvalidOperationException("Required field transform is not registered.");
                         continue;
+                    }
 
                     result.Value = transformer(result.Value, step.Argument);
                 }

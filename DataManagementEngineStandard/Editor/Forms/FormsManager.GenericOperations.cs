@@ -109,41 +109,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             object selectedRecord = null,
             CancellationToken ct = default)
         {
-            if (!_lovManager.HasLOV(blockName, fieldName))
-                return LOVResult.Fail($"No LOV registered for {blockName}.{fieldName}");
-
-            // Fire WHEN-LOV-VALIDATION trigger before showing
-            var ctx = TriggerContext.ForItem(TriggerType.WhenLOVValidation, blockName, fieldName, null, null, _dmeEditor);
-            var triggerResult = await _triggerManager.FireBlockTriggerAsync(TriggerType.WhenLOVValidation, blockName, ctx, ct).ConfigureAwait(false);
-            if (triggerResult == TriggerResult.Cancelled)
-                return LOVResult.Fail("LOV cancelled by WHEN-LOV-VALIDATION trigger");
-
-            // Load data
-            var result = await _lovManager.LoadLOVDataAsync(blockName, fieldName, searchText).ConfigureAwait(false);
-
-            // If the caller already has a selection, auto-populate related fields
-            if (selectedRecord != null && result.Success)
-            {
-                var lov = _lovManager.GetLOV(blockName, fieldName);
-                if (lov != null)
-                {
-                    var relatedValues = _lovManager.GetRelatedFieldValues(lov, selectedRecord);
-                    var blockInfo = GetBlock(blockName);
-                    var currentRecord = blockInfo?.UnitOfWork?.CurrentItem;
-                    if (currentRecord != null && relatedValues != null)
-                    {
-                        foreach (var kv in relatedValues)
-                        {
-                            var targetField = string.Equals(kv.Key, "__RETURN_VALUE__", StringComparison.Ordinal)
-                                ? fieldName
-                                : kv.Key;
-                            SetFieldValue(currentRecord, targetField, kv.Value);
-                        }
-                    }
-                }
-            }
-
-            return result;
+            return await ShowLOVWithOutcomeAsync(blockName, fieldName, searchText, selectedRecord, ct).ConfigureAwait(false);
         }
 
         #endregion

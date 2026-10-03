@@ -5,6 +5,27 @@ description: Guidance for MappingManager usage to create and persist entity and 
 
 # Entity Mapping Guide
 
+## Owned Metadata
+Use Models `EntityMetadataSnapshot.Capture` for independent run definitions, not
+the legacy shallow `EntityStructure.Clone`. It preserves key references and copies
+supported nested options without event subscribers; custom/cyclic/oversized graphs
+reject explicitly. Coordinate capture against concurrent edits and keep the result
+private. `EntityField.Clone` now terminates, but remains shallow for custom members.
+Read `DataManagementModelsStandard/DataBase/METADATA-SNAPSHOTS.md` for limits.
+Generated types now use requested-name/source identity with bounded single-flight
+compilation. Bare typeCache pre-seeds no longer override metadata; MyType/MyObject
+remain unsafe last-result globals. Read Engine `ConfigUtil/GENERATED-TYPES.md` for
+cache/compatibility/unloading limits. SyncSchemaTranslator.BindEntityMetadata now
+binds captured provider metadata into both destination field lists. Validate actual
+pairs and required target coverage before either bidirectional import; exact key
+pairs are added once. Bound mode requires existing targets and does not infer mapped
+DDL. Read Engine Editor/BeepSync/STORAGE-AND-OUTCOMES.md and test actual generated
+payloads, not pre-seed types or weaken validation. Record DQ uses the separate
+post-transform import admission gate. Sync thresholds/failed counts are separately
+verified. File reject replay now uses prepared destination snapshots/CAS claims
+and current quality, not repeated mappings/defaults. Read
+`Editor/Importing/REJECT-RECOVERY.md`; complete intent and native/provider-run recovery remain.
+
 Use this skill when implementing or updating mapping workflows in `MappingManager` for ETL/import/migration operations.
 
 ## Core Types
@@ -31,6 +52,11 @@ Use this skill when implementing or updating mapping workflows in `MappingManage
 - `Editor/Mapping/Utilities`: reusable static mapper utility functions.
 
 ## Recommended Workflow
+- For import admission use `MapObjectToAnotherStrict`: field failures propagate,
+  unknown transforms reject, default conversion is Reject, and defaults belong to
+  the caller's explicit stage. Deliberately registered conversion fallback/warning
+  policies still apply. Legacy mapping/compiled plans remain best-effort; read
+  `Editor/Importing/TRANSFORMATION-OUTCOMES.md` for exact limits.
 1. Create/load map: `CreateEntityMap(...)` or `ConfigEditor.LoadMappingValues(...)`.
 2. Apply auto matching and review low-confidence suggestions.
 3. Configure conversion policy and field-level transforms.

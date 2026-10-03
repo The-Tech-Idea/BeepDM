@@ -253,7 +253,7 @@ namespace TheTechIdea.Beep.Editor.Migration
             }
         }
 
-        private static void RecordRolloutDecisionAudit(MigrationPlanArtifact plan, MigrationRolloutGovernanceReport report)
+        private void RecordRolloutDecisionAudit(MigrationPlanArtifact plan, MigrationRolloutGovernanceReport report)
         {
             var audit = CreateAuditEvent(
                 executionToken: plan.ExecutionCheckpoint?.ExecutionToken,

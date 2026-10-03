@@ -18,6 +18,9 @@ description: Use when loading, updating, or saving persisted BeepDM configuratio
 
 ## Do NOT use this skill for
 
+- Hosting lifetimes, runtime graph ownership, or datasource creation/disposal -> use
+  [beepdm-runtime](../beepdm-runtime/SKILL.md). Deferred AddBeepRuntime snapshots
+  options; a legacy builder's eager return is caller-owned and separate from DI.
 - Building a connection definition for the first time on a fresh machine → use **beepdm-setup**.
 - Designing / applying schema migrations → use **beepdm-migration**.
 - Bulk data movement → use **beepdm-etl**.
@@ -57,7 +60,7 @@ ConfigEditor (Facade)
 | `QueryManager` | `QueryList` for metadata-discovery SQL. | `InitQueryDefaultValues()`, `SaveQueryFile()` |
 | `EntityMappingManager` | Saving/loading `EntityDataMap` per (entity, datasource). | `SaveMappingValues(entity, ds, map)`, `LoadMappingValues(entity, ds)` |
 | `ComponentConfigManager` | Driver, workflow, report, project metadata. | `DataDriversClasses`, `SaveConfigValues()` |
-| `MigrationHistoryManager` | Recording which migrations ran against which datasource. | `RecordMigration(ds, name, version)`, `IsMigrationApplied(ds, name)`, `GetMigrationHistory(ds)` |
+| `MigrationHistoryManager` | Recording which migrations ran against which datasource. | `LoadMigrationHistory(ds)`, `AppendMigrationRecord(ds, type, record)`, `AppendMigrationRecordAcknowledged(ds, type, record)` |
 
 ## Configuration Files
 
@@ -67,7 +70,25 @@ ConfigEditor (Facade)
 | `ConnectionConfig.json` | `ComponentConfigManager` | Driver class metadata |
 | `DataTypeMapping.json` | `DataTypesHelper` | Type translation between sources |
 | `QueryList.json` | `QueryManager` | SQL templates for metadata discovery |
-| `MigrationHistory/{ds}.json` | `MigrationHistoryManager` | Per-datasource applied-migration log |
+| `Migrations/history-v1-{hash}.json` | `MigrationHistoryManager` | Per-datasource applied-migration log |
+
+## Acknowledged Migration History
+- Use optional Models `IMigrationHistoryPersistence` on ConfigEditor for `SaveMigrationHistoryAcknowledged`/`AppendMigrationRecordAcknowledged`. Inspect `PersistenceWriteResult.Status` (Saved, Failed, Cancelled, Unsupported); legacy void history save/append now throw on failure.
+- History reads return empty only for a missing file, not corrupt/unreadable/empty existing state. Append coordinates the full read/validate/write across cooperating instances/processes; whole-history Save is explicit replacement, not stale-snapshot merging.
+- Built-in JsonLoader implements `IJsonSnapshotCodec` for stable complete snapshots. Custom loaders/stores need the explicit capabilities; never assume a void serializer persisted successfully.
+- New files are `Migrations/history-v1-<SHA256 of trimmed invariant-uppercase datasource name>.json` with StorageFormatVersion=1. Validate stored name/type before updating.
+- Valid legacy sanitized-name history is promoted on first update without altering original bytes; foreign/corrupt identity is rejected. After promotion, only the canonical file is authoritative. Do not mix old writers or delete legacy evidence to bypass validation.
+- See `DataManagementEngineStandard/Services/Persistence/README.md` for legacy case/OS discovery, local-filesystem, cancellation and power-loss limits. Broader configuration/BeepSync persistence remains unfinished.
+
+## Protected Connection Persistence
+- ConfigEditor implements optional Models `IConnectionConfigurationPersistence`. Inspect `SaveDataConnectionsAcknowledged(token).Status`; legacy `SaveDataconnectionsValues()` throws on failed saves. Custom catalog Save(false) is failure, never permission for raw-file fallback.
+- Fallback snapshots and built-in catalogs use captured per-runtime `IConnectionSecretProtector`. Existing corrupt/undecryptable state blocks replacement; load changes live state only after complete validation. Whole-snapshot Save is explicit replacement, not stale-edit merging.
+- Default `ConnectionCredentialProtection` uses Windows DPAPI CurrentUser. For portable hosts, inject `AesGcmConnectionCredentialCipher` with a host-owned `IConnectionCredentialKeyProvider` through `BeepServiceOptions.ConnectionSecretProtector` before resolution/configuration. Keep old keys during rotation; never store keys with connections or silently use plaintext.
+- Coverage is a defined whitelist: named secrets plus ConnectionString, ParameterList, HTTP/header/parameter containers and authentication URLs. Arbitrary labels/metadata are not a vault. Returned snapshots deep-clone covered containers; runtime drivers need Unprotect, not ciphertext.
+- Built-in catalog writes/exports use package version 2.0. Legacy 1.0 plaintext/named-field DPAPI can be read/upgraded; 1.0 records carrying the new opaque payload are rejected. Upgrade every reader/writer; fallback arrays are not version-gated against old loaders.
+- Encrypted export decrypts/reprotects with the selected key policy; it is not automatically portable across users/hosts. Redacted export clears whole covered containers and the payload without requiring keys, including operational URLs/strings that hosts must reconfigure.
+- BeepConnectionRepository invokes captured subscribers individually outside scope locks. Observer errors cannot reclassify a saved write; concrete NotificationFailed reports operation/scope/exception type only. Notifications are synchronous refresh signals, not ordered durable snapshots.
+- Read `DataManagementEngineStandard/Security/README.md` for exact coverage, formats, key/identity binding, recovery and scope/platform limits. Windows process tests do not establish Unix, arbitrary adapter or all-route security guarantees.
 
 ## Typical Workflow
 
@@ -82,12 +103,24 @@ ConfigEditor (Facade)
 | Handoff | Direction | What flows |
 |---|---|---|
 | **beepdm-setup** | ← Setup | `ConnectionConfigStep` writes connections through this façade. First-run connections land in `DataConnections.json`. |
-| **beepdm-migration** | ↔ Migration | `MigrationManager` consults `IsMigrationApplied(ds, name)` before running and calls `RecordMigration(...)` after success. `MigrationHistoryManager` is the persisted source of truth. |
+| **beepdm-migration** | ↔ Migration | Governed migration reads captured history and requires acknowledged checkpoints around provider attempts. `MigrationHistoryManager` is the persisted source of truth. |
 | **beepdm-etl** | ↔ ETL | ETL reads `EntityDataMap` from `EntityMappingManager` to know how source fields map to target fields. ETL does not maintain its own mapping store. |
 | **beepdm-unitofwork** | ← UoW | UoW does not write to `ConfigEditor`; it operates against an already-configured datasource. |
 | **beepdm-forms** | ← Forms | Forms read entity structure from config when present, but fall back to runtime discovery via `IDataSource.GetEntityStructure`. |
 
 ## Pitfalls
+
+- `JsonLoader.Serialize` serializes first, uses `Services/Persistence/AtomicFileStore`,
+  and propagates serialization/I/O failures. Corrupt JSON reads now throw rather
+  than returning a missing-file default; legacy managers may still catch/log.
+- Catalog changes coordinate the full read/modify/write across sync/async calls,
+  instances and cooperating processes. Do not replace this with separate load/save
+  calls or delete persistent `.beep.lock` files to unlock a store.
+- Malformed/foreign catalog data is not an empty configuration. Preserve it and
+  recover explicitly. Built-in fallback/catalog protection is explicit, but
+  other serializers/adapters still require audit; atomic writes alone do not secure credentials.
+- See `DataManagementEngineStandard/Services/Persistence/README.md` for platform,
+  cancellation, recovery and ownership limits.
 
 - **Bypass the façade** → in-memory collections desync from on-disk files. Always use the public methods.
 - **Rename config files / move folders** → existing tools and app assumptions break. Treat the layout as a public contract.
@@ -100,4 +133,5 @@ ConfigEditor (Facade)
 - See **beepdm-setup** for the wizard that writes first-run config.
 - See **beepdm-migration** for the history manager it shares with.
 - See **beepdm-etl** for the mapping manager it shares with.
-- See `.cursor/configeditor/SKILL.md` for the deep-dive implementation details.
+- See the directly installed `configeditor` skill for manager-level guidance;
+  this checkout uses `.harness/skills`, not the historical `.cursor` paths.

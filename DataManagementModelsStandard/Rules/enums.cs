@@ -45,7 +45,12 @@ namespace TheTechIdea.Beep.Rules
         // Unknown token type
         Unknown,
         OpenParen,
-        CloseParen
+        CloseParen,
+
+        // Appended for NFEL; existing serialized ordinals remain unchanged.
+        Power,
+        Question,
+        Colon
     }
 
     /// <summary>Severity level for parse and evaluation diagnostics.</summary>

@@ -57,6 +57,7 @@ namespace TheTechIdea.Beep.Editor
                 // than nothing — but it must not clobber a good one. (2026-08-03)
                 tracking.OriginalValues ??= SnapshotValues(item);
                 tracking.EntityState = EntityState.Modified;
+                tracking.IsSaved = false;
                 tracking.ModifiedAt = DateTime.UtcNow;
                 tracking.ModifiedBy = CurrentUser;
             }

@@ -1,5 +1,10 @@
 # FormsManager Enhancement Plan
 
+> Current safety/conformance work: [Reliability And Enhancement Plan (2026-10-03)](../RELIABILITY-AND-ENHANCEMENT-PLAN.md).
+> Scope is FormsManager and platform-neutral UI integration contracts. The scores
+> and completion notes below are historical feature-roadmap records, not current
+> transaction, provider, threading or UI-adapter qualification.
+
 > **Inspired by Oracle Forms** - phased roadmap to bring full Oracle Forms parity and modern data management capabilities to the Beep FormsManager system.
 
 **Current Score:** 9.5/10 (engine)  

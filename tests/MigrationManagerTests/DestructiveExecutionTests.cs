@@ -20,8 +20,9 @@ public class DestructiveExecutionTests
         return (harness, m, plan);
     }
 
-    private static MigrationPolicyOptions Approval() => new()
+    private static MigrationPolicyOptions Approval(MigrationPlanArtifact plan) => new()
     {
+        ApprovedPlanHash = plan.PlanHash,
         EnvironmentTier = MigrationEnvironmentTier.Development,
         RequireApprovalForHighRisk = true,
         RequireApprovalForCriticalRisk = true,
@@ -54,7 +55,7 @@ public class DestructiveExecutionTests
         plan.RollbackReadinessReport = m.CheckRollbackReadiness(
             plan, backupConfirmed: true, restoreTestEvidenceProvided: true);
 
-        var result = m.ExecuteMigrationPlan(plan, policyOptions: Approval());
+        var result = m.ExecuteMigrationPlan(plan, policyOptions: Approval(plan));
 
         Assert.True(result.Success, result.Message);
         Assert.Contains("DropColumn:Product.Obsolete", harness.ProviderCalls);

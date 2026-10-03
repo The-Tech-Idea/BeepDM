@@ -1,5 +1,15 @@
 # Migration Quick Reference
 
+Optional IMigrationExecutionOwnership/FileMigrationExecutionOwnership is available
+through ConfigEditor, but MigrationManager does not yet acquire it automatically.
+Read the project's EXECUTION-OWNERSHIP.md before using claims or reconciliation;
+never treat Dispose, lease expiry or this capability alone as safe DDL replay.
+
+Current version 2 intent rules are in SKILL.md and the project's PLAN-INTENT.md.
+Older snippets below do not override them: custom execution/governance settings
+require an explicit reviewed revision; approval options need ApprovedPlanHash;
+legacy checkpoints are rejected. Baseline drift may block partial-DDL resume.
+
 ## 1) Plan
 ```csharp
 var migration = new MigrationManager(editor, dataSource);

@@ -17,7 +17,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
     /// <summary>
     /// Helper class for managing dirty state and unsaved changes in data blocks
     /// </summary>
-    public class DirtyStateManager : IDirtyStateManager
+    public class DirtyStateManager : IDirtyStateManager, ICoordinatedBlockSave
     {
         #region Fields
         private readonly IDMEEditor _dmeEditor;
@@ -190,85 +190,76 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
         /// </summary>
         public async Task<bool> SaveDirtyBlocksAsync(List<string> dirtyBlocks)
         {
-            // SaveOptions.Default's own properties (ValidateBeforeSave, MaxRetries, ...) are
-            // genuinely read below and by SaveBlockWithRetryAsync -- this always used the bare
-            // type default, ignoring UnitofWorksManagerConfiguration.DefaultSaveOptions entirely,
-            // so a developer who configured Configuration.DefaultSaveOptions (e.g. MaxRetries = 5,
-            // or ValidateBeforeSave = false to skip the validation pass below) had that setting
-            // silently discarded on every save.
-            var saveOptions = _getDefaultSaveOptionsFunc?.Invoke() ?? SaveOptions.Default;
-            var results = new List<SaveResult>();
-            
+            var results = await SaveDirtyBlocksWithResultsAsync(dirtyBlocks).ConfigureAwait(false);
+            return results.Count == dirtyBlocks.Count && results.All(r => r.Success);
+        }
+
+        public async Task<IReadOnlyList<SaveResult>> SaveDirtyBlocksWithResultsAsync(List<string> dirtyBlocks,
+            Func<DataBlockInfo, Task<IErrorsInfo>> writer = null)
+        {
+            if (dirtyBlocks == null) throw new ArgumentNullException(nameof(dirtyBlocks));
+            var requested = dirtyBlocks.ToList();
+            var results = requested.Select(name => new SaveResult
+            {
+                BlockName = name, Success = false, ErrorMessage = "Block was not attempted"
+            }).ToList();
+            var configured = _getDefaultSaveOptionsFunc?.Invoke() ?? SaveOptions.Default;
+            var validate = configured.ValidateBeforeSave;
+            var stopOnFirstError = configured.StopOnFirstError;
+            var retryOptions = new SaveOptions { MaxRetries = Math.Max(0, configured.MaxRetries),
+                RetryDelayMs = Math.Max(0, configured.RetryDelayMs) };
             try
             {
-                LogOperation($"Starting save operation for {dirtyBlocks.Count} dirty blocks");
-
-                // Validate blocks before saving if required
-                if (saveOptions.ValidateBeforeSave)
+                if (requested.Distinct(StringComparer.OrdinalIgnoreCase).Count() != requested.Count)
+                    throw new InvalidOperationException("Duplicate block identities in save request.");
+                if (validate)
                 {
-                    var validationResults = await ValidateBlocksAsync(dirtyBlocks).ConfigureAwait(false);
-                    if (validationResults.Any(vr => !vr.IsValid))
-                    {
-                        LogError("Validation failed for one or more blocks", null);
-                        return false;
-                    }
+                    var validation = await ValidateBlocksAsync(requested).ConfigureAwait(false);
+                    if (validation.Count != requested.Count || validation.Any(r => !r.IsValid))
+                        throw new InvalidOperationException("Block validation failed or a target disappeared.");
                 }
-
-                // Sort blocks by dependency order (master blocks first)
-                var sortedBlocks = SortBlocksByDependency(dirtyBlocks);
-                
-                var successCount = 0;
-                var totalBlocks = sortedBlocks.Count;
-
-                foreach (var blockName in sortedBlocks)
+                var sorted = SortBlocksByDependency(requested);
+                foreach (var name in sorted)
                 {
+                    var index = requested.FindIndex(n => string.Equals(n, name, StringComparison.OrdinalIgnoreCase));
                     try
                     {
-                        var blockInfo = _getBlockFunc(blockName);
-                        if (blockInfo?.UnitOfWork != null)
+                        var block = _getBlockFunc(name);
+                        if (block?.UnitOfWork == null)
+                            throw new InvalidOperationException("Captured block is missing or has no unit of work.");
+                        // Never retry ambiguous writes by matching timeout/connection text.
+                        if (writer == null)
+                            results[index] = await SaveBlockWithRetryAsync(block, retryOptions).ConfigureAwait(false);
+                        else
                         {
-                            var result = await SaveBlockWithRetryAsync(blockInfo, saveOptions).ConfigureAwait(false);
-                            results.Add(result);
-                            
-                            if (result.Success)
+                            var info = await writer(block).ConfigureAwait(false);
+                            results[index] = new SaveResult
                             {
-                                successCount++;
-                                LogOperation($"Successfully saved block '{blockName}' ({successCount}/{totalBlocks})");
-
-                                // G0.1/G1.1: After a master block is committed, propagate its
-                                // newly-generated key (e.g. auto-increment ID assigned by the DB)
-                                // to all dirty detail records before they are committed.
-                                if (blockInfo.IsMasterBlock)
-                                    PropagateMasterKeyToDetails(blockName, sortedBlocks);
-                            }
-                            else
-                            {
-                                LogError($"Failed to save block '{blockName}': {result.ErrorMessage}", result.Exception);
-                                
-                                if (saveOptions.StopOnFirstError)
-                                    break;
-                            }
+                                BlockName = name, Success = info?.Flag == Errors.Ok,
+                                ErrorMessage = info?.Message ?? "Save returned no result", Exception = info?.Ex,
+                                ResultData = info
+                            };
                         }
+                        if (results[index].Success && block.IsMasterBlock)
+                            PropagateMasterKeyToDetails(name, sorted);
                     }
                     catch (Exception ex)
                     {
-                        LogError($"Exception saving block '{blockName}'", ex);
-                        
-                        if (saveOptions.StopOnFirstError)
-                            break;
+                        results[index] = new SaveResult { BlockName = name, Success = false,
+                            ErrorMessage = ex.Message, Exception = ex };
                     }
+                    if (!results[index].Success && stopOnFirstError) break;
                 }
-
-                var overallSuccess = results.All(r => r.Success);
-                LogOperation($"Save operation completed. Success: {successCount}/{totalBlocks}");
-                
-                return overallSuccess;
             }
             catch (Exception ex)
             {
-                LogError("Error in save operation", ex);
-                return false;
+                foreach (var result in results.Where(r => !r.Success))
+                {
+                    result.ErrorMessage = ex.Message;
+                    result.Exception = ex;
+                }
             }
+            return results;
         }
 
         /// <summary>
@@ -369,6 +360,8 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
 
         private async Task<SaveResult> SaveBlockWithRetryAsync(DataBlockInfo blockInfo, SaveOptions options)
         {
+            var unit = blockInfo.UnitOfWork;
+            var source = unit.DataSource;
             var maxRetries = options.MaxRetries;
             var retryCount = 0;
             
@@ -376,15 +369,17 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
             {
                 try
                 {
-                    var result = await blockInfo.UnitOfWork.Commit().ConfigureAwait(false);
+                    if (!ReferenceEquals(blockInfo.UnitOfWork, unit) || !ReferenceEquals(unit.DataSource, source))
+                        throw new InvalidOperationException("Save target changed before retry.");
+                    var result = await unit.Commit().ConfigureAwait(false);
                     
-                    if (result.Flag == Errors.Ok)
+                    if (result?.Flag == Errors.Ok)
                     {
                         return new SaveResult
                         {
                             BlockName = blockInfo.BlockName,
                             Success = true,
-                            RetryCount = retryCount
+                            RetryCount = retryCount, ResultData = result
                         };
                     }
                     else
@@ -392,7 +387,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
                         if (retryCount < maxRetries && IsRetryableError(result))
                         {
                             retryCount++;
-                            await Task.Delay(options.RetryDelayMs * retryCount); // Exponential backoff
+                            await Task.Delay(TimeSpan.FromMilliseconds((double)options.RetryDelayMs * retryCount)).ConfigureAwait(false);
                             continue;
                         }
                         
@@ -400,9 +395,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
                         {
                             BlockName = blockInfo.BlockName,
                             Success = false,
-                            ErrorMessage = result.Message,
-                            Exception = result.Ex,
-                            RetryCount = retryCount
+                            ErrorMessage = result?.Message ?? "Save returned no result",
+                            Exception = result?.Ex,
+                            RetryCount = retryCount, ResultData = result
                         };
                     }
                 }
@@ -411,7 +406,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
                     if (retryCount < maxRetries && IsRetryableException(ex))
                     {
                         retryCount++;
-                        await Task.Delay(options.RetryDelayMs * retryCount).ConfigureAwait(false);
+                        await Task.Delay(TimeSpan.FromMilliseconds((double)options.RetryDelayMs * retryCount)).ConfigureAwait(false);
                         continue;
                     }
                     
@@ -553,16 +548,12 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Helpers
 
         private bool IsRetryableError(IErrorsInfo result)
         {
-            // Define what errors are retryable (e.g., timeout, connection issues)
-            return result.Message?.Contains("timeout", StringComparison.OrdinalIgnoreCase) == true ||
-                   result.Message?.Contains("connection", StringComparison.OrdinalIgnoreCase) == true;
+            return result is ISafeWriteRetry safe && safe.IsSafeToRetry;
         }
 
         private bool IsRetryableException(Exception ex)
         {
-            // Define what exceptions are retryable
-            return ex is TimeoutException ||
-                   ex.Message?.Contains("timeout", StringComparison.OrdinalIgnoreCase) == true;
+            return ex is ISafeWriteRetry safe && safe.IsSafeToRetry;
         }
 
         private void LogOperation(string message, string blockName = null)

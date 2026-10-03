@@ -23,15 +23,14 @@ namespace TheTechIdea.Beep.Editor.Migration
     ///   <item><description><c>MigrationManager.Planning.TryTrackMigrationPlan</c> — plan-only record (no execution result), with deterministic <c>MigrationId = plan.PlanId</c> and plan-metadata <c>Notes</c>.</description></item>
     /// </list>
     /// <para>
-    /// All four now go through this writer. Failures are logged via
-    /// <see cref="IDMEEditor.AddLogMessage"/> and swallowed (the same behaviour
-    /// the inlined code had) — persistence is a side-effect of execution, not a
-    /// pre-condition for it.
+    /// Plan/checkpoint writes return acknowledgements via IMigrationHistoryPersistence.
+    /// Recovery checkpoints are mandatory for governed execution. Operation/summary
+    /// records retain best-effort legacy behavior and are not durability evidence.
     /// </para>
     ///
     /// <para><b>MigrationId conventions</b></para>
     /// <list type="bullet">
-    ///   <item><description><b>Deterministic anchor (lookup key):</b> <c>WriteExecutionSnapshot</c> uses <c>checkpoint.ExecutionToken</c> (the key into <c>ExecutionPlans[token]</c>); <c>WritePlanArtifact</c> uses <c>plan.PlanId</c> (the key for "rerun this plan overwrites the previous snapshot").</description></item>
+    ///   <item><description><b>Deterministic anchor (lookup key):</b> <c>WriteExecutionSnapshot</c> uses <c>checkpoint.ExecutionToken</c> (the key into <c>ExecutionPlans[token]</c>); <c>WritePlanArtifact</c> uses <c>plan.PlanId</c> (readers select the latest snapshot for that identity).</description></item>
     ///   <item><description><b>Plan-prefixed summary (traceable):</b> <c>WritePlanExecution</c> and <c>WriteOperation</c> (when called with a <c>planId</c>) use the format <c>{plan.PlanId}-{rand8}</c>. The prefix makes the record discoverable in the history file by its source plan.</description></item>
     ///   <item><description><b>Unprefixed summary (one-shot):</b> <c>WriteOperation</c> without a <c>planId</c> uses a full random Guid. This is the noise floor — 38 per-operation call sites in <c>TrackMigration</c> don't have a plan available at the call site.</description></item>
     /// </list>
@@ -45,16 +44,25 @@ namespace TheTechIdea.Beep.Editor.Migration
         /// with per-step status. Used at every <c>PersistExecutionCheckpoint</c>
         /// call site in <see cref="MigrationManager"/>.
         /// </summary>
-        public static void WriteExecutionSnapshot(
+        public static PersistenceWriteResult WriteExecutionSnapshot(
             IDMEEditor editor,
             MigrationExecutionCheckpoint checkpoint,
             string datasourceName,
-            DataSourceType datasourceType)
+            DataSourceType datasourceType,
+            System.Threading.CancellationToken token = default)
+            => WriteExecutionSnapshotToStore(editor?.ConfigEditor as IMigrationHistoryPersistence,
+                checkpoint, datasourceName, datasourceType, token);
+
+        internal static PersistenceWriteResult WriteExecutionSnapshotToStore(
+            IMigrationHistoryPersistence persistence, MigrationExecutionCheckpoint checkpoint,
+            string datasourceName, DataSourceType datasourceType,
+            System.Threading.CancellationToken token = default)
         {
-            if (checkpoint == null) return;
+            if (checkpoint == null) return new PersistenceWriteResult(PersistenceWriteStatus.Failed,
+                new ArgumentNullException(nameof(checkpoint)));
             try
             {
-                var snapshot = JsonSerializer.Serialize(checkpoint);
+                var snapshot = MigrationManager.SerializeCheckpointSnapshot(checkpoint);
                 var record = new MigrationRecord
                 {
                     MigrationId  = checkpoint.ExecutionToken,
@@ -75,12 +83,14 @@ namespace TheTechIdea.Beep.Editor.Migration
                         Sql         = string.Empty
                     }).ToList() ?? new List<MigrationStep>()
                 };
-                AppendRecord(editor, datasourceName, datasourceType, record);
+                if (persistence == null) return new PersistenceWriteResult(PersistenceWriteStatus.Unsupported);
+                return persistence.AppendMigrationRecordAcknowledged(datasourceName, datasourceType, record, token)
+                    ?? new PersistenceWriteResult(PersistenceWriteStatus.Failed);
             }
             catch (Exception ex)
             {
-                editor?.AddLogMessage("Beep", $"Failed to persist migration checkpoint: {ex.Message}",
-                    DateTime.Now, 0, null, Errors.Warning);
+                return new PersistenceWriteResult(ex is OperationCanceledException
+                    ? PersistenceWriteStatus.Cancelled : PersistenceWriteStatus.Failed, ex);
             }
         }
 
@@ -226,21 +236,23 @@ namespace TheTechIdea.Beep.Editor.Migration
         /// plan snapshot when a plan is generated but execution has not (yet)
         /// happened. <c>MigrationId</c> is deterministic (the plan's
         /// <c>PlanId</c>) so re-running the same plan produces a record that
-        /// overwrites the previous one in the history.
+        /// becomes the latest snapshot for that identity without deleting earlier records.
         /// </summary>
-        public static void WritePlanArtifact(
+        public static PersistenceWriteResult WritePlanArtifact(
             IDMEEditor editor,
             MigrationPlanArtifact plan,
             string operationName,
             string datasourceName,
             DataSourceType datasourceType)
         {
-            if (plan == null) return;
+            if (plan == null) return new PersistenceWriteResult(PersistenceWriteStatus.Failed,
+                new ArgumentNullException(nameof(plan)));
             try
             {
                 var record = new MigrationRecord
                 {
                     MigrationId  = plan.PlanId,
+                    PlanArtifactJson = MigrationManager.SerializePlanSnapshot(plan),
                     Name         = operationName,
                     AppliedOnUtc = DateTime.UtcNow,
                     Success      = !plan.ReadinessIssues.Any(issue => issue.Severity == MigrationIssueSeverity.Error),
@@ -255,14 +267,23 @@ namespace TheTechIdea.Beep.Editor.Migration
                         Message    = operation.Note
                     }).ToList()
                 };
-                AppendRecord(editor, datasourceName, datasourceType, record);
+                return AppendAcknowledged(editor, datasourceName, datasourceType, record);
             }
             catch (Exception ex)
             {
-                editor?.AddLogMessage("Beep",
-                    $"Failed to track migration plan artifact: {ex.Message}",
-                    DateTime.Now, 0, null, Errors.Warning);
+                return new PersistenceWriteResult(PersistenceWriteStatus.Failed, ex);
             }
+        }
+
+        private static PersistenceWriteResult AppendAcknowledged(IDMEEditor editor, string name,
+            DataSourceType type, MigrationRecord record, System.Threading.CancellationToken token = default)
+        {
+            if (editor?.ConfigEditor is not IMigrationHistoryPersistence persistence)
+                return new PersistenceWriteResult(PersistenceWriteStatus.Unsupported,
+                    new NotSupportedException("Governed migration requires IMigrationHistoryPersistence; legacy void appends cannot acknowledge recovery state."));
+            return persistence.AppendMigrationRecordAcknowledged(name, type, record, token)
+                ?? new PersistenceWriteResult(PersistenceWriteStatus.Failed,
+                    new InvalidOperationException("Migration persistence returned no acknowledgement."));
         }
 
         // ── Shared append (swallow the per-record exception) ─────────────

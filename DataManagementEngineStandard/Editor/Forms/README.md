@@ -1,5 +1,39 @@
 # FormsManager — Oracle Forms Runtime Engine
 
+> Current review (2026-10-03): [Reliability And Enhancement Plan](RELIABILITY-AND-ENHANCEMENT-PLAN.md)
+> and [open implementation tracker](.plans/todo-tracker.md#current-reliability-track).
+> Covers FormsManager and UI integration contracts. Historical completion claims
+> below do not qualify atomic commits, async lifecycle, provider paging or external
+> adapters. Runtime lives here; contracts/configuration/models live under
+> `DataManagementModelsStandard/Editor/Forms`, not in this runtime folder.
+
+Current commit increment: [ownership, outcomes and reconciliation contracts](COMMIT-OWNERSHIP.md).
+Current query increment: [managed policy, bounded grammar and scalar execution](QUERY-POLICY.md).
+Current lifetime increment: [callback draining, helper ownership and timer identity](LIFETIME-CONTRACTS.md).
+Current detail increment: [captured coordination](DETAIL-COORDINATION.md) and
+[default UoW staged publication](READ-PUBLICATION.md), shared query/detail read ordering
+and typed query outcomes. Broader operation/record generations remain open.
+Current record increment: [captured validation and LOV targets](RECORD-TARGETS.md),
+typed LOV/editor outcomes and acknowledged setter evidence, including editor
+permission/raw-disclosure checks and borrowed UI-provider completion. This does not close
+auxiliary read policy, raw helper events or host/dispatcher conformance.
+The full reliability plan is still in progress; see [qualification and remaining gates](IMPLEMENTATION-LOG.md).
+Current UI increment: [opt-in view binding and adapter checklist](UI-BINDING-CONTRACTS.md).
+This adds executable helper behavior, not automatic migration or qualification of desktop hosts.
+Current buffer increment: [cached read authorization](BUFFER-AUTHORIZATION.md)
+rejects new-context binding of old rows until a managed query/detail publishes;
+field-only changes can remask without re-query. Raw data remains a separate boundary.
+Current policy increment: [queued clearing/remasking](POLICY-REPAINT.md) observes
+default/facade policy changes, preserves dirty rows and joins UI physical drain.
+This is not instantaneous privacy, arbitrary state clearing or native adapter qualification.
+Current permission increment: [configured versus effective flags](PERMISSION-PROJECTION.md)
+restores policy grants after removal without lifting authored restrictions. This
+does not certify cached rows or make configuration/graph publication atomic.
+Current paging increment: [local cursor outcomes](LOCAL-PAGING.md) verify navigation
+before publishing page state. [Bounded provider fetch](PROVIDER-PAGING.md) now uses
+an explicit optional staged capability, mandatory policy and row/byte bounds.
+Provider prefetch/cache and external adapter qualification remain open.
+
 `FormsManager` is the BeepDM form-orchestration runtime in the `TheTechIdea.Beep.Editor.UOWManager`
 namespace. It implements `IUnitofWorksManager` and coordinates block registration, navigation,
 mode transitions, master/detail synchronization, triggers, LOVs, validation, auditing, security,
@@ -106,5 +140,5 @@ The `IUnitofWorksManager` interface exposes **~200 methods** across these catego
 | **[`enhancements.md`](enhancements.md)** | Improvement opportunities |
 | **[`architecture.md`](architecture.md)** | Subsystems, layering, host model |
 | **[`.plans/enhancement-plan.md`](.plans/enhancement-plan.md)** | Phased roadmap |
-| **[`Models/README.md`](Models/README.md)** | Model catalog |
-| **[`Configuration/README.md`](Configuration/README.md)** | Configuration DTOs |
+| **[`Models/README.md`](../../../DataManagementModelsStandard/Editor/Forms/Models/README.md)** | Model catalog |
+| **[`Configuration/README.md`](../../../DataManagementModelsStandard/Editor/Forms/Configuration/README.md)** | Configuration DTOs |

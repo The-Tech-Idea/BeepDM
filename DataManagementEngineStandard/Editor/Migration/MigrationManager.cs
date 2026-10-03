@@ -35,7 +35,11 @@ namespace TheTechIdea.Beep.Editor.Migration
         private readonly List<DdlOperationEvidence> _ddlEvidence = new List<DdlOperationEvidence>();
 
         public IDMEEditor DMEEditor => _editor;
-        public IDataSource MigrateDataSource { get; set; }
+        public IDataSource MigrateDataSource
+        {
+            get => _executionScope.Value?.Source ?? _migrationSource;
+            set { lock (_bindingGate) { RejectBindingChange(); _migrationSource = value; } }
+        }
 
         private EntityReadOptions _readOptions = EntityReadOptions.Default;
 

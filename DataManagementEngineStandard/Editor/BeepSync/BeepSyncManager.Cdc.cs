@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Threading;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.Editor.BeepSync;
@@ -9,6 +10,21 @@ namespace TheTechIdea.Beep.Editor
 {
     public partial class BeepSyncManager
     {
+        private static IErrorsInfo ValidateWatermarkPolicy(DataSyncSchema schema)
+        {
+            var policy = schema?.WatermarkPolicy;
+            if (policy == null) return new ErrorsInfo { Flag = Errors.Ok };
+            string failure = null;
+            if (!string.Equals(policy.WatermarkMode, "Timestamp", StringComparison.OrdinalIgnoreCase))
+                failure = $"Watermark mode '{policy.WatermarkMode}' is not supported by this sync executor. Only Timestamp is currently supported.";
+            else if (string.IsNullOrWhiteSpace(policy.WatermarkField))
+                failure = "Timestamp watermark requires a source field.";
+            else if (policy.LastWatermarkValue != null && policy.LastWatermarkValue is not DateTime && policy.LastWatermarkValue is not DateTimeOffset)
+                failure = "Timestamp watermark must be a DateTime or DateTimeOffset value.";
+            else if (policy.OverlapWindowSeconds < 0)
+                failure = "Watermark overlap cannot be negative.";
+            return new ErrorsInfo { Flag = failure == null ? Errors.Ok : Errors.Failed, Message = failure };
+        }
         /// <summary>
         /// Builds a <see cref="CdcFilterContext"/> from the schema's <see cref="WatermarkPolicy"/>.
         /// Returns <c>null</c> when no watermark policy is set (full-load mode).
@@ -17,6 +33,9 @@ namespace TheTechIdea.Beep.Editor
         {
             var wp = schema?.WatermarkPolicy;
             if (wp == null) return null;
+            token.ThrowIfCancellationRequested();
+            var validation = ValidateWatermarkPolicy(schema);
+            if (validation.Flag != Errors.Ok) throw new NotSupportedException(validation.Message);
 
             var ctx = new CdcFilterContext
             {
@@ -26,9 +45,10 @@ namespace TheTechIdea.Beep.Editor
             };
 
             // Lower bound with overlap window
-            ctx.WindowStart = wp.LastWatermarkValue is DateTime lastDt
+            var lastValue = wp.LastWatermarkValue is DateTimeOffset offset ? offset.UtcDateTime : wp.LastWatermarkValue;
+            ctx.WindowStart = lastValue is DateTime lastDt
                 ? lastDt.AddSeconds(-wp.OverlapWindowSeconds)
-                : wp.LastWatermarkValue;
+                : lastValue;
 
             // Default range filter
             if (!string.IsNullOrWhiteSpace(wp.WatermarkField) && ctx.WindowStart != null)
@@ -37,7 +57,7 @@ namespace TheTechIdea.Beep.Editor
                 {
                     FieldName   = wp.WatermarkField,
                     Operator    = ">",
-                    FilterValue = ctx.WindowStart?.ToString() ?? string.Empty
+                    FilterValue = ((DateTime)ctx.WindowStart).ToString("O", CultureInfo.InvariantCulture)
                 });
             }
 
@@ -94,6 +114,13 @@ namespace TheTechIdea.Beep.Editor
                 }
             }
 
+            // Keep the read window bounded; rows newer than this run belong to the next run.
+            ctx.ResolvedFilters.Add(new AppFilter
+            {
+                FieldName = wp.WatermarkField,
+                Operator = "<=",
+                FilterValue = ((DateTime)ctx.WindowEnd).ToString("O", CultureInfo.InvariantCulture)
+            });
             ctx.NewWatermarkValue = ctx.WindowEnd;
             return ctx;
         }

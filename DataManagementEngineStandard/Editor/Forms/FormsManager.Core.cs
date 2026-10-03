@@ -21,11 +21,11 @@ namespace TheTechIdea.Beep.Editor.UOWManager
     /// - Partial classes for related operations
     /// - The main class stays lean and focused on coordination
     /// </summary>
-    public partial class FormsManager : IUnitofWorksManager
+    public partial class FormsManager : IUnitofWorksManager, IAsyncDisposable
     {
         #region Fields
         private readonly IDMEEditor _dmeEditor;
-        private readonly ConcurrentDictionary<string, DataBlockInfo> _blocks = new();
+        private readonly ConcurrentDictionary<string, DataBlockInfo> _blocks = new(StringComparer.OrdinalIgnoreCase);
         private readonly ConcurrentDictionary<string, List<DataBlockRelationship>> _relationships = new(StringComparer.OrdinalIgnoreCase);
         private readonly MasterDetailKeyResolver _masterDetailKeyResolver = new();
 
@@ -72,17 +72,21 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         private readonly ConcurrentDictionary<string, object> _formParameters = new ConcurrentDictionary<string, object>(StringComparer.OrdinalIgnoreCase);
 
         private readonly object _lockObject = new object();
-        private bool _disposed;
+        private volatile bool _disposed;
+        private int _disposeStarted;
+        private readonly bool _ownsPerformanceManager;
+        private readonly bool _ownsTimerManager;
+        private readonly bool _ownsItemPropertyManager;
+        private readonly bool _ownsSystemVariablesManager;
+        private readonly ConcurrentQueue<FormsCleanupFailure> _cleanupFailures = new();
         private string _currentFormName;
         private string _currentBlockName;
 
         // Phase 4 helpers
         private readonly CrossBlockValidationManager _crossBlockValidation;
         private readonly NavigationHistoryManager _navHistoryManager = new();
-        private readonly ConcurrentDictionary<string, EventHandler<ItemChangedEventArgs<Entity>>> _itemChangedHandlers = new();
 
         // Master-detail: current-record change hook (Phase 7.6)
-        private readonly ConcurrentDictionary<string, EventHandler> _mdCurrentChangedHandlers = new(StringComparer.OrdinalIgnoreCase);
         private readonly ConcurrentDictionary<string, int> _syncSuppressCount = new(StringComparer.OrdinalIgnoreCase);
 
         // Phase 5 — audit
@@ -140,6 +144,10 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             ILogger<FormsManager> logger = null)
         {
             _dmeEditor = dmeEditor ?? throw new ArgumentNullException(nameof(dmeEditor));
+            _ownsPerformanceManager = performanceManager == null;
+            _ownsTimerManager = timerManager == null;
+            _ownsItemPropertyManager = itemPropertyManager == null;
+            _ownsSystemVariablesManager = systemVariablesManager == null;
 
             // Wire structured logging if a logger is supplied; Logging.cs owns the field + setter
             if (logger != null) Logger = logger;

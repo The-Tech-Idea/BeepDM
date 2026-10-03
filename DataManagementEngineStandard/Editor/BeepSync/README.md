@@ -2,6 +2,13 @@
 
 ## Overview
 
+Current storage, checkpoint, completion and compatibility guarantees are documented
+in [Storage And Outcomes](STORAGE-AND-OUTCOMES.md). The active orchestrator is split
+across BeepSyncManager.Core.cs, Sync.cs, Cdc.cs and focused partials, not a single
+BeepSyncManager.cs. Import execution uses legacy synchronous provider calls;
+an async orchestration method does not establish native asynchronous I/O. Older
+architecture/examples below are not evidence of automatic idempotent resume.
+
 BeepSyncManager is a modern, clean synchronization manager built using best practices and following the Single Responsibility Principle. It consolidates and improves upon the functionality from `DataSyncManager` and `DataSyncService` while providing a maintainable, testable architecture.
 
 ## Architecture

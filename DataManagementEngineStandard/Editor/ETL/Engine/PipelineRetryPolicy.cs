@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
+using System.Threading;
+using TheTechIdea.Beep.Pipelines.Models;
 
 namespace TheTechIdea.Beep.Pipelines.Engine
 {
@@ -28,23 +30,26 @@ namespace TheTechIdea.Beep.Pipelines.Engine
         /// <see cref="_maxRetries"/> times with exponential backoff + ±20 % jitter.
         /// The last failure is re-thrown if all retries are exhausted.
         /// </summary>
-        public async Task ExecuteAsync(Func<Task> operation)
+        public Task ExecuteAsync(Func<Task> operation) => ExecuteAsync(operation, CancellationToken.None);
+
+        public async Task ExecuteAsync(Func<Task> operation, CancellationToken token)
         {
             int attempt = 0;
             while (true)
             {
                 try
                 {
+                    token.ThrowIfCancellationRequested();
                     await operation().ConfigureAwait(false);
                     return;
                 }
-                catch (Exception) when (attempt < _maxRetries)
+                catch (Exception ex) when (attempt < _maxRetries && IsRetryable(ex))
                 {
                     int delay = (int)(_baseDelayMs * Math.Pow(_backoffFactor, attempt));
                     // ±20 % jitter
                     delay += Random.Shared.Next(-(delay / 5), delay / 5 + 1);
                     delay  = Math.Max(delay, 0);
-                    await Task.Delay(delay).ConfigureAwait(false);
+                    await Task.Delay(delay, token).ConfigureAwait(false);
                     attempt++;
                 }
             }
@@ -54,24 +59,30 @@ namespace TheTechIdea.Beep.Pipelines.Engine
         /// Execute <paramref name="operation"/> returning <typeparamref name="T"/>,
         /// retrying on failure using the same policy as <see cref="ExecuteAsync(Func{Task})"/>.
         /// </summary>
-        public async Task<T> ExecuteAsync<T>(Func<Task<T>> operation)
+        public Task<T> ExecuteAsync<T>(Func<Task<T>> operation) => ExecuteAsync(operation, CancellationToken.None);
+
+        public async Task<T> ExecuteAsync<T>(Func<Task<T>> operation, CancellationToken token)
         {
             int attempt = 0;
             while (true)
             {
                 try
                 {
+                    token.ThrowIfCancellationRequested();
                     return await operation().ConfigureAwait(false);
                 }
-                catch (Exception) when (attempt < _maxRetries)
+                catch (Exception ex) when (attempt < _maxRetries && IsRetryable(ex))
                 {
                     int delay = (int)(_baseDelayMs * Math.Pow(_backoffFactor, attempt));
                     delay += Random.Shared.Next(-(delay / 5), delay / 5 + 1);
                     delay  = Math.Max(delay, 0);
-                    await Task.Delay(delay).ConfigureAwait(false);
+                    await Task.Delay(delay, token).ConfigureAwait(false);
                     attempt++;
                 }
             }
         }
+        private static bool IsRetryable(Exception exception)
+            => exception is not OperationCanceledException &&
+               (exception is not PipelineWriteException write || write.CanRetry);
     }
 }

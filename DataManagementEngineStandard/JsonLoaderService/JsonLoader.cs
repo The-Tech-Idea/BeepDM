@@ -5,13 +5,15 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.IO;
+using System.Globalization;
 using TheTechIdea.Beep.ConfigUtil;
+using TheTechIdea.Beep.Services.Persistence;
  
 namespace TheTechIdea.Beep.JsonLoaderService
 {/// <summary>
 /// Provides methods for serializing objects to JSON and deserializing JSON to objects.
 /// </summary>
-    public class JsonLoader : IJsonLoader,IDisposable
+    public class JsonLoader : IJsonLoader, IJsonSnapshotCodec, IDisposable
     {
        
         private bool disposedValue;
@@ -22,6 +24,31 @@ namespace TheTechIdea.Beep.JsonLoaderService
         public JsonLoader()
         {
 
+        }
+
+        private static JsonSerializer CreateSnapshotSerializer() => JsonSerializer.Create(new JsonSerializerSettings
+        {
+            TypeNameHandling = TypeNameHandling.None,
+            ObjectCreationHandling = ObjectCreationHandling.Replace,
+            ReferenceLoopHandling = ReferenceLoopHandling.Error,
+            DateParseHandling = DateParseHandling.None,
+            MaxDepth = 64,
+            CheckAdditionalContent = true,
+            Converters = { new Newtonsoft.Json.Converters.StringEnumConverter() }
+        });
+
+        public string SerializeSnapshot(object value)
+        {
+            using var buffer = new StringWriter(CultureInfo.InvariantCulture);
+            using (var writer = new JsonTextWriter(buffer))
+                CreateSnapshotSerializer().Serialize(writer, value);
+            return buffer.ToString();
+        }
+
+        public T DeserializeSnapshot<T>(string json)
+        {
+            using var reader = new JsonTextReader(new StringReader(json)) { MaxDepth = 64, DateParseHandling = DateParseHandling.None };
+            return CreateSnapshotSerializer().Deserialize<T>(reader);
         }
         /// <summary>
         /// Serializes the specified object to a JSON string.
@@ -59,10 +86,9 @@ namespace TheTechIdea.Beep.JsonLoaderService
 
          //   };
 
-            if (File.Exists(filename))
+            var JSONtxt = AtomicFileStore.ReadText(filename);
+            if (JSONtxt != null)
             {
-                String JSONtxt = File.ReadAllText(filename);
-
                 return  JsonConvert.DeserializeObject<List<T>>(JSONtxt, GetSettings());
             }else
             {
@@ -133,25 +159,8 @@ namespace TheTechIdea.Beep.JsonLoaderService
             //    Converters = new List<JsonConverter> { new Newtonsoft.Json.Converters.StringEnumConverter() }
 
             //};
-            try
-            {
-                if (File.Exists(filename))
-                {
-                    String JSONtxt = File.ReadAllText(filename);
-
-                    return JsonConvert.DeserializeObject<T>(JSONtxt, GetSettings());
-                }
-                else
-                    return default(T);
-
-            }
-            catch (Exception ex)
-            {
-
-                Console.WriteLine(ex.Message);
-            }
-
-            return default(T);
+            var json = AtomicFileStore.ReadText(filename);
+            return json == null ? default(T) : JsonConvert.DeserializeObject<T>(json, GetSettings());
         }
         /// <summary>
         /// Serializes file to object .
@@ -171,26 +180,10 @@ namespace TheTechIdea.Beep.JsonLoaderService
             };
             serializer.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
             
-            using (StreamWriter file = new StreamWriter(filename))
-            {
-                try
-                {
-                    // JsonSerializer serializer = new JsonSerializer();
-                    using (JsonWriter writer = new JsonTextWriter(file))
-                    {
-                        serializer.Serialize(writer, t);
-                        // {"ExpiryDate":new Date(1230375600000),"Price":0}
-                    }
-                   
-                }
-                catch (Exception ex)
-                {
-
-                   Console.WriteLine(ex.ToString());
-
-                }
-               
-            }
+            using var buffer = new StringWriter(CultureInfo.InvariantCulture);
+            using (JsonWriter writer = new JsonTextWriter(buffer))
+                serializer.Serialize(writer, t);
+            AtomicFileStore.WriteText(filename, buffer.ToString());
         }
         /// <summary>
         /// Deserializes  Object from file.

@@ -153,6 +153,13 @@ namespace TheTechIdea.Beep.Editor.Mapping
         /// Maps source object to a new destination object using mapping, then applies defaults from DefaultsManager.
         /// </summary>
         public static object MapObjectToAnother(IDMEEditor DMEEditor, string destentityname, EntityDataMap_DTL SelectedMapping, object sourceobj)
+            => MapObjectToAnotherCore(DMEEditor, destentityname, SelectedMapping, sourceobj, false);
+
+        /// <summary>Strict field mapping without implicit defaults. The caller owns its explicit default stage.</summary>
+        public static object MapObjectToAnotherStrict(IDMEEditor editor, string destinationEntity, EntityDataMap_DTL mapping, object source)
+            => MapObjectToAnotherCore(editor, destinationEntity, mapping, source, true);
+
+        private static object MapObjectToAnotherCore(IDMEEditor DMEEditor, string destentityname, EntityDataMap_DTL SelectedMapping, object sourceobj, bool strict)
         {
             // Validate parameters
             if (DMEEditor == null)
@@ -170,7 +177,8 @@ namespace TheTechIdea.Beep.Editor.Mapping
                 throw new InvalidOperationException($"Failed to create destination object for entity: {destentityname}");
 
             // Prefer compiled plan path for repeated executions, then fallback to reflection path.
-            var executedCompiledPlan = ExecuteCompiledPlan(
+            // Legacy compiled plans can skip unusable fields and swallow step failures.
+            var executedCompiledPlan = !strict && ExecuteCompiledPlan(
                 DMEEditor,
                 sourceobj,
                 destobj,
@@ -184,23 +192,27 @@ namespace TheTechIdea.Beep.Editor.Mapping
                 {
                     try
                     {
-                        MapProperty(sourceobj, destobj, mapping, SelectedMapping.EntityDataSource, destentityname);
+                        MapProperty(sourceobj, destobj, mapping, SelectedMapping.EntityDataSource, destentityname, strict);
                     }
                     catch (Exception ex)
                     {
+                        if (strict) throw new Importing.ImportTransformationException(Importing.ImportTransformationStage.Mapping, ex.GetType().Name);
                         // Log and continue mapping the next field
                         DMEEditor.AddLogMessage("MappingError", $"Error mapping field '{mapping?.FromFieldName}' to '{mapping?.ToFieldName}': {ex.Message}", DateTime.Now, 0, null, Errors.Failed);
                     }
                 }
             }
 
+            if (strict) return destobj;
+
             // Apply Defaults via DefaultsManager (rule/static) after basic mapping
             try
             {
                 MappingDefaultsHelper.ApplyDefaultsToObject(DMEEditor, SelectedMapping.EntityDataSource, destentityname, destobj, SelectedMapping.SelectedDestFields);
             }
-            catch
+            catch (Exception ex)
             {
+                System.Diagnostics.Debug.WriteLine($"Mapping defaults failed: {ex.GetType().Name}. Legacy best-effort mapping continues.");
                 // do not fail mapping on defaults
             }
 

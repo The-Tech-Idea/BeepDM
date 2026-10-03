@@ -80,6 +80,15 @@ namespace TheTechIdea.Beep.Editor.Migration
             }
 
             // Connection and basic probe
+            if (plan.PlanHashVersion == CurrentPlanHashVersion && !ValidatePlanIntent(plan, out var intentError))
+            {
+                report.Checks.Add(new MigrationPreflightCheck
+                {
+                    Code = "preflight-plan-intent", Decision = MigrationPolicyDecision.Block,
+                    Message = intentError, Recommendation = "Rebuild and re-approve the migration plan."
+                });
+                return report;
+            }
             var connectivityOk = ProbeConnectivity();
             report.Checks.Add(new MigrationPreflightCheck
             {
@@ -224,6 +233,21 @@ namespace TheTechIdea.Beep.Editor.Migration
 
         private bool DetectSchemaDrift(MigrationPlanArtifact plan)
         {
+            if (plan.PlanHashVersion == CurrentPlanHashVersion)
+            {
+                foreach (var operation in plan.Operations
+                    .Where(item => item.SchemaSnapshot != null)
+                    .GroupBy(item => item.EntityName, StringComparer.Ordinal).Select(group => group.First()))
+                {
+                    var snapshot = operation.SchemaSnapshot;
+                    var exists = MigrateDataSource.CheckEntityExist(operation.EntityName);
+                    if (exists != snapshot.ExpectedEntityExists) return true;
+                    if (exists && !string.Equals(CanonicalJson(SchemaIntent(snapshot.ExpectedSchema)),
+                        CanonicalJson(SchemaIntent(MigrateDataSource.GetEntityStructure(operation.EntityName, true))),
+                        StringComparison.Ordinal)) return true;
+                }
+                return false;
+            }
             var types = plan.Operations
                 .Where(operation => operation != null && !string.IsNullOrWhiteSpace(operation.EntityTypeName))
                 .Select(operation => ResolveType(operation.EntityTypeName))
@@ -504,6 +528,8 @@ namespace TheTechIdea.Beep.Editor.Migration
 
         private EntityStructure ResolveDesiredEntityStructure(MigrationPlanOperation operation)
         {
+            if (operation.SchemaSnapshot != null)
+                return CopySnapshot(operation.SchemaSnapshot.DesiredSchema);
             var entityType = ResolveType(operation.EntityTypeName);
             if (entityType != null)
                 return TryGetEntityStructure(entityType);

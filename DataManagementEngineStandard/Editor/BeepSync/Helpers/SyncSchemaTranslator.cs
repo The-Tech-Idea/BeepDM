@@ -5,6 +5,8 @@ using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.Editor.Importing;
 using TheTechIdea.Beep.Editor.Importing.Interfaces;
+using TheTechIdea.Beep.Editor.Importing.Helpers;
+using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Report;
 using TheTechIdea.Beep.Workflow;
 using TheTechIdea.Beep.Workflow.Mapping;
@@ -104,6 +106,37 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Helpers
         }
 
         /// <summary>
+        /// Binds a translated mapped configuration to independent provider metadata.
+        /// Call for both directions before admitting either import. Missing mapped targets reject.
+        /// </summary>
+        public static void BindEntityMetadata(DataImportConfiguration config, EntityStructure source, EntityStructure target)
+        {
+            if (config == null) throw new ArgumentNullException(nameof(config));
+            var capturedSource = EntityMetadataSnapshot.Capture(source);
+            var capturedTarget = EntityMetadataSnapshot.Capture(target);
+            BoundMappingMetadata.Validate(config.Mapping, capturedSource, capturedTarget);
+            var from = BoundMappingMetadata.Index(capturedSource);
+            var to = BoundMappingMetadata.Index(capturedTarget);
+            var detail = config.Mapping.MappedEntities[0];
+            foreach (var pair in detail.FieldMapping)
+            {
+                var sourceField = from[pair.FromFieldName];
+                var targetField = to[pair.ToFieldName];
+                pair.FromFieldName = sourceField.FieldName;
+                pair.FromFieldType = sourceField.Fieldtype;
+                pair.ToFieldName = targetField.FieldName;
+                pair.ToFieldType = targetField.Fieldtype;
+            }
+            config.SourceEntityStructure = capturedSource;
+            config.DestEntityStructure = capturedTarget;
+            config.Mapping.EntityFields = capturedSource.Fields;
+            detail.EntityFields = capturedTarget.Fields;
+            detail.SelectedDestFields = capturedTarget.Fields;
+            config.RequireBoundMappingMetadata = true;
+            BoundMappingMetadata.ValidateConfiguration(config);
+        }
+
+        /// <summary>
         /// Batch size from the schema, falling back to 50 when unset. The fallback matters:
         /// BatchSize is a plain int defaulting to 0, and a 0-row batch would stall the import.
         /// </summary>
@@ -150,8 +183,8 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Helpers
 
             foreach (var field in schema.MappedFields ?? Enumerable.Empty<FieldSyncData>())
             {
-                if (string.IsNullOrWhiteSpace(field.SourceField) || string.IsNullOrWhiteSpace(field.DestinationField))
-                    continue;
+                if (field == null || string.IsNullOrWhiteSpace(field.SourceField) || string.IsNullOrWhiteSpace(field.DestinationField))
+                    throw new InvalidOperationException("Sync field mappings must contain complete pairs.");
 
                 dtl.FieldMapping.Add(new Mapping_rep_fields
                 {
@@ -166,7 +199,7 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Helpers
 
             // Include sync key field if not already in MappedFields
             var keyInMapped = schema.MappedFields?.Any(f =>
-                string.Equals(f.SourceField, schema.SourceSyncDataField, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(f.SourceField, schema.SourceSyncDataField, StringComparison.OrdinalIgnoreCase) &&
                 string.Equals(f.DestinationField, schema.DestinationSyncDataField, StringComparison.OrdinalIgnoreCase)) ?? false;
 
             if (!keyInMapped && !string.IsNullOrWhiteSpace(schema.SourceSyncDataField) && !string.IsNullOrWhiteSpace(schema.DestinationSyncDataField))
@@ -203,8 +236,8 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Helpers
 
             foreach (var field in schema.MappedFields ?? Enumerable.Empty<FieldSyncData>())
             {
-                if (string.IsNullOrWhiteSpace(field.SourceField) || string.IsNullOrWhiteSpace(field.DestinationField))
-                    continue;
+                if (field == null || string.IsNullOrWhiteSpace(field.SourceField) || string.IsNullOrWhiteSpace(field.DestinationField))
+                    throw new InvalidOperationException("Sync field mappings must contain complete pairs.");
 
                 dtl.FieldMapping.Add(new Mapping_rep_fields
                 {
@@ -217,7 +250,10 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Helpers
                 });
             }
 
-            if (!string.IsNullOrWhiteSpace(schema.DestinationSyncDataField) && !string.IsNullOrWhiteSpace(schema.SourceSyncDataField))
+            var keyInMapped = dtl.FieldMapping.Any(f =>
+                string.Equals(f.FromFieldName, schema.DestinationSyncDataField, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(f.ToFieldName, schema.SourceSyncDataField, StringComparison.OrdinalIgnoreCase));
+            if (!keyInMapped && !string.IsNullOrWhiteSpace(schema.DestinationSyncDataField) && !string.IsNullOrWhiteSpace(schema.SourceSyncDataField))
             {
                 dtl.FieldMapping.Add(new Mapping_rep_fields
                 {

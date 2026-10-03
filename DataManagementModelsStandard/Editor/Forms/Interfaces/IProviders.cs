@@ -52,6 +52,10 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
         /// Display the large-text editor popup and return whether the user
         /// committed (OK) or discarded (Cancel) their edit.
         /// Corresponds to Oracle Forms EDIT_TEXTITEM built-in.
+        /// The provider owns UI dispatch, dialog dismissal and cancellation acknowledgement.
+        /// The manager passes a per-request definition copy and awaits physical completion,
+        /// including after close. Providers are borrowed; the manager does not dispose them.
+        /// Do not read mutable manager CurrentItem when applying a dialog result.
         /// </summary>
         Task<Forms.Models.EditorResult> ShowEditorAsync(
             Forms.Models.EditorDefinition editor,

@@ -21,13 +21,40 @@ Use this skill when planning, validating, executing, or governing schema migrati
 - The task is only about CRUD or transactional app logic. Use [`unitofwork`](../unitofwork/SKILL.md) or [`idatasource`](../idatasource/SKILL.md).
 - The task is only about connection definition or config persistence. Use [`connection`](../connection/SKILL.md) and [`configeditor`](../configeditor/SKILL.md).
 
+## Captured Plan Intent
+- New plans have `PlanHashVersion = 2` and per-operation `SchemaSnapshot`; previews/execution consume captured schema, not later reflection/model-cache values.
+- Artifacts remain mutable for compatibility, but meaningful changes invalidate identity. Rebuild schema/target changes; never manually replace the hash to reuse approval.
+- Hashes bind target, desired/baseline definitions, operation order, retry/failure, governance and performance policies. Composite key/index/relation order is semantic; cosmetic wording and lifecycle state are not identity.
+- A supplied execution/governance policy must match captured intent. Use concrete `CreateMigrationPlanRevision(plan, executionPolicy, policyOptions)` for explicit policy/environment changes, then review/re-approve the returned revision with a new token.
+- Approval options need `ApprovedPlanHash = plan.PlanHash` plus the existing approver/reason and recovery evidence. Host authorization remains separate; a hash is not a signature.
+- Plan history includes `PlanArtifactJson`; concrete `LoadMigrationPlan(planId)` validates it. Checkpoints preserve `ApprovedPlan` for reload; old summary-only/hash formats are rejected, not silently upgraded.
+- Baseline drift checks may block partially applied DDL. Reconcile before a new plan; do not promise universal resume, transactional DDL or exactly-once writes. Concurrent token admission and provider-confirmed recovery remain open gates.
+- Skipped UpToDate steps satisfy dependencies. Continue-on-failure still returns failure/incomplete checkpoint when any step failed.
+- Read `DataManagementEngineStandard/Editor/Migration/PLAN-INTENT.md` for format and recovery limits. Recording-provider tests prove payload semantics, not live database recovery.
+
+## Acknowledged Checkpoints
+- Governed execution requires optional Models `IMigrationHistoryPersistence`; custom configuration stores must implement it. A legacy void append or a null result is not an acknowledgement.
+- Built-in ConfigEditor history uses coordinated whole-file updates, strict corruption/identity checks, version-one hashed paths and validated legacy promotion that preserves original bytes. Custom loaders need `IJsonSnapshotCodec`.
+- Planning is available without persistence: inspect `PlanPersistenceStatus`/`PlanPersistenceErrorCode`. Its preview token is an in-process reservation, not a saved execution start.
+- Execution saves start and Running checkpoints before DDL. Failed admission saves run no DDL; failed post-DDL saves stop later work, keep acknowledged AppliedCount and return failure with `RequiresReconciliation`. Check `CheckpointPersisted` and `CheckpointPersistenceStatus`.
+- Restarted Running, corrupt/empty and wrong-token checkpoints block replay. Preserve evidence and reconcile provider state; do not clear checkpoints or retry DDL to hide a save failure.
+- Separate-process filesystem reload and recording-provider failure tests are not live-provider crash recovery, power-loss durability or concurrent-token admission proof.
+
+## Durable Ownership Backend
+- Models adds optional `IMigrationExecutionOwnership`; ConfigEditor exposes FileMigrationExecutionOwnership at an explicit config root. **MigrationManager does not yet acquire it automatically**; execute/resume/compensation and private progress integration remain open.
+- All cooperating owners need the same root and canonical physical-target identity, not aliases, credentials, runtime GUIDs, tokens or plan hashes. Separate roots/identity spellings do not coordinate.
+- Only Acquired supplies a lease. Its permanent owner handle blocks live competitors and live-owner reconciliation; Dispose/crash never clears unfinished durable work.
+- Finish must be acknowledged with Completed/SafeToRetry/RequiresReconciliation from actual provider/checkpoint evidence. Failed Finish, abandoned claims and corrupt state block blind replay; lease expiry is not proof of safety.
+- Explicit reconciliation requires the expected claim ID, authorized actor and non-secret evidence reference after the live owner is gone. Reconciled claims are archived before replacement; archive failure preserves evidence.
+- Read `DataManagementEngineStandard/Editor/Migration/EXECUTION-OWNERSHIP.md`. Backend process tests do not prove automatic manager admission, provider reconciliation, Unix/network storage or power-loss durability.
+
 ## Core Capabilities
 - Discover entity types across assemblies.
 - Register assemblies explicitly for discovery.
 - Ensure a database/schema exists from Entity types or `EntityStructure`.
 - Apply migrations for missing entities or columns.
 - Optionally add foreign keys and indexes on RDBMS targets via opt-in flags.
-- Build immutable migration plan artifacts and hashes.
+- Build versioned migration artifacts with captured schema and validated intent hashes.
 - Evaluate plan policy and protected-environment safety decisions.
 - Generate dry-run DDL previews, preflight checks, and impact reports.
 - Execute with retries, deterministic step state, checkpoint persistence, and resume.

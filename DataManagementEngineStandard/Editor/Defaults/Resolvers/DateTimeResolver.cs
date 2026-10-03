@@ -32,12 +32,25 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
         public override object ResolveValue(string rule, IPassedArgs parameters)
         {
             if (string.IsNullOrWhiteSpace(rule))
+            {
+                if (RequiredDefaultResolution.Current != null && GetType() == typeof(DateTimeResolver))
+                {
+                    LogError("Required date rule is empty.");
+                    return null;
+                }
                 return DateTime.Now;
+            }
 
             var upperRule = rule.ToUpperInvariant().Trim();
             
             try
             {
+                if (RequiredDefaultResolution.Current != null && GetType() == typeof(DateTimeResolver))
+                {
+                    RequiredBuiltInRule.Validate(this, rule);
+                    return RequiredDateTimeRule.Resolve(rule, parameters);
+                }
+                if (RequiredDefaultResolution.Current != null) RequiredBuiltInRule.Validate(this, rule);
                 return upperRule switch
                 {
                     "NOW" or "CURRENTDATETIME" => DateTime.Now,
@@ -61,12 +74,13 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
                     _ when upperRule.StartsWith("ADDMONTHS(") => ParseAddMonths(rule),
                     _ when upperRule.StartsWith("ADDYEARS(") => ParseAddYears(rule),
                     _ when upperRule.StartsWith("FORMAT(") || upperRule.StartsWith("DATEFORMAT(") => ParseDateFormat(rule),
-                    _ => DateTime.Now
+                    _ => InvalidDateFallback()
                 };
             }
             catch (Exception ex)
             {
                 LogError($"Error resolving date/time rule '{rule}'", ex);
+                if (RequiredDefaultResolution.Current != null && GetType() == typeof(DateTimeResolver)) return null;
                 return DateTime.Now;
             }
         }
@@ -75,6 +89,9 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
         {
             if (string.IsNullOrWhiteSpace(rule))
                 return false;
+
+            if (RequiredDefaultResolution.Current != null)
+                return RequiredBuiltInRule.MatchesOperator(rule, SupportedRuleTypes);
 
             var upperRule = rule.ToUpperInvariant().Trim();
             
@@ -143,7 +160,7 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
             {
                 LogError($"Error parsing ADDDAYS rule '{rule}'", ex);
             }
-            return DateTime.Now;
+            return InvalidDateFallback();
         }
 
         private object ParseAddHours(string rule)
@@ -166,7 +183,7 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
             {
                 LogError($"Error parsing ADDHOURS rule '{rule}'", ex);
             }
-            return DateTime.Now;
+            return InvalidDateFallback();
         }
 
         private object ParseAddMinutes(string rule)
@@ -189,7 +206,7 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
             {
                 LogError($"Error parsing ADDMINUTES rule '{rule}'", ex);
             }
-            return DateTime.Now;
+            return InvalidDateFallback();
         }
 
         private object ParseAddMonths(string rule)
@@ -212,7 +229,7 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
             {
                 LogError($"Error parsing ADDMONTHS rule '{rule}'", ex);
             }
-            return DateTime.Now;
+            return InvalidDateFallback();
         }
 
         private object ParseAddYears(string rule)
@@ -235,7 +252,7 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
             {
                 LogError($"Error parsing ADDYEARS rule '{rule}'", ex);
             }
-            return DateTime.Now;
+            return InvalidDateFallback();
         }
 
         private object ParseDateFormat(string rule)
@@ -260,24 +277,29 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
             {
                 LogError($"Error parsing FORMAT rule '{rule}'", ex);
             }
+            LogError("Date format arguments could not be resolved.");
             return DateTime.Now.ToString("yyyy-MM-dd");
         }
 
         private DateTime ResolveBaseDateTime(string baseRule)
         {
             if (string.IsNullOrWhiteSpace(baseRule))
-                return DateTime.Now;
+                return InvalidDateFallback();
+
+            if (DateTime.TryParse(RemoveQuotes(baseRule), out DateTime parsedDate))
+                return parsedDate;
 
             // Try to resolve as another date rule first
             var resolved = ResolveValue(baseRule, null);
             if (resolved is DateTime dt)
                 return dt;
 
-            // Try to parse as direct date string
-            if (DateTime.TryParse(baseRule, out DateTime parsedDate))
-                return parsedDate;
+            return InvalidDateFallback();
+        }
 
-            // Default to now
+        private DateTime InvalidDateFallback()
+        {
+            LogError("Date rule arguments could not be resolved.");
             return DateTime.Now;
         }
 

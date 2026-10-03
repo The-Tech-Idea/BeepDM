@@ -29,41 +29,71 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         /// </summary>
         public void Dispose()
         {
-            if (_disposed) return;
-            
+            if (Interlocked.Exchange(ref _disposeStarted, 1) != 0) return;
             try
             {
-                foreach (var blockInfo in _blocks.Values)
+                RegistrationLease[] registrations;
+                lock (_registrationGate)
                 {
-                    if (blockInfo.UnitOfWork != null)
-                    {
-                        _eventManager.UnsubscribeFromUnitOfWorkEvents(blockInfo.UnitOfWork, blockInfo.BlockName);
-                    }
+                    _disposed = true;
+                    registrations = _registrations.Values.Concat(_pendingRegistrations.Values).Distinct().ToArray();
+                    foreach (var registration in registrations) registration.MarkRetired();
+                    _blocks.Clear();
+                    _registrations.Clear();
+                    _pendingRegistrations.Clear();
+                    _detailSyncSuppressions.Clear();
+                    _currentBlockName = null;
                 }
-
-                _dirtyStateManager.OnUnsavedChanges -= OnUnsavedChangesHandler;
-                _securityManager.OnSecurityViolation -= OnSecurityViolationHandler;
-                OnBlockFieldChanged -= HandleBlockFieldChangedForAudit;
-                DisposeTriggerChaining();
-                
-                _performanceManager?.Dispose();
-                _messageBus.OnFormMessage -= OnMessageBusFormMessage;
-                _messageBus?.UnsubscribeAll(_currentFormName ?? string.Empty);
-                _timerManager?.TimerFired -= OnTimerManagerFired;
-                _timerManager?.Dispose();
-                
-                _blocks.Clear();
-                
-                LogOperation("UnitofWorksManager disposed");
-            }
-            catch (Exception ex)
-            {
-                LogError("Error during UnitofWorksManager disposal", ex);
+                CleanupAction("Managed operation lifetime cancellation", _operationLifetime.Cancel);
+                foreach (var registration in registrations) registration.CleanupIfRetired();
+                CleanupAction("Closed current-block variables", ClearOwnedCurrentBlockVariables);
+                CleanupAction("Dirty notifications", () => _dirtyStateManager.OnUnsavedChanges -= OnUnsavedChangesHandler);
+                CleanupAction("Security notifications", () => _securityManager.OnSecurityViolation -= OnSecurityViolationHandler);
+                if (_observedSecurityPolicy != null)
+                    CleanupAction("Security policy notifications", () => _observedSecurityPolicy.SecurityPolicyChanged -= OnSecurityPolicyChanged);
+                CleanupAction("Audit notifications", () => OnBlockFieldChanged -= HandleBlockFieldChangedForAudit);
+                CleanupAction("Trigger notifications", DisposeTriggerChaining);
+                CleanupAction("Bus notifications", () => _messageBus.OnFormMessage -= OnMessageBusFormMessage);
+                // UnsubscribeAll(formName) can remove another owner's same-name subscriptions.
+                DetachOwnedMessages();
+                CleanupAction("Timer notifications", () => _timerManager.TimerFired -= OnTimerManagerFired);
+                if (_ownsTimerManager) CleanupAction("Owned timers", _timerManager.Dispose);
+                if (_ownsPerformanceManager) CleanupAction("Owned performance helper", _performanceManager.Dispose);
+                if (_ownsItemPropertyManager && _itemPropertyManager is IDisposable items)
+                    CleanupAction("Owned item helper", items.Dispose);
+                lock (_lockObject) _relationships.Clear();
+                _pendingDeferredSync.Clear();
+                _syncSuppressCount.Clear();
+                CleanupAction("Disposal log", () => LogOperation("UnitofWorksManager disposed"));
             }
             finally
             {
-                _disposed = true;
+                try { _readResourcesRetired = RetireReadResourcesAfterDrain(); }
+                finally { _disposeCompleted.TrySetResult(); }
             }
+        }
+
+        /// <summary>Recent cleanup failures (at most 128); cleanup never stops at the first failure.</summary>
+        public IReadOnlyList<FormsCleanupFailure> CleanupFailures => _cleanupFailures.ToArray();
+
+        private bool CleanupAction(string resource, Action cleanup)
+        {
+            try { cleanup(); return true; }
+            catch (Exception ex)
+            {
+                _cleanupFailures.Enqueue(new FormsCleanupFailure(resource, ex));
+                while (_cleanupFailures.Count > 128) _cleanupFailures.TryDequeue(out _);
+                try { LogError($"Cleanup failed: {resource}", ex); } catch { }
+                return false;
+            }
+        }
+
+        private bool IsCurrentRegistration(string name, DataBlockInfo block, IUnitofWork source)
+        {
+            lock (_registrationGate)
+                return !_disposed && _registrations.TryGetValue(name, out var registration) && registration.Published &&
+                    !registration.Retired && ReferenceEquals(registration.Block, block) &&
+                    ReferenceEquals(registration.Source, source) && ReferenceEquals(block.UnitOfWork, source);
         }
 
         #endregion
@@ -98,6 +128,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         /// </summary>
         private async void OnTimerManagerFired(object sender, TimerFiredEventArgs e)
         {
+            using var callback = TryEnterCallback();
+            if (callback == null) return;
+            if (_disposed || e == null) return;
             // Was `_ = _triggerManager.FireFormTriggerAsync(...)` — fire-and-forget
             // on an async Task, inside a synchronous event handler. The try/catch
             // only ever observed a *synchronous* throw from building the call; an
@@ -119,7 +152,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             }
             catch (Exception ex)
             {
-                LogError($"Error handling timer fired for '{e.TimerName}'", ex);
+                CleanupAction("Timer callback diagnostic", () => LogError($"Error handling timer fired for '{e.TimerName}'", ex));
             }
         }
 
@@ -130,6 +163,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         /// <param name="e">Delivered message payload.</param>
         private async void OnMessageBusFormMessage(object sender, FormMessageEventArgs e)
         {
+            using var callback = TryEnterCallback();
+            if (callback == null) return;
+            if (_disposed) return;
             // async void + try/catch: the WHEN-FORM-NOTIFICATION fire below is
             // genuinely async, and this is a plain event handler subscribed via
             // += — same hazard, same established fix as OnTimerManagerFired
@@ -147,6 +183,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     string.Equals(message.TargetForm, "*", StringComparison.OrdinalIgnoreCase))
                 {
                     OnFormMessage?.Invoke(this, e);
+                    if (_disposed) return;
 
                     // Fire WHEN-FORM-NOTIFICATION — the trigger counterpart to
                     // the plain .NET event just above, for a form author using
@@ -163,7 +200,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             }
             catch (Exception ex)
             {
-                LogError("Error handling form-bus notification", ex, _currentFormName);
+                CleanupAction("Bus callback diagnostic", () => LogError("Error handling form-bus notification", ex, _currentFormName));
             }
         }
 
@@ -174,6 +211,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         /// <param name="e">Unsaved-change event payload.</param>
         protected void OnUnsavedChangesHandler(object sender, UnsavedChangesEventArgs e)
         {
+            if (_disposed) return;
             // This can be overridden by derived classes or handled by event subscribers
             // Default behavior could be to show a dialog or log the event
             LogOperation($"Unsaved changes detected in block '{e.BlockName}' with {e.DirtyBlocks.Count} affected blocks");

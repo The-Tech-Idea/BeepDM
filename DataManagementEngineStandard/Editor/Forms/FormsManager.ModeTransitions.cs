@@ -53,13 +53,17 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         /// Transitions a block from CRUD to Query mode - equivalent to Oracle Forms ENTER_QUERY
         /// Validates unsaved changes before transition
         /// </summary>
-        public async Task<IErrorsInfo> EnterQueryModeAsync(string blockName)
+        public Task<IErrorsInfo> EnterQueryModeAsync(string blockName) => EnterQueryModeCoreAsync(blockName);
+
+        private async Task<IErrorsInfo> EnterQueryModeCoreAsync(string blockName, Action verify = null,
+            System.Threading.CancellationToken cancellationToken = default)
         {
             var result = new ErrorsInfo { Flag = Errors.Ok };
 
             try
             {
                 var blockInfo = GetBlock(blockName);
+                verify?.Invoke();
                 if (blockInfo == null)
                 {
                     result.Flag = Errors.Failed;
@@ -87,6 +91,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
 
                 // CRITICAL: Check for unsaved changes in current block AND all related blocks
                 var unsavedChangesResult = await ValidateUnsavedChangesForModeTransition(blockName).ConfigureAwait(false);
+                verify?.Invoke();
                 if (!unsavedChangesResult.IsValid)
                 {
                     result.Flag = Errors.Failed;
@@ -97,6 +102,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
 
                 // Check for unsaved changes in related blocks (detail blocks)
                 var relatedBlocksResult = await ValidateRelatedBlocksForModeTransition(blockName, DataBlockMode.Query).ConfigureAwait(false);
+                verify?.Invoke();
                 if (!relatedBlocksResult.IsValid)
                 {
                     result.Flag = Errors.Failed;
@@ -107,6 +113,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
 
                 // Clear the block before entering query mode (Oracle Forms behavior)
                 await ClearBlockForModeTransition(blockName).ConfigureAwait(false);
+                verify?.Invoke();
 
                 // Set the block to Enter-Query mode — the user is now typing
                 // criteria, not looking at results. Nothing in the engine set
@@ -123,12 +130,14 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 // files); wired individually, same shape as CurrentFormName's
                 // three writers.
                 _systemVariablesManager?.SetMode(ToSystemVariableMode(DataBlockMode.EnterQuery));
+                verify?.Invoke();
 
                 // Update current block reference
                 _currentBlockName = blockName;
 
                 // Trigger mode change events
                 _eventManager.TriggerBlockEnter(blockName);
+                verify?.Invoke();
 
                 // TriggerType.EnterQuery (Oracle Forms ENTER_QUERY) existed with
                 // no firing code anywhere -- confirmed by grepping the whole
@@ -141,7 +150,8 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 // PostQuery fire relative to their own state changes. (2026-08-26)
                 await _triggerManager.FireBlockTriggerAsync(
                     TriggerType.EnterQuery, blockName,
-                    TriggerContext.ForBlock(TriggerType.EnterQuery, blockName, null, _dmeEditor)).ConfigureAwait(false);
+                    TriggerContext.ForBlock(TriggerType.EnterQuery, blockName, null, _dmeEditor), cancellationToken).ConfigureAwait(false);
+                verify?.Invoke();
 
                 result.Message = $"Block '{blockName}' entered Query mode successfully";
                 Status = result.Message;
@@ -151,6 +161,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             }
             catch (Exception ex)
             {
+                verify?.Invoke();
                 result.Flag = Errors.Failed;
                 result.Message = ex.Message;
                 result.Ex = ex;
@@ -167,122 +178,79 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         /// </summary>
         public async Task<IErrorsInfo> ExecuteQueryAndEnterCrudModeAsync(string blockName, List<AppFilter> filters = null)
         {
-            var result = new ErrorsInfo { Flag = Errors.Ok };
-
+            var result = new FormQueryResult { FormInstanceId = _commitFormInstanceId, BlockName = blockName, Flag = Errors.Failed };
+            using var lifetime = TryEnterCallback();
+            if (lifetime == null) { result.Message = "FormsManager is closed."; return result; }
+            using var cancellation = System.Threading.CancellationTokenSource.CreateLinkedTokenSource(_operationLifetime.Token);
+            var ct = cancellation.Token;
+            ManagedReadPlan notificationPlan = null;
             try
             {
-                var blockInfo = GetBlock(blockName);
-                if (blockInfo == null)
+                var block = GetBlock(blockName);
+                if (block == null)
                 {
-                    result.Flag = Errors.Failed;
                     result.Message = $"Block '{blockName}' not found";
                     return result;
                 }
-
-                // B2: must be in Query mode OR EnterQuery mode to execute query.
-                // Oracle Forms allows the user to be in EnterQuery (typing criteria)
-                // and then press EXECUTE_QUERY (or F8) to materialize the result
-                // without first leaving EnterQuery. The previous strict
-                // `!= DataBlockMode.Query` check rejected EnterQuery, blocking
-                // that flow and forcing the user to leave EnterQuery first.
-                if (blockInfo.Mode != DataBlockMode.Query && blockInfo.Mode != DataBlockMode.EnterQuery)
+                if (block.Mode != DataBlockMode.Query && block.Mode != DataBlockMode.EnterQuery)
                 {
-                    result.Flag = Errors.Failed;
-                    result.Message = $"Block '{blockName}' must be in Query or Enter-Query mode to execute query. Current mode: {blockInfo.Mode}";
-                    Status = result.Message;
+                    result.Message = $"Block '{blockName}' must be in Query or Enter-Query mode to execute query. Current mode: {block.Mode}";
+                    return result;
+                }
+                var unit = block.UnitOfWork;
+                var wasInEnterQuery = block.Mode == DataBlockMode.EnterQuery;
+                result = await ExecuteQueryWithOutcomeAsync(blockName, filters, ct).ConfigureAwait(false);
+                if (!result.ReadAcknowledged) return result;
+                notificationPlan = CaptureQueryCompletionPlan(result, block, unit);
+                if (!CanDeliverQueryNotification(notificationPlan, ct))
+                {
+                    AddQueryNotificationFailure(result, new SupersededQueryException());
                     return result;
                 }
 
-                // Captured before the transition below, for the EXIT_QUERY fire
-                // point further down -- ExitQuery (Oracle Forms EXIT_QUERY) pairs
-                // specifically with a block that was actually in enter-query mode,
-                // not one that was already sitting in plain Query mode and simply
-                // re-executed.
-                var wasInEnterQueryMode = blockInfo.Mode == DataBlockMode.EnterQuery;
-
-                LogOperation($"Executing query and entering CRUD mode for block '{blockName}' (source mode={blockInfo.Mode})", blockName);
-
-                // Execute the query using enhanced query execution
-                var queryResult = await ExecuteQueryEnhancedAsync(blockName, filters).ConfigureAwait(false);
-                if (queryResult.Flag != Errors.Ok)
+                var validation = await ValidateQueryResultsForModeTransition(blockName).ConfigureAwait(false);
+                if (!CanDeliverQueryNotification(notificationPlan, ct))
                 {
-                    result.Flag = queryResult.Flag;
-                    result.Message = $"Query execution failed: {queryResult.Message}";
-                    result.Ex = queryResult.Ex;
-                    Status = result.Message;
+                    AddQueryNotificationFailure(result, new SupersededQueryException());
                     return result;
                 }
-
-                // Validate query results
-                var validationResult = await ValidateQueryResultsForModeTransition(blockName).ConfigureAwait(false);
-                if (!validationResult.IsValid)
+                if (!validation.IsValid)
                 {
                     result.Flag = Errors.Warning;
-                    result.Message = $"Query executed but with warnings: {validationResult.Message}";
-                    // Continue execution but log the warning
-                    LogOperation($"Query validation warning for block '{blockName}': {validationResult.Message}", blockName);
+                    result.Message = $"Query executed but with warnings: {validation.Message}";
+                    ObserveQueryNotification(result, notificationPlan, ct, () => LogOperation(result.Message, blockName));
                 }
-
-                // B3: ExecuteQueryEnhancedAsync has already transitioned the
-                // block to CRUD mode on success. The previous "ensure
-                // consistency" re-assignment was redundant and masked any
-                // inconsistency between the helper and the outer caller.
-                // Trust the helper; if the mode is wrong here, the helper is
-                // broken and a future audit pass will catch it.
-                //
-                // We still update LastModeChange so callers can tell that a
-                // mode transition happened, even if the target mode was
-                // already set by the helper.
-                blockInfo.LastModeChange = DateTime.Now;
-
-                // TriggerType.ExitQuery (Oracle Forms EXIT_QUERY) existed with no
-                // firing code anywhere, same defect as EnterQuery above. Fired
-                // only when the block actually was in enter-query mode --
-                // matches Oracle Forms pairing EXIT_QUERY with ENTER_QUERY, not
-                // with an ordinary re-query of a block already showing results.
-                // (2026-08-26)
-                if (wasInEnterQueryMode)
+                if (wasInEnterQuery)
+                    await ObserveQueryTriggerAsync(result, notificationPlan, TriggerType.ExitQuery, ct).ConfigureAwait(false);
+                if (CanDeliverQueryNotification(notificationPlan, ct))
                 {
-                    await _triggerManager.FireBlockTriggerAsync(
-                        TriggerType.ExitQuery, blockName,
-                        TriggerContext.ForBlock(TriggerType.ExitQuery, blockName, null, _dmeEditor)).ConfigureAwait(false);
+                    var recordCount = GetRecordCount(blockName);
+                    if (recordCount > 0 && CanDeliverQueryNotification(notificationPlan, ct))
+                    {
+                        var navigated = await FirstRecordAsync(blockName).ConfigureAwait(false);
+                        if (!navigated)
+                            AddQueryNotificationFailure(result, new InvalidOperationException("Query published, but first-record navigation was rejected."));
+                    }
+                    if (validation.IsValid)
+                        result.Message = $"Query executed successfully. {recordCount} records found. Block '{blockName}' in CRUD mode.";
                 }
-
-                // Navigate to first record if available
-                var recordCount = GetRecordCount(blockName);
-                if (recordCount > 0)
-                {
-                    await FirstRecordAsync(blockName).ConfigureAwait(false);
-                }
-
-                // Only overwrite result.Message with the generic success text when
-                // there was nothing to warn about. Before this, the "Query executed
-                // but with warnings: ..." message set above (result.Flag stayed
-                // Warning, correctly) was unconditionally clobbered here on every
-                // path with at least one record -- so a caller reading only
-                // result.Message (the natural thing to show a user) never learned
-                // *why* the flag said Warning, for any validation warning past or
-                // future, not just the MaxRecords one this pass added a reader for.
-                if (validationResult.IsValid)
-                {
-                    result.Message = recordCount > 0
-                        ? $"Query executed successfully. {recordCount} records found. Block '{blockName}' in CRUD mode."
-                        : $"Query executed successfully. No records found. Block '{blockName}' in CRUD mode.";
-                }
-
-                Status = result.Message;
-                LogOperation($"Block '{blockName}' transitioned to CRUD mode with {recordCount} records", blockName);
-
+                ObserveQueryNotification(result, notificationPlan, ct, () => Status = result.Message);
+                ObserveQueryNotification(result, notificationPlan, ct, () => LogOperation(result.Message, blockName));
+                if (!CanDeliverQueryNotification(notificationPlan, ct))
+                    AddQueryNotificationFailure(result, new SupersededQueryException());
                 return result;
             }
             catch (Exception ex)
             {
-                result.Flag = Errors.Failed;
+                if (result.ReadAcknowledged)
+                {
+                    AddQueryNotificationFailure(result, ex);
+                    return result;
+                }
+                if (ct.IsCancellationRequested) return CancelQuery(result, ex);
+                result.State = FormQueryState.Failed;
                 result.Message = ex.Message;
                 result.Ex = ex;
-                Status = $"Error executing query for block '{blockName}': {ex.Message}";
-                LogError($"Error executing query for block '{blockName}'", ex, blockName);
-                _eventManager.TriggerError(blockName, ex);
                 return result;
             }
         }

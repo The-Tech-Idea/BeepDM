@@ -7,423 +7,349 @@ using System.Threading;
 using System.Threading.Tasks;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.Services;
+using TheTechIdea.Beep.Services.Persistence;
 
 namespace TheTechIdea.Beep.Winform.Controls
 {
     public sealed class JsonConnectionStorageProvider : IConnectionStorageProvider, IDisposable
     {
+        private const string CurrentPackageVersion = "2.0";
         private readonly IBeepService _beepService;
-        private readonly object _syncRoot = new();
-        private readonly SemaphoreSlim _asyncLock = new(1, 1);
         private readonly JsonSerializerOptions _jsonOptions = new() { WriteIndented = true };
+        private int _disposed;
+        private readonly IConnectionSecretProtector _protector;
 
         public JsonConnectionStorageProvider(IBeepService beepService)
+            : this(beepService, (beepService?.Config_editor as IConnectionProtectionContext)?.ConnectionSecretProtector
+                ?? TheTechIdea.Beep.Security.ConnectionCredentialProtection.Default)
+        { }
+
+        public JsonConnectionStorageProvider(IBeepService beepService, IConnectionSecretProtector protector)
         {
             _beepService = beepService ?? throw new ArgumentNullException(nameof(beepService));
+            _protector = protector ?? throw new ArgumentNullException(nameof(protector));
         }
 
-        public void Dispose()
-        {
-            _asyncLock?.Dispose();
-        }
+        public void Dispose() => Interlocked.Exchange(ref _disposed, 1);
+
+        private void ThrowIfDisposed() => ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposed) != 0, this);
 
         public IReadOnlyList<ConnectionProperties> LoadConnections(ConnectionStorageScope scope, string profileName, bool includePrecedenceChain)
         {
-            lock (_syncRoot)
-            {
-                var selectedProfile = NormalizeProfile(profileName);
-                var chain = includePrecedenceChain ? GetReadChain(scope) : new[] { scope };
-                var merged = new Dictionary<string, ConnectionProperties>(StringComparer.OrdinalIgnoreCase);
-
-                foreach (var chainScope in chain)
+            ThrowIfDisposed();
+            var profile = NormalizeProfile(profileName);
+            var chain = includePrecedenceChain ? GetReadChain(scope) : new[] { scope };
+            var merged = new Dictionary<string, ConnectionProperties>(StringComparer.OrdinalIgnoreCase);
+            foreach (var chainScope in Enumerable.Reverse(chain))
+                foreach (var record in ReadScopeRecords(chainScope).Where(r => string.Equals(r.ProfileName, profile, StringComparison.OrdinalIgnoreCase)))
                 {
-                    foreach (var record in ReadScopeRecords(chainScope)
-                                 .Where(r => string.Equals(r.ProfileName, selectedProfile, StringComparison.OrdinalIgnoreCase)
-                                          && r.Connection != null))
-                    {
-                        EnsureConnectionDefaults(record.Connection);
-                        var key = GetIdentityKey(record.Connection);
-                        merged[key] = ConnectionSecretProtector.Decrypt(record.Connection);
-                    }
+                    EnsureConnectionDefaults(record.Connection);
+                    merged[GetIdentityKey(record.Connection)] = _protector.Unprotect(record.Connection);
                 }
-
-                return merged.Values.OrderBy(c => c.ConnectionName).ToList();
-            }
+            return merged.Values.OrderBy(c => c.ConnectionName).ToList();
         }
 
         public bool SaveConnections(ConnectionStorageScope scope, string profileName, IReadOnlyList<ConnectionProperties> connections)
         {
-            lock (_syncRoot)
+            ThrowIfDisposed();
+            var profile = NormalizeProfile(profileName);
+            var prepared = (connections ?? Array.Empty<ConnectionProperties>())
+                .Select(connection => PrepareForPersist(connection, scope, profile)).ToList();
+            return UpdateScopeRecords(scope, records =>
             {
-                var selectedProfile = NormalizeProfile(profileName);
-                var records = ReadScopeRecords(scope)
-                    .Where(r => !string.Equals(r.ProfileName, selectedProfile, StringComparison.OrdinalIgnoreCase))
-                    .ToList();
-
-                foreach (var connection in connections ?? Array.Empty<ConnectionProperties>())
-                {
-                    var prepared = PrepareForPersist(connection, scope, selectedProfile);
-                    records.Add(prepared);
-                }
-
-                WriteScopeRecords(scope, records);
+                records.RemoveAll(r => string.Equals(r.ProfileName, profile, StringComparison.OrdinalIgnoreCase));
+                records.AddRange(prepared);
                 return true;
-            }
+            }, true);
         }
 
         public bool AddOrUpdate(ConnectionStorageScope scope, string profileName, ConnectionProperties connection, bool persist)
         {
-            if (connection == null || string.IsNullOrWhiteSpace(connection.ConnectionName))
+            ThrowIfDisposed();
+            if (connection == null || string.IsNullOrWhiteSpace(connection.ConnectionName)) return false;
+            var profile = NormalizeProfile(profileName);
+            var prepared = PrepareForPersist(connection, scope, profile);
+            return UpdateScopeRecords(scope, records =>
             {
-                return false;
-            }
-
-            lock (_syncRoot)
-            {
-                var selectedProfile = NormalizeProfile(profileName);
-                var records = ReadScopeRecords(scope);
-                var prepared = PrepareForPersist(connection, scope, selectedProfile);
-
-                var existing = records.FirstOrDefault(r =>
-                    string.Equals(r.ProfileName, selectedProfile, StringComparison.OrdinalIgnoreCase) &&
+                records.RemoveAll(r => string.Equals(r.ProfileName, profile, StringComparison.OrdinalIgnoreCase) &&
                     IsSameIdentity(r.Connection, prepared.Connection));
-
-                if (existing != null)
-                {
-                    records.Remove(existing);
-                }
-
                 records.Add(prepared);
-                if (persist)
-                {
-                    WriteScopeRecords(scope, records);
-                }
-
                 return true;
-            }
+            }, persist);
         }
 
         public bool Remove(ConnectionStorageScope scope, string profileName, string connectionName, bool persist)
         {
-            if (string.IsNullOrWhiteSpace(connectionName))
+            ThrowIfDisposed();
+            if (string.IsNullOrWhiteSpace(connectionName)) return false;
+            var profile = NormalizeProfile(profileName);
+            return UpdateScopeRecords(scope, records =>
+                records.RemoveAll(r => string.Equals(r.ProfileName, profile, StringComparison.OrdinalIgnoreCase) &&
+                    string.Equals(r.Connection.ConnectionName, connectionName, StringComparison.OrdinalIgnoreCase)) > 0, persist);
+        }
+
+        public async Task<IReadOnlyList<ConnectionProperties>> LoadConnectionsAsync(ConnectionStorageScope scope,
+            string profileName, bool includePrecedenceChain, CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            cancellationToken.ThrowIfCancellationRequested();
+            var profile = NormalizeProfile(profileName);
+            var chain = includePrecedenceChain ? GetReadChain(scope) : new[] { scope };
+            var merged = new Dictionary<string, ConnectionProperties>(StringComparer.OrdinalIgnoreCase);
+            // Apply lower-precedence scopes first so Project overrides User, then Machine.
+            foreach (var chainScope in Enumerable.Reverse(chain))
             {
-                return false;
+                var records = await ReadScopeRecordsAsync(chainScope, cancellationToken).ConfigureAwait(false);
+                foreach (var record in records.Where(r => string.Equals(r.ProfileName, profile, StringComparison.OrdinalIgnoreCase)))
+                {
+                    EnsureConnectionDefaults(record.Connection);
+                    merged[GetIdentityKey(record.Connection)] = _protector.Unprotect(record.Connection);
+                }
             }
+            return merged.Values.OrderBy(c => c.ConnectionName).ToList();
+        }
 
-            lock (_syncRoot)
+        public Task<bool> SaveConnectionsAsync(ConnectionStorageScope scope, string profileName,
+            IReadOnlyList<ConnectionProperties> connections, CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            cancellationToken.ThrowIfCancellationRequested();
+            var profile = NormalizeProfile(profileName);
+            var prepared = (connections ?? Array.Empty<ConnectionProperties>())
+                .Select(connection => PrepareForPersist(connection, scope, profile)).ToList();
+            return UpdateScopeRecordsAsync(scope, records =>
             {
-                var selectedProfile = NormalizeProfile(profileName);
-                var records = ReadScopeRecords(scope);
-                var existing = records.FirstOrDefault(r =>
-                    string.Equals(r.ProfileName, selectedProfile, StringComparison.OrdinalIgnoreCase) &&
-                    string.Equals(r.Connection.ConnectionName, connectionName, StringComparison.OrdinalIgnoreCase));
-
-                if (existing == null)
-                {
-                    return false;
-                }
-
-                records.Remove(existing);
-                if (persist)
-                {
-                    WriteScopeRecords(scope, records);
-                }
-
+                records.RemoveAll(r => string.Equals(r.ProfileName, profile, StringComparison.OrdinalIgnoreCase));
+                records.AddRange(prepared);
                 return true;
-            }
+            }, true, cancellationToken);
         }
 
-        public bool Promote(ConnectionStorageScope sourceScope, ConnectionStorageScope targetScope, string profileName, ConnectionConflictPolicy conflictPolicy, out string message)
+        public Task<bool> AddOrUpdateAsync(ConnectionStorageScope scope, string profileName,
+            ConnectionProperties connection, bool persist, CancellationToken cancellationToken = default)
         {
-            lock (_syncRoot)
+            ThrowIfDisposed();
+            cancellationToken.ThrowIfCancellationRequested();
+            if (connection == null || string.IsNullOrWhiteSpace(connection.ConnectionName)) return Task.FromResult(false);
+            var profile = NormalizeProfile(profileName);
+            var prepared = PrepareForPersist(connection, scope, profile);
+            return UpdateScopeRecordsAsync(scope, records =>
             {
-                var selectedProfile = NormalizeProfile(profileName);
-                var source = ReadScopeRecords(sourceScope)
-                    .Where(r => string.Equals(r.ProfileName, selectedProfile, StringComparison.OrdinalIgnoreCase))
-                    .ToList();
-                var target = ReadScopeRecords(targetScope);
-
-                if (source.Count == 0)
-                {
-                    message = "No records found in source scope.";
-                    return false;
-                }
-
-                var actionLog = new List<string>();
-                foreach (var sourceRecord in source)
-                {
-                    var existing = target.FirstOrDefault(r =>
-                        string.Equals(r.ProfileName, selectedProfile, StringComparison.OrdinalIgnoreCase) &&
-                        (IsSameIdentity(r.Connection, sourceRecord.Connection) ||
-                         string.Equals(r.Connection.ConnectionName, sourceRecord.Connection.ConnectionName, StringComparison.OrdinalIgnoreCase)));
-
-                    if (existing == null)
-                    {
-                        target.Add(CloneRecordForScope(sourceRecord, targetScope, selectedProfile));
-                        actionLog.Add($"Added:{sourceRecord.Connection.ConnectionName}");
-                        continue;
-                    }
-
-                    ResolveConflict(target, existing, sourceRecord, targetScope, selectedProfile, conflictPolicy, actionLog);
-                }
-
-                WriteScopeRecords(targetScope, target);
-                message = string.Join(Environment.NewLine, actionLog);
-                return true;
-            }
-        }
-
-        public bool ExportPackage(ConnectionStorageScope scope, string profileName, string packagePath, bool includeEncryptedSecretsOnly, out string message)
-        {
-            lock (_syncRoot)
-            {
-                var selectedProfile = NormalizeProfile(profileName);
-                var records = ReadScopeRecords(scope)
-                    .Where(r => string.Equals(r.ProfileName, selectedProfile, StringComparison.OrdinalIgnoreCase))
-                    .ToList();
-                if (records.Count == 0)
-                {
-                    message = "No records available to export.";
-                    return false;
-                }
-
-                var package = new ConnectionCatalogPackage
-                {
-                    PackageVersion = "1.0",
-                    ProfileName = selectedProfile,
-                    SourceScope = scope.ToString(),
-                    ExportedOnUtc = DateTime.UtcNow
-                };
-
-                foreach (var record in records)
-                {
-                    var cloned = CloneRecordForScope(record, scope, selectedProfile);
-                    if (!includeEncryptedSecretsOnly)
-                    {
-                        cloned.Connection = ConnectionSecretProtector.StripSecrets(ConnectionSecretProtector.Decrypt(cloned.Connection));
-                    }
-
-                    package.Records.Add(cloned);
-                }
-
-                EnsureDirectory(packagePath);
-                File.WriteAllText(packagePath, JsonSerializer.Serialize(package, _jsonOptions));
-                message = $"Exported {package.Records.Count} connection(s).";
-                return true;
-            }
-        }
-
-        public bool ImportPackage(ConnectionStorageScope targetScope, string profileName, string packagePath, ConnectionConflictPolicy conflictPolicy, bool importWhenEmptyOnly, out string message)
-        {
-            lock (_syncRoot)
-            {
-                if (!File.Exists(packagePath))
-                {
-                    message = "Package file does not exist.";
-                    return false;
-                }
-
-                var package = JsonSerializer.Deserialize<ConnectionCatalogPackage>(File.ReadAllText(packagePath), _jsonOptions);
-                if (package?.Records == null || package.Records.Count == 0)
-                {
-                    message = "Package does not contain records.";
-                    return false;
-                }
-
-                var selectedProfile = NormalizeProfile(profileName);
-                var target = ReadScopeRecords(targetScope);
-                if (importWhenEmptyOnly && target.Any(r => string.Equals(r.ProfileName, selectedProfile, StringComparison.OrdinalIgnoreCase)))
-                {
-                    message = "Import skipped because target profile is not empty.";
-                    return false;
-                }
-
-                var actionLog = new List<string>();
-                foreach (var sourceRecord in package.Records)
-                {
-                    sourceRecord.Connection ??= new ConnectionProperties();
-                    EnsureConnectionDefaults(sourceRecord.Connection);
-                    var existing = target.FirstOrDefault(r =>
-                        string.Equals(r.ProfileName, selectedProfile, StringComparison.OrdinalIgnoreCase) &&
-                        (IsSameIdentity(r.Connection, sourceRecord.Connection) ||
-                         string.Equals(r.Connection.ConnectionName, sourceRecord.Connection.ConnectionName, StringComparison.OrdinalIgnoreCase)));
-
-                    if (existing == null)
-                    {
-                        target.Add(CloneRecordForScope(sourceRecord, targetScope, selectedProfile));
-                        actionLog.Add($"Added:{sourceRecord.Connection.ConnectionName}");
-                        continue;
-                    }
-
-                    ResolveConflict(target, existing, sourceRecord, targetScope, selectedProfile, conflictPolicy, actionLog);
-                }
-
-                WriteScopeRecords(targetScope, target);
-                message = string.Join(Environment.NewLine, actionLog);
-                return true;
-            }
-        }
-
-        public async Task<IReadOnlyList<ConnectionProperties>> LoadConnectionsAsync(ConnectionStorageScope scope, string profileName, bool includePrecedenceChain, CancellationToken cancellationToken = default)
-        {
-            await _asyncLock.WaitAsync(cancellationToken).ConfigureAwait(false);
-            try
-            {
-                var selectedProfile = NormalizeProfile(profileName);
-                var chain = includePrecedenceChain ? GetReadChain(scope) : new[] { scope };
-                var merged = new Dictionary<string, ConnectionProperties>(StringComparer.OrdinalIgnoreCase);
-
-                foreach (var chainScope in chain)
-                {
-                    var records = await ReadScopeRecordsAsync(chainScope, cancellationToken).ConfigureAwait(false);
-                    foreach (var record in records
-                        .Where(r => string.Equals(r.ProfileName, selectedProfile, StringComparison.OrdinalIgnoreCase)
-                                 && r.Connection != null))
-                    {
-                        EnsureConnectionDefaults(record.Connection);
-                        var key = GetIdentityKey(record.Connection);
-                        merged[key] = ConnectionSecretProtector.Decrypt(record.Connection);
-                    }
-                }
-
-                return merged.Values.OrderBy(c => c.ConnectionName).ToList();
-            }
-            finally
-            {
-                _asyncLock.Release();
-            }
-        }
-
-        public async Task<bool> SaveConnectionsAsync(ConnectionStorageScope scope, string profileName, IReadOnlyList<ConnectionProperties> connections, CancellationToken cancellationToken = default)
-        {
-            await _asyncLock.WaitAsync(cancellationToken).ConfigureAwait(false);
-            try
-            {
-                var selectedProfile = NormalizeProfile(profileName);
-                var records = (await ReadScopeRecordsAsync(scope, cancellationToken).ConfigureAwait(false))
-                    .Where(r => !string.Equals(r.ProfileName, selectedProfile, StringComparison.OrdinalIgnoreCase))
-                    .ToList();
-
-                foreach (var connection in connections ?? Array.Empty<ConnectionProperties>())
-                {
-                    var prepared = PrepareForPersist(connection, scope, selectedProfile);
-                    records.Add(prepared);
-                }
-
-                await WriteScopeRecordsAsync(scope, records, cancellationToken).ConfigureAwait(false);
-                return true;
-            }
-            finally
-            {
-                _asyncLock.Release();
-            }
-        }
-
-        public async Task<bool> AddOrUpdateAsync(ConnectionStorageScope scope, string profileName, ConnectionProperties connection, bool persist, CancellationToken cancellationToken = default)
-        {
-            if (connection == null || string.IsNullOrWhiteSpace(connection.ConnectionName))
-            {
-                return false;
-            }
-
-            await _asyncLock.WaitAsync(cancellationToken).ConfigureAwait(false);
-            try
-            {
-                var selectedProfile = NormalizeProfile(profileName);
-                var records = await ReadScopeRecordsAsync(scope, cancellationToken).ConfigureAwait(false);
-                var prepared = PrepareForPersist(connection, scope, selectedProfile);
-
-                var existing = records.FirstOrDefault(r =>
-                    string.Equals(r.ProfileName, selectedProfile, StringComparison.OrdinalIgnoreCase) &&
+                records.RemoveAll(r => string.Equals(r.ProfileName, profile, StringComparison.OrdinalIgnoreCase) &&
                     IsSameIdentity(r.Connection, prepared.Connection));
-
-                if (existing != null)
-                {
-                    records.Remove(existing);
-                }
-
                 records.Add(prepared);
-                if (persist)
-                {
-                    await WriteScopeRecordsAsync(scope, records, cancellationToken).ConfigureAwait(false);
-                }
-
                 return true;
-            }
-            finally
-            {
-                _asyncLock.Release();
-            }
+            }, persist, cancellationToken);
         }
 
-        public async Task<bool> RemoveAsync(ConnectionStorageScope scope, string profileName, string connectionName, bool persist, CancellationToken cancellationToken = default)
+        public Task<bool> RemoveAsync(ConnectionStorageScope scope, string profileName,
+            string connectionName, bool persist, CancellationToken cancellationToken = default)
         {
-            if (string.IsNullOrWhiteSpace(connectionName))
+            ThrowIfDisposed();
+            cancellationToken.ThrowIfCancellationRequested();
+            if (string.IsNullOrWhiteSpace(connectionName)) return Task.FromResult(false);
+            var profile = NormalizeProfile(profileName);
+            return UpdateScopeRecordsAsync(scope, records =>
+                records.RemoveAll(r => string.Equals(r.ProfileName, profile, StringComparison.OrdinalIgnoreCase) &&
+                    string.Equals(r.Connection.ConnectionName, connectionName, StringComparison.OrdinalIgnoreCase)) > 0,
+                persist, cancellationToken);
+        }
+
+        public bool Promote(ConnectionStorageScope sourceScope, ConnectionStorageScope targetScope,
+            string profileName, ConnectionConflictPolicy conflictPolicy, out string message)
+        {
+            ThrowIfDisposed();
+            var profile = NormalizeProfile(profileName);
+            var source = ReadScopeRecords(sourceScope)
+                .Where(r => string.Equals(r.ProfileName, profile, StringComparison.OrdinalIgnoreCase)).ToList();
+            if (source.Count == 0)
             {
+                message = "No records found in source scope.";
                 return false;
             }
-
-            await _asyncLock.WaitAsync(cancellationToken).ConfigureAwait(false);
-            try
+            var actions = new List<string>();
+            UpdateScopeRecords(targetScope, target =>
             {
-                var selectedProfile = NormalizeProfile(profileName);
-                var records = await ReadScopeRecordsAsync(scope, cancellationToken).ConfigureAwait(false);
-                var existing = records.FirstOrDefault(r =>
-                    string.Equals(r.ProfileName, selectedProfile, StringComparison.OrdinalIgnoreCase) &&
-                    string.Equals(r.Connection.ConnectionName, connectionName, StringComparison.OrdinalIgnoreCase));
-
-                if (existing == null)
-                {
-                    return false;
-                }
-
-                records.Remove(existing);
-                if (persist)
-                {
-                    await WriteScopeRecordsAsync(scope, records, cancellationToken).ConfigureAwait(false);
-                }
-
+                ApplyIncoming(target, source, targetScope, profile, conflictPolicy, actions);
                 return true;
-            }
-            finally
-            {
-                _asyncLock.Release();
-            }
+            }, true);
+            message = string.Join(Environment.NewLine, actions);
+            return true;
         }
 
-        private async Task<List<ConnectionCatalogRecord>> ReadScopeRecordsAsync(ConnectionStorageScope scope, CancellationToken cancellationToken)
+        public bool ExportPackage(ConnectionStorageScope scope, string profileName, string packagePath,
+            bool includeEncryptedSecretsOnly, out string message)
         {
-            var path = GetCatalogFilePath(scope);
-            if (!File.Exists(path))
+            ThrowIfDisposed();
+            var profile = NormalizeProfile(profileName);
+            var records = ReadScopeRecords(scope)
+                .Where(r => string.Equals(r.ProfileName, profile, StringComparison.OrdinalIgnoreCase)).ToList();
+            if (records.Count == 0)
             {
-                return new List<ConnectionCatalogRecord>();
+                message = "No records available to export.";
+                return false;
             }
-
-            try
-            {
-                var json = await File.ReadAllTextAsync(path, cancellationToken).ConfigureAwait(false);
-                var loaded = JsonSerializer.Deserialize<ConnectionCatalogPackage>(json, _jsonOptions);
-                return StripNullConnections(loaded?.Records);
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"[JsonConnectionStorageProvider.ReadScopeRecords] {scope}: {ex.GetType().Name} - {ex.Message}");
-                return new List<ConnectionCatalogRecord>();
-            }
-        }
-
-        private async Task WriteScopeRecordsAsync(ConnectionStorageScope scope, List<ConnectionCatalogRecord> records, CancellationToken cancellationToken)
-        {
-            var path = GetCatalogFilePath(scope);
             var package = new ConnectionCatalogPackage
             {
-                SourceScope = scope.ToString(),
-                Records = records ?? new List<ConnectionCatalogRecord>(),
-                ExportedOnUtc = DateTime.UtcNow
+                PackageVersion = CurrentPackageVersion,
+                ProfileName = profile, SourceScope = scope.ToString(), ExportedOnUtc = DateTime.UtcNow
             };
+            foreach (var record in records)
+            {
+                var cloned = includeEncryptedSecretsOnly
+                    ? CloneRecordForScope(record, scope, profile)
+                    : new ConnectionCatalogRecord
+                    {
+                        Scope = scope.ToString(), ProfileName = profile, SourceStore = record.Scope,
+                        SourceProfile = record.ProfileName, ExportedOnUtc = DateTime.UtcNow,
+                        PackageVersion = CurrentPackageVersion, Connection = _protector.Redact(record.Connection)
+                    };
+                package.Records.Add(cloned);
+            }
+            AtomicFileStore.WriteText(packagePath, JsonSerializer.Serialize(package, _jsonOptions));
+            message = $"Exported {package.Records.Count} connection(s).";
+            return true;
+        }
 
-            var json = JsonSerializer.Serialize(package, _jsonOptions);
-            await File.WriteAllTextAsync(path, json, cancellationToken).ConfigureAwait(false);
+        public bool ImportPackage(ConnectionStorageScope targetScope, string profileName, string packagePath,
+            ConnectionConflictPolicy conflictPolicy, bool importWhenEmptyOnly, out string message)
+        {
+            ThrowIfDisposed();
+            var json = AtomicFileStore.ReadText(packagePath);
+            if (json == null)
+            {
+                message = "Package file does not exist.";
+                return false;
+            }
+            var package = ParsePackage(json);
+            if (package.Records.Count == 0)
+            {
+                message = "Package does not contain records.";
+                return false;
+            }
+            var profile = NormalizeProfile(profileName);
+            var actions = new List<string>();
+            var applied = UpdateScopeRecords(targetScope, target =>
+            {
+                if (importWhenEmptyOnly && target.Any(r => string.Equals(r.ProfileName, profile, StringComparison.OrdinalIgnoreCase)))
+                    return false;
+                ApplyIncoming(target, package.Records, targetScope, profile, conflictPolicy, actions);
+                return true;
+            }, true);
+            message = applied ? string.Join(Environment.NewLine, actions) : "Import skipped because target profile is not empty.";
+            return applied;
+        }
+
+        private void ApplyIncoming(List<ConnectionCatalogRecord> target, IEnumerable<ConnectionCatalogRecord> source,
+            ConnectionStorageScope scope, string profile, ConnectionConflictPolicy policy, List<string> actions)
+        {
+            foreach (var record in source)
+            {
+                EnsureConnectionDefaults(record.Connection);
+                var existing = target.FirstOrDefault(r => string.Equals(r.ProfileName, profile, StringComparison.OrdinalIgnoreCase) &&
+                    (IsSameIdentity(r.Connection, record.Connection) ||
+                     string.Equals(r.Connection.ConnectionName, record.Connection.ConnectionName, StringComparison.OrdinalIgnoreCase)));
+                if (existing == null)
+                {
+                    target.Add(CloneRecordForScope(record, scope, profile));
+                    actions.Add($"Added:{record.Connection.ConnectionName}");
+                }
+                else ResolveConflict(target, existing, record, scope, profile, policy, actions);
+            }
+        }
+
+        private List<ConnectionCatalogRecord> ReadScopeRecords(ConnectionStorageScope scope)
+        {
+            var json = AtomicFileStore.ReadText(GetCatalogFilePath(scope));
+            return json == null ? new List<ConnectionCatalogRecord>() : ParsePackage(json, scope).Records;
+        }
+
+        private bool UpdateScopeRecords(ConnectionStorageScope scope, Func<List<ConnectionCatalogRecord>, bool> update, bool persist)
+        {
+            if (!persist) return update(ReadScopeRecords(scope));
+            var changed = false;
+            AtomicFileStore.UpdateText(GetCatalogFilePath(scope), current =>
+            {
+                var records = current == null ? new List<ConnectionCatalogRecord>() : ParsePackage(current, scope).Records;
+                ValidateExistingCredentials(records);
+                changed = update(records);
+                if (!changed) return current;
+                return JsonSerializer.Serialize(new ConnectionCatalogPackage
+                {
+                    PackageVersion = CurrentPackageVersion,
+                    SourceScope = scope.ToString(), Records = records, ExportedOnUtc = DateTime.UtcNow
+                }, _jsonOptions);
+            });
+            return changed;
+        }
+
+        private async Task<List<ConnectionCatalogRecord>> ReadScopeRecordsAsync(ConnectionStorageScope scope, CancellationToken token)
+        {
+            var json = await AtomicFileStore.ReadTextAsync(GetCatalogFilePath(scope), token).ConfigureAwait(false);
+            return json == null ? new List<ConnectionCatalogRecord>() : ParsePackage(json, scope).Records;
+        }
+
+        private async Task<bool> UpdateScopeRecordsAsync(ConnectionStorageScope scope,
+            Func<List<ConnectionCatalogRecord>, bool> update, bool persist, CancellationToken token)
+        {
+            if (!persist)
+                return update(await ReadScopeRecordsAsync(scope, token).ConfigureAwait(false));
+            var changed = false;
+            await AtomicFileStore.UpdateTextAsync(GetCatalogFilePath(scope), current =>
+            {
+                var records = current == null ? new List<ConnectionCatalogRecord>() : ParsePackage(current, scope).Records;
+                ValidateExistingCredentials(records);
+                changed = update(records);
+                if (!changed) return current;
+                return JsonSerializer.Serialize(new ConnectionCatalogPackage
+                {
+                    PackageVersion = CurrentPackageVersion,
+                    SourceScope = scope.ToString(), Records = records, ExportedOnUtc = DateTime.UtcNow
+                }, _jsonOptions);
+            }, token).ConfigureAwait(false);
+            return changed;
+        }
+
+        private ConnectionCatalogPackage ParsePackage(string json, ConnectionStorageScope? scope = null)
+        {
+            using var document = JsonDocument.Parse(json);
+            ValidateUniqueProperties(document.RootElement);
+            if (document.RootElement.ValueKind != JsonValueKind.Object ||
+                !document.RootElement.TryGetProperty(nameof(ConnectionCatalogPackage.Records), out var records) ||
+                records.ValueKind != JsonValueKind.Array)
+                throw new InvalidDataException("Connection catalog records are missing or malformed.");
+            var package = JsonSerializer.Deserialize<ConnectionCatalogPackage>(json, _jsonOptions);
+            if (package == null || (package.PackageVersion != "1.0" && package.PackageVersion != CurrentPackageVersion) || package.Records == null ||
+                package.Records.Any(r => r?.Connection == null || string.IsNullOrWhiteSpace(r.Connection.ConnectionName) ||
+                    string.IsNullOrWhiteSpace(r.ProfileName) || (r.PackageVersion != "1.0" && r.PackageVersion != CurrentPackageVersion) ||
+                    (r.PackageVersion == "1.0" && !string.IsNullOrEmpty(r.Connection.ProtectedCredentialPayload))) ||
+                (package.PackageVersion == "1.0" && package.Records.Any(r => r.PackageVersion != "1.0")))
+                throw new InvalidDataException("Unsupported or malformed connection catalog package.");
+            if (scope != null && (!string.Equals(package.SourceScope, scope.ToString(), StringComparison.OrdinalIgnoreCase) ||
+                package.Records.Any(r => !string.Equals(r.Scope, scope.ToString(), StringComparison.OrdinalIgnoreCase))))
+                throw new InvalidDataException("Connection catalog scope does not match its storage identity.");
+            return package;
+        }
+
+        private void ValidateExistingCredentials(IEnumerable<ConnectionCatalogRecord> records)
+        {
+            // Validate before any deletion/replacement. Redacted export deliberately does not require keys.
+            foreach (var record in records) _protector.Unprotect(record.Connection);
+        }
+
+        private static void ValidateUniqueProperties(JsonElement element)
+        {
+            if (element.ValueKind == JsonValueKind.Object)
+            {
+                var names = new HashSet<string>(StringComparer.Ordinal);
+                foreach (var property in element.EnumerateObject())
+                {
+                    if (!names.Add(property.Name)) throw new InvalidDataException("Connection catalog contains duplicate JSON properties.");
+                    ValidateUniqueProperties(property.Value);
+                }
+            }
+            else if (element.ValueKind == JsonValueKind.Array)
+                foreach (var item in element.EnumerateArray()) ValidateUniqueProperties(item);
         }
 
         private static string NormalizeProfile(string profileName)
@@ -450,43 +376,11 @@ namespace TheTechIdea.Beep.Winform.Controls
             return Path.Combine(directory, $"{scope.ToString().ToLowerInvariant()}.connections.json");
         }
 
-        private List<ConnectionCatalogRecord> ReadScopeRecords(ConnectionStorageScope scope)
+        private ConnectionCatalogRecord PrepareForPersist(ConnectionProperties connection, ConnectionStorageScope scope, string profileName)
         {
-            var path = GetCatalogFilePath(scope);
-            if (!File.Exists(path))
-            {
-                return new List<ConnectionCatalogRecord>();
-            }
-
-            try
-            {
-                var loaded = JsonSerializer.Deserialize<ConnectionCatalogPackage>(File.ReadAllText(path), _jsonOptions);
-                return loaded?.Records ?? new List<ConnectionCatalogRecord>();
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"[JsonConnectionStorageProvider.ReadScopeRecords] {scope}: {ex.GetType().Name} - {ex.Message}");
-                return new List<ConnectionCatalogRecord>();
-            }
-        }
-
-        private void WriteScopeRecords(ConnectionStorageScope scope, List<ConnectionCatalogRecord> records)
-        {
-            var path = GetCatalogFilePath(scope);
-            var package = new ConnectionCatalogPackage
-            {
-                SourceScope = scope.ToString(),
-                Records = records ?? new List<ConnectionCatalogRecord>(),
-                ExportedOnUtc = DateTime.UtcNow
-            };
-
-            File.WriteAllText(path, JsonSerializer.Serialize(package, _jsonOptions));
-        }
-
-        private static ConnectionCatalogRecord PrepareForPersist(ConnectionProperties connection, ConnectionStorageScope scope, string profileName)
-        {
-            var sanitized = ConnectionSecretProtector.Encrypt(connection);
-            EnsureConnectionDefaults(sanitized);
+            var prepared = _protector.Unprotect(connection);
+            EnsureConnectionDefaults(prepared);
+            var sanitized = _protector.Protect(prepared);
             return new ConnectionCatalogRecord
             {
                 Scope = scope.ToString(),
@@ -494,7 +388,7 @@ namespace TheTechIdea.Beep.Winform.Controls
                 SourceStore = scope.ToString(),
                 SourceProfile = profileName,
                 ExportedOnUtc = DateTime.UtcNow,
-                PackageVersion = "1.0",
+                PackageVersion = CurrentPackageVersion,
                 Connection = sanitized
             };
         }
@@ -534,8 +428,15 @@ namespace TheTechIdea.Beep.Winform.Controls
             return string.Equals(left.ConnectionName, right.ConnectionName, StringComparison.OrdinalIgnoreCase);
         }
 
-        private static ConnectionCatalogRecord CloneRecordForScope(ConnectionCatalogRecord source, ConnectionStorageScope scope, string profileName)
+        private ConnectionCatalogRecord CloneRecordForScope(ConnectionCatalogRecord source, ConnectionStorageScope scope, string profileName, bool rename = false)
         {
+            var plaintext = _protector.Unprotect(source.Connection);
+            EnsureConnectionDefaults(plaintext);
+            if (rename)
+            {
+                plaintext.ConnectionName += "_Imported";
+                plaintext.GuidID = Guid.NewGuid().ToString("D");
+            }
             return new ConnectionCatalogRecord
             {
                 Scope = scope.ToString(),
@@ -543,12 +444,12 @@ namespace TheTechIdea.Beep.Winform.Controls
                 SourceStore = source.Scope,
                 SourceProfile = source.ProfileName,
                 ExportedOnUtc = DateTime.UtcNow,
-                PackageVersion = source.PackageVersion,
-                Connection = ConnectionSecretProtector.Encrypt(ConnectionSecretProtector.Decrypt(source.Connection))
+                PackageVersion = CurrentPackageVersion,
+                Connection = _protector.Protect(plaintext)
             };
         }
 
-        private static void ResolveConflict(
+        private void ResolveConflict(
             ICollection<ConnectionCatalogRecord> targetRecords,
             ConnectionCatalogRecord existing,
             ConnectionCatalogRecord incoming,
@@ -564,9 +465,7 @@ namespace TheTechIdea.Beep.Winform.Controls
                     break;
                 case ConnectionConflictPolicy.Rename:
                 {
-                    var renamed = CloneRecordForScope(incoming, targetScope, profileName);
-                    renamed.Connection.ConnectionName = $"{incoming.Connection.ConnectionName}_Imported";
-                    renamed.Connection.GuidID = Guid.NewGuid().ToString("D");
+                    var renamed = CloneRecordForScope(incoming, targetScope, profileName, rename: true);
                     targetRecords.Add(renamed);
                     actionLog.Add($"Renamed:{incoming.Connection.ConnectionName}");
                     break;

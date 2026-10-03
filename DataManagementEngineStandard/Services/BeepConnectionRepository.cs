@@ -22,6 +22,8 @@ namespace TheTechIdea.Beep.Winform.Controls
         };
 
         public event EventHandler? ConnectionsChanged;
+        /// <summary>Observer errors after a committed change; diagnostic observer errors are isolated too.</summary>
+        public event EventHandler<ConnectionCatalogNotificationFailureEventArgs>? NotificationFailed;
         public ConnectionStorageScope ActiveScope { get; set; } = ConnectionStorageScope.Project;
         public string ActiveProfileName { get; set; } = "Default";
         public bool UseScopePrecedence { get; set; } = true;
@@ -49,19 +51,22 @@ namespace TheTechIdea.Beep.Winform.Controls
             }
 
             var scope = ActiveScope;
+            var profile = ActiveProfileName;
+            EventHandler? observers;
             lock (GetScopeLock(scope))
             {
                 EnsureConnectionDefaults(connection);
-                var changed = _storageProvider.AddOrUpdate(scope, ActiveProfileName, connection, persist);
+                var changed = _storageProvider.AddOrUpdate(scope, profile, connection, persist);
 
                 if (!changed)
                 {
                     return false;
                 }
 
-                ConnectionsChanged?.Invoke(this, EventArgs.Empty);
-                return true;
+                observers = ConnectionsChanged;
             }
+            NotifyCommitted(nameof(AddOrUpdate), scope, observers);
+            return true;
         }
 
         public bool Remove(string connectionName, bool persist = true)
@@ -72,17 +77,20 @@ namespace TheTechIdea.Beep.Winform.Controls
             }
 
             var scope = ActiveScope;
+            var profile = ActiveProfileName;
+            EventHandler? observers;
             lock (GetScopeLock(scope))
             {
-                var removed = _storageProvider.Remove(scope, ActiveProfileName, connectionName, persist);
+                var removed = _storageProvider.Remove(scope, profile, connectionName, persist);
                 if (!removed)
                 {
                     return false;
                 }
 
-                ConnectionsChanged?.Invoke(this, EventArgs.Empty);
-                return true;
+                observers = ConnectionsChanged;
             }
+            NotifyCommitted(nameof(Remove), scope, observers);
+            return true;
         }
 
         public bool Save(List<ConnectionProperties> connections)
@@ -93,32 +101,34 @@ namespace TheTechIdea.Beep.Winform.Controls
         bool IConnectionCatalogRepository.Save(IReadOnlyList<ConnectionProperties> connections)
         {
             var scope = ActiveScope;
+            var profile = ActiveProfileName;
+            EventHandler? observers;
             lock (GetScopeLock(scope))
             {
-                var saved = _storageProvider.SaveConnections(scope, ActiveProfileName, connections ?? new List<ConnectionProperties>());
+                var saved = _storageProvider.SaveConnections(scope, profile, connections ?? new List<ConnectionProperties>());
                 if (!saved)
                 {
                     return false;
                 }
 
-                ConnectionsChanged?.Invoke(this, EventArgs.Empty);
-                return true;
+                observers = ConnectionsChanged;
             }
+            NotifyCommitted(nameof(Save), scope, observers);
+            return true;
         }
 
         public bool Promote(ConnectionStorageScope targetScope, ConnectionConflictPolicy conflictPolicy, out string message)
         {
             var sourceScope = ActiveScope;
+            var profile = ActiveProfileName;
+            EventHandler? observers;
             lock (GetScopeLock(sourceScope))
             {
-                var ok = _storageProvider.Promote(sourceScope, targetScope, ActiveProfileName, conflictPolicy, out message);
-                if (ok)
-                {
-                    ConnectionsChanged?.Invoke(this, EventArgs.Empty);
-                }
-
-                return ok;
+                if (!_storageProvider.Promote(sourceScope, targetScope, profile, conflictPolicy, out message)) return false;
+                observers = ConnectionsChanged;
             }
+            NotifyCommitted(nameof(Promote), sourceScope, observers);
+            return true;
         }
 
         public bool ExportPackage(string packagePath, bool includeEncryptedSecretsOnly, out string message)
@@ -137,24 +147,51 @@ namespace TheTechIdea.Beep.Winform.Controls
             out string message)
         {
             var scope = ActiveScope;
+            var profile = ActiveProfileName;
+            EventHandler? observers;
             lock (GetScopeLock(scope))
             {
-                var ok = _storageProvider.ImportPackage(scope, ActiveProfileName, packagePath, conflictPolicy, importWhenEmptyOnly, out message);
-                if (ok)
-                {
-                    ConnectionsChanged?.Invoke(this, EventArgs.Empty);
-                }
-
-                return ok;
+                if (!_storageProvider.ImportPackage(scope, profile, packagePath, conflictPolicy, importWhenEmptyOnly, out message)) return false;
+                observers = ConnectionsChanged;
             }
+            NotifyCommitted(nameof(ImportPackage), scope, observers);
+            return true;
+        }
+
+        private void NotifyCommitted(string operation, ConnectionStorageScope scope, EventHandler? observers)
+        {
+            if (observers == null) return;
+            // The captured list runs outside scope locks. Concurrent changes may notify out of commit order.
+            foreach (EventHandler observer in observers.GetInvocationList())
+            {
+                try { observer(this, EventArgs.Empty); }
+                catch (Exception ex)
+                {
+                    var failure = new ConnectionCatalogNotificationFailureEventArgs(operation, scope, ex.GetType().Name);
+                    ReportObserverFailure(failure.ExceptionType);
+                    var diagnostics = NotificationFailed;
+                    if (diagnostics == null) continue;
+                    foreach (EventHandler<ConnectionCatalogNotificationFailureEventArgs> diagnostic in diagnostics.GetInvocationList())
+                    {
+                        try { diagnostic(this, failure); }
+                        catch (Exception diagnosticError) { ReportObserverFailure(diagnosticError.GetType().Name); }
+                    }
+                }
+            }
+        }
+
+        private void ReportObserverFailure(string exceptionType)
+        {
+            // Observer and logger messages may contain credentials. Neither can change the durable result.
+            try { _beepService.lg?.WriteLog($"Connection catalog observer failed ({exceptionType}); storage outcome is unchanged."); }
+            catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Connection catalog observer logging failed ({ex.GetType().Name})."); }
         }
 
         private object GetScopeLock(ConnectionStorageScope scope)
         {
             if (!_scopeLocks.TryGetValue(scope, out var lockObj))
             {
-                lockObj = new object();
-                _scopeLocks[scope] = lockObj;
+                throw new ArgumentOutOfRangeException(nameof(scope));
             }
 
             return lockObj;

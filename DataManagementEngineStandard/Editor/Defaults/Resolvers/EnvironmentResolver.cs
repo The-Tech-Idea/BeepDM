@@ -31,6 +31,12 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
             
             try
             {
+                if (RequiredDefaultResolution.Current != null && GetType() == typeof(EnvironmentResolver))
+                {
+                    RequiredBuiltInRule.Validate(this, rule);
+                    return RequiredEnvironmentRule.Resolve(rule);
+                }
+
                 return upperRule switch
                 {
                     "TEMP" or "TEMPPATH" => Environment.GetEnvironmentVariable("TEMP") ?? Environment.GetEnvironmentVariable("TMP"),

@@ -179,7 +179,7 @@ namespace TheTechIdea.Beep.Editor.Migration
             {
                 if (MigrateDataSource == null || _editor == null) return null;
                 if (MigrateDataSource.DatasourceType != type) return null;
-                return _editor.GetMigrationProvider(MigrateDataSource)?.Capabilities;
+                return ResolveProvider()?.Capabilities;
             }
             catch
             {

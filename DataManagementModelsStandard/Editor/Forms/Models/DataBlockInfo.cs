@@ -6,10 +6,22 @@ using TheTechIdea.Beep.DataBase;
 namespace TheTechIdea.Beep.Editor.UOWManager.Models
 {
     /// <summary>
-    /// Information about a registered data block
+    /// Information about a registered data block.
+    /// Permission setters configure the block; getters include its runtime security overlay.
     /// </summary>
     public class DataBlockInfo
     {
+        private bool _configuredInsert = true, _configuredUpdate = true, _configuredDelete = true, _configuredQuery = true;
+        private RuntimePermissionOverlay _securityPermissions;
+
+        internal bool ConfiguredInsertAllowed => _configuredInsert;
+        internal bool ConfiguredUpdateAllowed => _configuredUpdate;
+        internal bool ConfiguredDeleteAllowed => _configuredDelete;
+        internal bool ConfiguredQueryAllowed => _configuredQuery;
+
+        internal void PublishSecurityPermissions(Guid owner, long revision, bool query, bool insert, bool update, bool delete) =>
+            RuntimePermissionOverlay.Publish(ref _securityPermissions,
+                new RuntimePermissionOverlay(owner, revision, query, insert, update, delete, true, true));
         /// <summary>Gets or sets the name of the block</summary>
         public string BlockName { get; set; }
         
@@ -41,16 +53,16 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Models
         public string ForeignKeyField { get; set; }
         
         /// <summary>Gets or sets whether insert operations are allowed (Oracle Forms: INSERT_ALLOWED)</summary>
-        public bool InsertAllowed { get; set; } = true;
+        public bool InsertAllowed { get => _configuredInsert && (System.Threading.Volatile.Read(ref _securityPermissions)?.Insert ?? true); set => _configuredInsert = value; }
         
         /// <summary>Gets or sets whether update operations are allowed (Oracle Forms: UPDATE_ALLOWED)</summary>
-        public bool UpdateAllowed { get; set; } = true;
+        public bool UpdateAllowed { get => _configuredUpdate && (System.Threading.Volatile.Read(ref _securityPermissions)?.Update ?? true); set => _configuredUpdate = value; }
         
         /// <summary>Gets or sets whether delete operations are allowed (Oracle Forms: DELETE_ALLOWED)</summary>
-        public bool DeleteAllowed { get; set; } = true;
+        public bool DeleteAllowed { get => _configuredDelete && (System.Threading.Volatile.Read(ref _securityPermissions)?.Delete ?? true); set => _configuredDelete = value; }
         
         /// <summary>Gets or sets whether query operations are allowed (Oracle Forms: QUERY_ALLOWED)</summary>
-        public bool QueryAllowed { get; set; } = true;
+        public bool QueryAllowed { get => _configuredQuery && (System.Threading.Volatile.Read(ref _securityPermissions)?.Query ?? true); set => _configuredQuery = value; }
         
         /// <summary>Gets or sets a default WHERE clause appended to every query</summary>
         public string DefaultWhereClause { get; set; } = string.Empty;
@@ -75,7 +87,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Models
         /// <summary>Lazy-load strategy for this block.</summary>
         public LazyLoadMode LazyLoadMode { get; set; } = LazyLoadMode.None;
 
-        /// <summary>Current 1-based page number (used when paging is active).</summary>
+        /// <summary>Current 1-based local cursor page. Long provider pages are reported in FormQueryResult.ProviderPage.</summary>
         public int CurrentPage { get; set; } = 1;
         
         /// <summary>Gets or sets extended properties for the block</summary>

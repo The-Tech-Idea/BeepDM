@@ -64,6 +64,8 @@ namespace TheTechIdea.Beep.Extensions
             ["less than or equal"] = "<=",
 
             ["like"] = "like",
+            ["notlike"] = "not like",
+            ["not like"] = "not like",
             ["contains"] = "contains",
             ["startswith"] = "startswith",
             ["startwith"] = "startswith",
@@ -322,9 +324,10 @@ namespace TheTechIdea.Beep.Extensions
                     case "startswith":
                     case "endswith":
                     case "like":
+                    case "not like":
                     {
                         var p = parameterBase;
-                        clauses.Add($"{quotedField} LIKE {parameterPrefix}{p}");
+                        clauses.Add($"{quotedField} {(op == "not like" ? "NOT LIKE" : "LIKE")} {parameterPrefix}{p}");
                         parameters[p] = op switch
                         {
                             "contains" => $"%{filter.FilterValue}%",
@@ -418,9 +421,10 @@ namespace TheTechIdea.Beep.Extensions
                     case "startswith":
                     case "endswith":
                     case "like":
+                    case "not like":
                     {
                         var p = parameterBase;
-                        clauses.Add($"{quotedField} LIKE {parameterPrefix}{p}");
+                        clauses.Add($"{quotedField} {(op == "not like" ? "NOT LIKE" : "LIKE")} {parameterPrefix}{p}");
                         parameters[p] = op switch
                         {
                             "contains" => $"%{filter.FilterValue}%",
@@ -658,17 +662,50 @@ namespace TheTechIdea.Beep.Extensions
             return token;
         }
 
-        private static IEnumerable<string> SplitCollectionValues(string value)
-        {
-            if (string.IsNullOrWhiteSpace(value))
-            {
-                return Enumerable.Empty<string>();
-            }
+        private static IEnumerable<string> SplitCollectionValues(string value) => ParseCollectionFilterValues(value);
 
-            return value
-                .Split(new[] { ',', ';', '|' }, StringSplitOptions.RemoveEmptyEntries)
-                .Select(v => v.Trim())
-                .Where(v => !string.IsNullOrWhiteSpace(v));
+        /// <summary>Decodes delimited filter values, preserving quoted commas and empty strings.</summary>
+        public static IReadOnlyList<string> ParseCollectionFilterValues(string value)
+        {
+            var values = new List<string>();
+            if (string.IsNullOrWhiteSpace(value)) return values;
+            if (value.Length > 1048576) throw new FormatException("Collection filter exceeds its limit.");
+            int position = 0;
+            while (position < value.Length)
+            {
+                while (position < value.Length && char.IsWhiteSpace(value[position])) position++;
+                bool quoted = position < value.Length && (value[position] == '\'' || value[position] == '"');
+                string item;
+                if (quoted)
+                {
+                    var quote = value[position++];
+                    var text = new System.Text.StringBuilder();
+                    bool closed = false;
+                    while (position < value.Length)
+                    {
+                        var ch = value[position++];
+                        if (ch != quote) { text.Append(ch); continue; }
+                        if (position < value.Length && value[position] == quote) { text.Append(quote); position++; continue; }
+                        closed = true; break;
+                    }
+                    if (!closed) throw new FormatException("Unterminated collection filter quote.");
+                    while (position < value.Length && char.IsWhiteSpace(value[position])) position++;
+                    item = text.ToString();
+                }
+                else
+                {
+                    var start = position;
+                    while (position < value.Length && value[position] != ',' && value[position] != ';' && value[position] != '|') position++;
+                    item = value.Substring(start, position - start).Trim();
+                }
+                if (quoted || item.Length > 0) values.Add(item);
+                if (values.Count > 4096) throw new FormatException("Collection filter count exceeds its limit.");
+                if (position == value.Length) break;
+                if (value[position] != ',' && value[position] != ';' && value[position] != '|')
+                    throw new FormatException("Trailing collection filter syntax.");
+                position++;
+            }
+            return values;
         }
 
         private static object ConvertFilterValue(string rawValue, string valueTypeName, Type fieldType)

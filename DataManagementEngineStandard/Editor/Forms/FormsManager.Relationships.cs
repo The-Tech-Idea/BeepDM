@@ -189,25 +189,17 @@ namespace TheTechIdea.Beep.Editor.UOWManager
 
         /// <summary>
         /// Synchronizes detail blocks when master record changes.
-        /// Fires ON-POPULATE-DETAILS trigger before delegating to the relationship manager.
+        /// Uses captured, serialized detail requests and propagates incomplete synchronization as a failure.
         /// </summary>
         /// <param name="masterBlockName">Master block whose detail blocks should be synchronized.</param>
         /// <param name="ct">
-        /// Cancellation token. Propagated through the detail
-        /// hierarchy walk; observed at the start of each
-        /// relationship iteration.
+        /// Cancellation token. Passed to the trigger and observed at admission,
+        /// queueing and safe traversal boundaries. Legacy UoW Get cannot be forcibly cancelled.
         /// </param>
         public async Task SynchronizeDetailBlocksAsync(string masterBlockName, CancellationToken ct = default)
         {
-            // Fire ON-POPULATE-DETAILS to allow triggers to intervene
-            await _triggerManager.FireBlockTriggerAsync(
-                TriggerType.OnPopulateDetails, masterBlockName,
-                TriggerContext.ForBlock(TriggerType.OnPopulateDetails, masterBlockName, null, _dmeEditor)).ConfigureAwait(false);
-
-            await SynchronizeDetailHierarchyAsync(
-                masterBlockName,
-                new HashSet<string>(StringComparer.OrdinalIgnoreCase),
-                ct);
+            var result = await SynchronizeDetailBlocksWithOutcomeAsync(masterBlockName, ct).ConfigureAwait(false);
+            if (result.Flag != Errors.Ok) throw new InvalidOperationException(result.Message, result.Ex);
         }
 
         /// <summary>
@@ -220,33 +212,8 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         /// </summary>
         public async Task SynchronizeDeferredDetailAsync(string masterBlockName, string detailBlockName, CancellationToken ct = default)
         {
-            var relationship = GetActiveRelationships(masterBlockName)
-                .FirstOrDefault(r => string.Equals(r.DetailBlockName, detailBlockName, StringComparison.OrdinalIgnoreCase));
-            if (relationship == null || relationship.Coordination != DetailCoordination.Deferred)
-                return;
-
-            _pendingDeferredSync.TryRemove(detailBlockName, out _);
-
-            // Reuse the already-hardened per-relationship sync logic in
-            // SynchronizeDetailHierarchyAsync (culture-invariant filter
-            // values, missing-master-value clearing, per-relationship error
-            // isolation — see its own B3/B4/B8 comments) rather than a second
-            // copy of it. Flipping the mode to Immediate for one pass means
-            // any OTHER Immediate sibling relationship under the same master
-            // is harmlessly re-queried too; that's a redundant refresh, not
-            // an incorrect one, and simpler than extracting the inner loop
-            // body just to avoid it.
-            var originalMode = relationship.Coordination;
-            relationship.Coordination = DetailCoordination.Immediate;
-            try
-            {
-                await SynchronizeDetailHierarchyAsync(
-                    masterBlockName, new HashSet<string>(StringComparer.OrdinalIgnoreCase), ct).ConfigureAwait(false);
-            }
-            finally
-            {
-                relationship.Coordination = originalMode;
-            }
+            var result = await SynchronizeDeferredDetailWithOutcomeAsync(masterBlockName, detailBlockName, ct).ConfigureAwait(false);
+            if (result.Flag != Errors.Ok) throw new InvalidOperationException(result.Message, result.Ex);
         }
 
         /// <summary>
@@ -308,44 +275,44 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         private void RemoveBlockRelationships(string blockName)
         {
             var blockInfo = GetBlock(blockName);
-            if (blockInfo == null)
-                return;
-
+            var details = new List<string>();
+            var masters = new List<string>();
             lock (_lockObject)
             {
                 if (_relationships.TryRemove(blockName, out var ownedRelationships))
-                {
-                    foreach (var relationship in ownedRelationships)
-                    {
-                        var detailBlock = GetBlock(relationship.DetailBlockName);
-                        if (detailBlock != null)
-                        {
-                            detailBlock.MasterBlockName = null;
-                            detailBlock.MasterKeyField = null;
-                            detailBlock.ForeignKeyField = null;
-                        }
-                    }
-                }
-
+                    details.AddRange(ownedRelationships.Select(r => r.DetailBlockName));
                 foreach (var kvp in _relationships.ToList())
                 {
                     kvp.Value.RemoveAll(r => string.Equals(r.DetailBlockName, blockName, StringComparison.OrdinalIgnoreCase));
                     if (!kvp.Value.Any())
                     {
-                        var masterBlock = GetBlock(kvp.Key);
-                        if (masterBlock != null)
-                        {
-                            masterBlock.IsMasterBlock = false;
-                        }
+                        masters.Add(kvp.Key);
                         _relationships.TryRemove(kvp.Key, out _);
                     }
                 }
             }
-
-            blockInfo.MasterBlockName = null;
-            blockInfo.MasterKeyField = null;
-            blockInfo.ForeignKeyField = null;
-            blockInfo.IsMasterBlock = GetDetailBlocks(blockName).Any();
+            // Unregister retires lookup first. Graph removal cannot depend on finding the retired root.
+            foreach (var name in details)
+            {
+                var detail = GetBlock(name);
+                if (detail == null || !string.Equals(detail.MasterBlockName, blockName, StringComparison.OrdinalIgnoreCase)) continue;
+                detail.MasterBlockName = null;
+                detail.MasterKeyField = null;
+                detail.ForeignKeyField = null;
+                _pendingDeferredSync.TryRemove(name, out _);
+            }
+            foreach (var name in masters)
+            {
+                var master = GetBlock(name);
+                if (master != null) master.IsMasterBlock = GetDetailBlocks(name).Any();
+            }
+            if (blockInfo != null)
+            {
+                blockInfo.MasterBlockName = null;
+                blockInfo.MasterKeyField = null;
+                blockInfo.ForeignKeyField = null;
+                blockInfo.IsMasterBlock = GetDetailBlocks(blockName).Any();
+            }
         }
 
         /// <summary>All registered blocks. Standalone filtering requires per-block form tracking (deferred).</summary>

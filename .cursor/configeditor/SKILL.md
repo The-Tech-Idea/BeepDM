@@ -32,6 +32,24 @@ Use this skill when working with BeepDM configuration persistence and the manage
 - Keep in-memory collections and on-disk configuration synchronized.
 - Provide the metadata needed by datasource creation, migrations, ETL, and UI tooling.
 
+## Acknowledged Migration History
+- Use optional Models `IMigrationHistoryPersistence` on ConfigEditor for `SaveMigrationHistoryAcknowledged`/`AppendMigrationRecordAcknowledged`. Inspect `PersistenceWriteResult.Status` (Saved, Failed, Cancelled, Unsupported); legacy void history save/append now throw on failure.
+- History reads return empty only for a missing file, not corrupt/unreadable/empty existing state. Append coordinates the full read/validate/write across cooperating instances/processes; whole-history Save is explicit replacement, not stale-snapshot merging.
+- Built-in JsonLoader implements `IJsonSnapshotCodec` for stable complete snapshots. Custom loaders/stores need the explicit capabilities; never assume a void serializer persisted successfully.
+- New files are `Migrations/history-v1-<SHA256 of trimmed invariant-uppercase datasource name>.json` with StorageFormatVersion=1. Validate stored name/type before updating.
+- Valid legacy sanitized-name history is promoted on first update without altering original bytes; foreign/corrupt identity is rejected. After promotion, only the canonical file is authoritative. Do not mix old writers or delete legacy evidence to bypass validation.
+- See `DataManagementEngineStandard/Services/Persistence/README.md` for legacy case/OS discovery, local-filesystem, cancellation and power-loss limits. Broader configuration/BeepSync persistence remains unfinished.
+
+## Protected Connection Persistence
+- ConfigEditor implements optional Models `IConnectionConfigurationPersistence`. Inspect `SaveDataConnectionsAcknowledged(token).Status`; legacy `SaveDataconnectionsValues()` throws on failed saves. Custom catalog Save(false) is failure, never permission for raw-file fallback.
+- Fallback snapshots and built-in catalogs use captured per-runtime `IConnectionSecretProtector`. Existing corrupt/undecryptable state blocks replacement; load changes live state only after complete validation. Whole-snapshot Save is explicit replacement, not stale-edit merging.
+- Default `ConnectionCredentialProtection` uses Windows DPAPI CurrentUser. For portable hosts, inject `AesGcmConnectionCredentialCipher` with a host-owned `IConnectionCredentialKeyProvider` through `BeepServiceOptions.ConnectionSecretProtector` before resolution/configuration. Keep old keys during rotation; never store keys with connections or silently use plaintext.
+- Coverage is a defined whitelist: named secrets plus ConnectionString, ParameterList, HTTP/header/parameter containers and authentication URLs. Arbitrary labels/metadata are not a vault. Returned snapshots deep-clone covered containers; runtime drivers need Unprotect, not ciphertext.
+- Built-in catalog writes/exports use package version 2.0. Legacy 1.0 plaintext/named-field DPAPI can be read/upgraded; 1.0 records carrying the new opaque payload are rejected. Upgrade every reader/writer; fallback arrays are not version-gated against old loaders.
+- Encrypted export decrypts/reprotects with the selected key policy; it is not automatically portable across users/hosts. Redacted export clears whole covered containers and the payload without requiring keys, including operational URLs/strings that hosts must reconfigure.
+- BeepConnectionRepository invokes captured subscribers individually outside scope locks. Observer errors cannot reclassify a saved write; concrete NotificationFailed reports operation/scope/exception type only. Notifications are synchronous refresh signals, not ordered durable snapshots.
+- Read `DataManagementEngineStandard/Security/README.md` for exact coverage, formats, key/identity binding, recovery and scope/platform limits. Windows process tests do not establish Unix, arbitrary adapter or all-route security guarantees.
+
 ## Typical Workflow
 1. Access `editor.ConfigEditor`; avoid creating ad-hoc config stores once the editor exists.
 2. Load the relevant collection such as `LoadDataConnectionsValues()`.

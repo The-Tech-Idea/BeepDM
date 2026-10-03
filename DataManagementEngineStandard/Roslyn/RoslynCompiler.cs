@@ -17,10 +17,8 @@ using System.Collections.Concurrent;
 
 namespace TheTechIdea.Beep.Roslyn
 {
-    public static class RoslynCompiler
+    public static partial class RoslynCompiler
     {
-         // Dictionary to store compiled types and their assemblies
-          private static readonly Dictionary<string, Tuple<Type, Assembly>> CompiledTypes = new Dictionary<string, Tuple<Type, Assembly>>();
         // Create a central method for managing references instead of duplicating across multiple methods
         private static List<MetadataReference> GetCommonReferences(bool includeAdditionalReferences = false)
         {
@@ -235,78 +233,6 @@ namespace TheTechIdea.Beep.Roslyn
             {
                 Console.WriteLine($"Compilation successful! Assembly generated at '{outputFile}'");
                 return true;
-            }
-        }
-        public static Tuple<Type, Assembly> CompileClassTypeandAssembly(string classname, string code)
-        {
-            if (CompiledTypes.TryGetValue(classname, out var existingType))
-            {
-                return existingType;
-            }
-            SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(code);
-
-            string assemblyName = Path.GetRandomFileName();
-
-            // Use the shared reference set.
-            //
-            // This method built its own five-entry array and ignored
-            // GetCommonReferences, so it had no DataAnnotations reference — and
-            // it is the path DMTypeBuilder uses, which is how the RDBMS drivers
-            // build a row type. An entity generated from a real database schema
-            // carries [Key]/[Required]/[MaxLength], so the compile failed, this
-            // returned null, and DMTypeBuilder threw "Failed to compile type 'x'
-            // in namespace 'y'" — with the actual C# errors going to
-            // Console.Error, where no log ever sees them. A form over a SQL
-            // table could not build its row type at all. (2026-08-02)
-            var references = GetCommonReferences(includeAdditionalReferences: true);
-            CSharpCompilation compilation = CSharpCompilation.Create(
-                assemblyName,
-                syntaxTrees: new[] { syntaxTree },
-                references: references,
-                options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
-
-            using (var ms = new MemoryStream())
-            {
-                EmitResult result = compilation.Emit(ms);
-
-                if (!result.Success)
-                {
-                    IEnumerable<Diagnostic> failures = result.Diagnostics.Where(diagnostic =>
-                        diagnostic.IsWarningAsError ||
-                        diagnostic.Severity == DiagnosticSeverity.Error);
-
-                    // Throw with the diagnostics rather than returning null.
-                    //
-                    // Every caller treats null as fatal and reports a message
-                    // that names neither the error nor the line, while the real
-                    // C# errors went to Console.Error — invisible to any log.
-                    // Failing loudly with the reason attached is the difference
-                    // between "type generation is broken" and a specific missing
-                    // reference. (2026-08-02)
-                    var detail = string.Join("; ",
-                        failures.Select(d => $"{d.Id}: {d.GetMessage()}").Take(5));
-
-                    foreach (Diagnostic diagnostic in failures)
-                    {
-                        Console.Error.WriteLine("{0}: {1}", diagnostic.Id, diagnostic.GetMessage());
-                    }
-
-                    throw new InvalidOperationException(
-                        $"Could not compile generated type '{classname}': {detail}");
-                }
-                else
-                {
-                    ms.Seek(0, SeekOrigin.Begin);
-                    Assembly assembly = Assembly.Load(ms.ToArray());
-                    var compiledType = assembly.GetTypes().FirstOrDefault(p => p.Name.Contains(classname));
-
-                    // Store the compiled type and assembly in the dictionary
-                    if (compiledType != null)
-                    {
-                        CompiledTypes[classname] = new Tuple<Type, Assembly>(compiledType, assembly);
-                    }
-                    return new Tuple<Type, Assembly>(assembly.GetTypes().FirstOrDefault(p => p.Name.Contains(classname)), assembly);  // Gets first type. Adjust this if you need to get a specific type.
-                }
             }
         }
         public static Type CompileGetClassType(string filepath, string classname, string code)
@@ -777,7 +703,7 @@ namespace TheTechIdea.Beep.Roslyn
 
         public static bool RemoveFromCache(string className)
         {
-            return CompiledTypes.Remove(className, out _);
+            return CompiledTypes.RemoveWhere(key => string.Equals(key.RequestedType, className, StringComparison.Ordinal));
         }
         // Add ability to generate PDB files for debugging capabilities
         public static bool CompileWithDebuggingInfo(string sourceCode, string outputFile)

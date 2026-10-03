@@ -1,8 +1,8 @@
 using System;
-using System.Collections.Concurrent;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.Utilities;
+using TheTechIdea.Beep.Roslyn;
 
 namespace TheTechIdea.Beep.Tools
 {
@@ -12,15 +12,11 @@ namespace TheTechIdea.Beep.Tools
     /// </summary>
     /// <remarks>
     /// <para>
-    /// <b>Every datasource's <c>GetEntityType</c> should call this.</b> They were
-    /// each solving it differently and none of them correctly:
-    /// <c>JsonMultiFileDataSource</c> used <c>DMTypeBuilder</c>, which emits
-    /// types deriving from <c>object</c>; <c>InMemoryCacheDataSource</c> returned
-    /// <c>Dictionary&lt;string, object&gt;</c> with a "could implement dynamic
-    /// type creation later" note.
+    /// Generates Entity-derived types for datasource GetEntityType consumers.
+    /// Captures metadata and keys by generated source identity, not entity name alone.
     /// </para>
     /// <para>
-    /// That matters because <c>UnitofWork&lt;T&gt;</c> is constrained to
+    /// <c>UnitofWork&lt;T&gt;</c> is constrained to
     /// <c>T : Entity, new()</c> and <c>UnitOfWorkFactory</c> reaches it through
     /// <c>MakeGenericType</c>. A type that does not derive from <c>Entity</c>
     /// cannot back a unit of work, so a block over such a datasource registers
@@ -34,10 +30,8 @@ namespace TheTechIdea.Beep.Tools
     /// </remarks>
     public static class EntityTypeFactory
     {
-        // Keyed by datasource + entity: two blocks over the same entity share a
-        // type, and re-opening a form must not recompile it.
-        private static readonly ConcurrentDictionary<string, Type> Cache =
-            new ConcurrentDictionary<string, Type>(StringComparer.OrdinalIgnoreCase);
+        private readonly record struct TypeIdentity(string DataSource, string Entity, string SourceHash);
+        private static readonly BoundedCompilationCache<TypeIdentity, Type> Cache = new(256);
 
         /// <summary>Namespace the generated entity classes are emitted into.</summary>
         public const string GeneratedNamespace = "TheTechIdea.Beep.Generated.Entities";
@@ -57,50 +51,35 @@ namespace TheTechIdea.Beep.Tools
             if (structure.Fields == null || structure.Fields.Count == 0) return null;
             if (string.IsNullOrWhiteSpace(structure.EntityName)) return null;
 
-            var key = $"{structure.DataSourceID}.{structure.EntityName}";
-
-            return Cache.GetOrAdd(key, _ => Build(editor, structure));
-        }
-
-        private static Type Build(IDMEEditor editor, EntityStructure structure)
-        {
             try
             {
+                var captured = EntityMetadataSnapshot.Capture(structure);
                 var creator = new ClassCreator(editor);
 
                 // CreateEntityClass — NOT CreateClass. The latter emits a plain
                 // POCO with no base type, which fails the T : Entity constraint
                 // at MakeGenericType with a message that names neither.
                 var code = creator.CreateEntityClass(
-                    structure,
+                    captured,
                     usingHeader: null,
                     extraCode: null,
                     outputPath: null,
                     namespaceString: GeneratedNamespace,
                     generateFiles: false);
 
-                // CreateEntityClass names the class after the entity.
-                var type = creator.CreateTypeFromCode(
-                    code, $"{GeneratedNamespace}.{structure.EntityName}");
-
-                if (type == null)
+                var key = new TypeIdentity(captured.DataSourceID, captured.EntityName, RoslynCompiler.GeneratedSourceHash(code));
+                return Cache.GetOrAdd(key, () =>
                 {
-                    editor.AddLogMessage(
-                        "Beep",
-                        $"EntityTypeFactory: could not build a runtime type for " +
-                        $"'{structure.EntityName}'.",
-                        DateTime.Now, 0, null, Errors.Failed);
-                }
-
-                return type;
+                    var type = RoslynCompiler.CompileClassTypeandAssembly($"{GeneratedNamespace}.{captured.EntityName}", code).Item1;
+                    return type ?? throw new InvalidOperationException("Generated source does not contain the requested entity type.");
+                });
             }
             catch (Exception ex)
             {
                 // House rule: report, never swallow.
                 editor.AddLogMessage(
                     "Beep",
-                    $"EntityTypeFactory: generating a runtime type for " +
-                    $"'{structure.EntityName}' failed: {ex.Message}",
+                    $"EntityTypeFactory: generating a runtime type failed ({ex.GetType().Name}).",
                     DateTime.Now, 0, null, Errors.Failed);
                 return null;
             }
@@ -113,14 +92,7 @@ namespace TheTechIdea.Beep.Tools
         {
             if (string.IsNullOrWhiteSpace(dataSourceName)) return;
 
-            var prefix = dataSourceName + ".";
-            foreach (var key in Cache.Keys)
-            {
-                if (key.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-                {
-                    Cache.TryRemove(key, out _);
-                }
-            }
+            Cache.RemoveWhere(key => string.Equals(key.DataSource, dataSourceName, StringComparison.OrdinalIgnoreCase));
         }
     }
 }

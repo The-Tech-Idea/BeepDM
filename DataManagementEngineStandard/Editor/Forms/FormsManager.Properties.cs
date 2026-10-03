@@ -43,13 +43,20 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         /// <summary>Gets or sets the current active block name</summary>
         public string CurrentBlockName
         {
-            get => _currentBlockName;
+            get { lock (_registrationGate) return _disposed ? null : _currentBlockName; }
             set => _currentBlockName = value;
         }
 
         /// <summary>Gets all registered blocks (read-only snapshot — mutation requires FormsManager methods).</summary>
-        public IReadOnlyDictionary<string, DataBlockInfo> Blocks =>
-            new System.Collections.ObjectModel.ReadOnlyDictionary<string, DataBlockInfo>(_blocks);
+        public IReadOnlyDictionary<string, DataBlockInfo> Blocks
+        {
+            get
+            {
+                lock (_registrationGate)
+                    return new System.Collections.ObjectModel.ReadOnlyDictionary<string, DataBlockInfo>(
+                        new Dictionary<string, DataBlockInfo>(_blocks, StringComparer.OrdinalIgnoreCase));
+            }
+        }
 
         /// <summary>Gets whether any block has unsaved changes</summary>
         public bool IsDirty => _blocks.Values.Any(block => block.UnitOfWork?.IsDirty == true);
@@ -58,7 +65,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         public string Status { get; private set; } = "Ready";
 
         /// <summary>Gets the count of registered blocks</summary>
-        public int BlockCount => _blocks.Count;
+        public int BlockCount { get { lock (_registrationGate) return _blocks.Count; } }
 
         /// <summary>Gets the dirty state manager</summary>
         public IDirtyStateManager DirtyStateManager => _dirtyStateManager;

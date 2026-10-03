@@ -1,5 +1,31 @@
 # FormsManager Enhancement — Todo Tracker
 
+## Current Reliability Track
+
+Review: 2026-10-03. [Authoritative plan and source findings](../RELIABILITY-AND-ENHANCEMENT-PLAN.md).
+Scope: FormsManager and UI integration contracts, not control-library redesign.
+Baseline: 221 net8.0 Forms tests passed; forced solution build has zero errors.
+Implementation is in progress. [Commit contracts](../COMMIT-OWNERSHIP.md) and
+[qualification log](../IMPLEMENTATION-LOG.md) distinguish implemented behavior from
+remaining gates. No full stage is closed yet.
+
+- [~] A: BF-01/BF-02/BF-04 enlistment, outcome ledger, safe retry and initial cleanup implemented; remaining gates in the plan/log.
+- [~] B: BF-03 basic/enhanced/detail/count/aggregate policy boundary, bounded compilation and default basic/enhanced/detail staged publication implemented; auxiliary read/cache and external provider qualification remain. See QUERY-POLICY.md and READ-PUBLICATION.md.
+- [~] C: BF-05/BF-06/BF-07 captured teardown, gated event leases, staged default item/root replacement, pending-setup acknowledgement and managed query/detail cancellation/drain, borrowed ownership and timer identity implemented. Full public-operation lifetime/cancellation, mutable graph/system-state and host gates remain. See LIFETIME-CONTRACTS.md.
+- [~] D: BF-08 shared managed query/detail read ordering, query request supersession, default UoW staged reads, preserved implicit query mode, targeted deferred requests, dirty branch admission, composite keys and typed publication/notification outcomes implemented. Broader cross-operation generations, concurrent editing and raw helper/host record identity remain. See DETAIL-COORDINATION.md, READ-PUBLICATION.md and the record-target increment below.
+- [~] D record targets: manager validation/LOV/editor now capture record/item/request identity and observed UoW revisions, reject cursor/edit ABA and retain setter evidence. Raw helper events, general scheduling, async rules/context and host generations remain. See RECORD-TARGETS.md.
+- [~] E: Captured editor outcomes and opt-in FormsViewBinding over existing contracts implemented, with dispatcher/origin capabilities, target/policy identity, copied buffers/field policies, guarded focus/render/edit and physical acknowledgement drain. Executable fixture and E-01 through E-10 checklist are in UI-BINDING-CONTRACTS.md. POLICY-REPAINT.md adds queued clearing/remasking and policy callback/pump drain. Full real host routing, query/custom edit pipelines, async user/error completion, synchronous privacy and concrete adapters remain open.
+- [~] F: BF-09 typed local cursor paging, exact long math/count shrink and opt-in bounded provider fetch implemented. PROVIDER-PAGING.md and ProviderPagingTests.cs qualify staged row/byte limits, complete key ordering, mandatory policy, dirty protection and physical cancellation/drain through a native SQLite test producer. Policy/query/registration-aware bounded prefetch/cache remains required and unimplemented; external providers and Stage F stay open.
+- [~] B/D/E cached binding: default query/detail publication now installs read-policy/provider/buffer receipts; principal/filter changes revoke fresh target capture, while field-only changes permit remasking. BUFFER-AUTHORIZATION.md records compatibility and 30 added real-UoW cases. POLICY-REPAINT.md adds automatic queued clearing/remasking, explicit reconciliation and 31 policy/UI/drain cases. Raw row/auxiliary cache policy, immediate privacy and real adapters remain open.
+- [~] G: Forms test project multi-targeted and dependencies pinned; five Forms skills/direct installed copies updated with multi-TFM compiled examples. Current provider-fetch matrix: 795 Forms and 1,393 framework per TFM, 6,564 executions across net8/net9/net10. Broader provider/adapter, duplicate-skill routing, prior intermittents and release closeout remain.
+
+- [~] B/C/E permission projection: authored flags are separate from registration-owned security overlays; rule removal and preinstalled policy project across live registrations, with optional default item registry fencing and isolated effective-change observers. See PERMISSION-PROJECTION.md. Whole configuration/graph pinning, raw item mutation feeds, custom helpers and native adapters remain open.
+
+Close each stage only against its plan's test gates. Existing checkmarks below
+record historical feature implementation, not completion of this reliability track.
+
+## Historical Feature Track
+
 > Track progress across all enhancement phases.  
 > Update status: `[ ]` = Not started, `[~]` = In progress, `[x]` = Complete
 

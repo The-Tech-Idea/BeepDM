@@ -50,6 +50,8 @@ public class FormsManagerTests : IDisposable
         var mock = new Mock<IUnitofWork>();
         mock.Setup(u => u.TotalItemCount).Returns(recordCount);
         mock.Setup(u => u.CurrentItem).Returns(currentItem);
+        mock.Setup(u => u.Get(It.IsAny<List<AppFilter>>())).ReturnsAsync((object)new List<object>());
+        mock.Setup(u => u.Get()).ReturnsAsync((object)new List<object>());
         var units = new Mock<System.Collections.ICollection>();
         units.Setup(c => c.Count).Returns(recordCount);
         mock.As<System.Collections.IEnumerable>().Setup(e => e.GetEnumerator()).Returns(new List<object>().GetEnumerator());
@@ -668,11 +670,13 @@ public class FormsManagerTests : IDisposable
     private static Mock<IUnitofWork> CreateMutableCountUowMock(int startingCount, Func<object> currentItemFactory)
     {
         var count = startingCount;
+        var current = count > 0 ? currentItemFactory() : null;
         var mock = new Mock<IUnitofWork>();
         mock.Setup(u => u.TotalItemCount).Returns(() => count);
-        mock.Setup(u => u.CurrentItem).Returns(() => count > 0 ? currentItemFactory() : null);
+        mock.Setup(u => u.CurrentItem).Returns(() => current);
+        mock.Setup(u => u.Get(It.IsAny<List<AppFilter>>())).ReturnsAsync((object)new List<object>());
         mock.Setup(u => u.DeleteAsync(It.IsAny<object>()))
-            .ReturnsAsync(() => { count--; return new ErrorsInfo { Flag = Errors.Ok }; });
+            .ReturnsAsync(() => { count--; current = count > 0 ? currentItemFactory() : null; return new ErrorsInfo { Flag = Errors.Ok }; });
         var units = new Mock<System.Collections.ICollection>();
         units.Setup(c => c.Count).Returns(() => count);
         mock.As<System.Collections.IEnumerable>().Setup(e => e.GetEnumerator()).Returns(() => new List<object>().GetEnumerator());
@@ -989,7 +993,7 @@ public class FormsManagerTests : IDisposable
         var empUow = CreateUowMock(0);
         var dataSource = new Mock<IDataSource>();
         dataSource.Setup(d => d.GetScalarAsync(It.Is<string>(sql =>
-                sql.Contains("EMPNO = '1'"))))
+                sql.Contains("\"EMPNO\" = 1"))))
             .ReturnsAsync(1.0);
         _mockEditor.Setup(e => e.GetDataSource("DEFAULT_DB")).Returns(dataSource.Object);
 
@@ -1539,14 +1543,15 @@ public class FormsManagerTests : IDisposable
     private static Mock<IUnitofWork> CreateDirtyUowMock(IDataSource dataSource, IErrorsInfo commitResult)
     {
         var mock = CreateUowMock(1, new TestRecord());
-        mock.Setup(u => u.IsDirty).Returns(true);
+        var dirty = true;
+        mock.Setup(u => u.IsDirty).Returns(() => dirty);
         mock.Setup(u => u.DataSource).Returns(dataSource);
-        mock.Setup(u => u.Commit()).ReturnsAsync(commitResult);
+        mock.Setup(u => u.Commit()).ReturnsAsync(commitResult).Callback(() => dirty = commitResult.Flag != Errors.Ok);
         return mock;
     }
 
     [Fact]
-    public async Task CommitFormAsync_TransactionalDataSource_BeginsThenCommits()
+    public async Task CommitFormAsync_LegacyUow_UsesExplicitIndependentCommitFallback()
     {
         var dataSource = new Mock<IDataSource>();
         dataSource.Setup(d => d.BeginTransaction(It.IsAny<PassedArgs>())).Returns(new ErrorsInfo { Flag = Errors.Ok });
@@ -1560,13 +1565,14 @@ public class FormsManagerTests : IDisposable
         var result = await _manager.CommitFormAsync().ConfigureAwait(false);
 
         Assert.Equal(Errors.Ok, result.Flag);
-        dataSource.Verify(d => d.BeginTransaction(It.IsAny<PassedArgs>()), Times.Once);
-        dataSource.Verify(d => d.Commit(It.IsAny<PassedArgs>()), Times.Once);
+        Assert.True(Assert.IsType<FormCommitResult>(result).UsesIndependentCommits);
+        dataSource.Verify(d => d.BeginTransaction(It.IsAny<PassedArgs>()), Times.Never);
+        dataSource.Verify(d => d.Commit(It.IsAny<PassedArgs>()), Times.Never);
         dataSource.Verify(d => d.EndTransaction(It.IsAny<PassedArgs>()), Times.Never);
     }
 
     [Fact]
-    public async Task CommitFormAsync_BlockCommitFails_AbortsTheOpenedTransactionInsteadOfCommittingIt()
+    public async Task CommitFormAsync_LegacyBlockCommitFails_ReportsUnknownWithoutInventingOuterTransaction()
     {
         var dataSource = new Mock<IDataSource>();
         dataSource.Setup(d => d.BeginTransaction(It.IsAny<PassedArgs>())).Returns(new ErrorsInfo { Flag = Errors.Ok });
@@ -1580,8 +1586,9 @@ public class FormsManagerTests : IDisposable
         var result = await _manager.CommitFormAsync().ConfigureAwait(false);
 
         Assert.Equal(Errors.Failed, result.Flag);
-        dataSource.Verify(d => d.BeginTransaction(It.IsAny<PassedArgs>()), Times.Once);
-        dataSource.Verify(d => d.EndTransaction(It.IsAny<PassedArgs>()), Times.Once);
+        Assert.True(Assert.IsType<FormCommitResult>(result).RequiresReconciliation);
+        dataSource.Verify(d => d.BeginTransaction(It.IsAny<PassedArgs>()), Times.Never);
+        dataSource.Verify(d => d.EndTransaction(It.IsAny<PassedArgs>()), Times.Never);
         dataSource.Verify(d => d.Commit(It.IsAny<PassedArgs>()), Times.Never);
     }
 
@@ -1637,7 +1644,8 @@ public class FormsManagerTests : IDisposable
     public async Task ItemChanged_FieldHasLOV_FiresWhenLOVValidationTrigger()
     {
         var entity = CreateEntity("EMP", ("Name", "string"));
-        var uow = CreateUowMock(1, new TestEntityRecord());
+        var record = new TestEntityRecord { Name = "Alice" };
+        var uow = CreateUowMock(1, record);
         _manager.RegisterBlock("EMP", uow.Object, entity);
         _manager.LOV.RegisterLOV("EMP", "Name", new LOVDefinition
         {
@@ -1648,29 +1656,26 @@ public class FormsManagerTests : IDisposable
             ReturnField = "Name"
         });
 
-        string capturedItemName = null;
-        object capturedNewValue = null;
+        var observed = new TaskCompletionSource<(string ItemName, object NewValue)>(TaskCreationOptions.RunContinuationsAsynchronously);
         _manager.Triggers.RegisterBlockTrigger(TriggerType.WhenLOVValidation, "EMP", ctx =>
         {
-            capturedItemName = ctx.ItemName;
-            capturedNewValue = ctx.NewValue;
+            observed.TrySetResult((ctx.ItemName, ctx.NewValue));
             return TriggerResult.Success;
         });
 
-        var record = new TestEntityRecord { Name = "Alice" };
         uow.Raise(u => u.ItemChanged += null, uow.Object, new ItemChangedEventArgs<Entity>(record, "Name"));
 
-        await WaitUntilAsync(() => capturedItemName != null).ConfigureAwait(false);
-
-        Assert.Equal("Name", capturedItemName);
-        Assert.Equal("Alice", capturedNewValue);
+        var captured = await observed.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        Assert.Equal("Name", captured.ItemName);
+        Assert.Equal("Alice", captured.NewValue);
     }
 
     [Fact]
     public async Task ItemChanged_WhenLOVValidationTriggerCancels_SetsItemErrorWithoutQueryingTheLOV()
     {
         var entity = CreateEntity("EMP", ("Name", "string"));
-        var uow = CreateUowMock(1, new TestEntityRecord());
+        var record = new TestEntityRecord { Name = "NotInList" };
+        var uow = CreateUowMock(1, record);
         var dataSource = new Mock<IDataSource>();
         _mockEditor.Setup(e => e.GetDataSource("DEFAULT_DB")).Returns(dataSource.Object);
         _manager.RegisterBlock("EMP", uow.Object, entity);
@@ -1684,7 +1689,6 @@ public class FormsManagerTests : IDisposable
         });
         _manager.Triggers.RegisterBlockTrigger(TriggerType.WhenLOVValidation, "EMP", _ => TriggerResult.Cancelled);
 
-        var record = new TestEntityRecord { Name = "NotInList" };
         uow.Raise(u => u.ItemChanged += null, uow.Object, new ItemChangedEventArgs<Entity>(record, "Name"));
 
         await WaitUntilAsync(() => _manager.ItemProperties.HasItemError("EMP", "Name")).ConfigureAwait(false);
@@ -1700,7 +1704,8 @@ public class FormsManagerTests : IDisposable
     public async Task ItemChanged_NoTrigger_ValueMatchesLOV_ClearsItemError()
     {
         var entity = CreateEntity("EMP", ("Name", "string"));
-        var uow = CreateUowMock(1, new TestEntityRecord());
+        var record = new TestEntityRecord { Name = "Alice" };
+        var uow = CreateUowMock(1, record);
         _manager.RegisterBlock("EMP", uow.Object, entity);
         _manager.ItemProperties.SetItemError("EMP", "Name", "stale error from a previous edit");
 
@@ -1719,7 +1724,6 @@ public class FormsManagerTests : IDisposable
             UseCache = false
         });
 
-        var record = new TestEntityRecord { Name = "Alice" };
         uow.Raise(u => u.ItemChanged += null, uow.Object, new ItemChangedEventArgs<Entity>(record, "Name"));
 
         await WaitUntilAsync(() => !_manager.ItemProperties.HasItemError("EMP", "Name")).ConfigureAwait(false);
@@ -1743,12 +1747,12 @@ public class FormsManagerTests : IDisposable
     public async Task ItemChanged_NoLov_SetsBlockAndRecordStatusToChanged()
     {
         var entity = CreateEntity("EMP", ("Name", "string"));
-        var uow = CreateUowMock(1, new TestEntityRecord());
+        var record = new TestEntityRecord { Name = "Bob" };
+        var uow = CreateUowMock(1, record);
         _manager.RegisterBlock("EMP", uow.Object, entity);
 
         Assert.Equal("NEW", _manager.SystemVariables.GetSystemVariables("EMP").BLOCK_STATUS);
 
-        var record = new TestEntityRecord { Name = "Bob" };
         uow.Raise(u => u.ItemChanged += null, uow.Object, new ItemChangedEventArgs<Entity>(record, "Name"));
 
         await WaitUntilAsync(
@@ -1907,7 +1911,7 @@ public class FormsManagerTests : IDisposable
         var entity = CreateEntity("ORD", ("TenantId", "int"));
         var uow = CreateUowMock(0);
         var dataSource = new Mock<IDataSource>();
-        dataSource.Setup(d => d.GetScalarAsync(It.Is<string>(sql => sql.Contains("TenantId = '42'"))))
+        dataSource.Setup(d => d.GetScalarAsync(It.Is<string>(sql => sql.Contains("\"TenantId\" = 42"))))
             .ReturnsAsync(3.0);
         _mockEditor.Setup(e => e.GetDataSource("DEFAULT_DB")).Returns(dataSource.Object);
         _manager.RegisterBlock("ORD", uow.Object, entity, "DEFAULT_DB");
@@ -2689,6 +2693,7 @@ public class FormsManagerTests : IDisposable
         var uowMock = new Mock<IUnitofWork>();
         uowMock.Setup(u => u.Units).Returns(units);
         uowMock.Setup(u => u.TotalItemCount).Returns(units.Count);
+        uowMock.Setup(u => u.Get()).ReturnsAsync((object)units);
         var manager = new FormsManager(_mockEditor.Object);
         manager.Configuration.MaxRecordsPerBlock = 10000;
         manager.Configuration.BlockConfigurations["EMP"] = new BlockConfiguration { MaxRecords = 2 };
@@ -2709,6 +2714,7 @@ public class FormsManagerTests : IDisposable
         var uowMock = new Mock<IUnitofWork>();
         uowMock.Setup(u => u.Units).Returns(units);
         uowMock.Setup(u => u.TotalItemCount).Returns(units.Count);
+        uowMock.Setup(u => u.Get()).ReturnsAsync((object)units);
         var manager = new FormsManager(_mockEditor.Object);
         manager.Configuration.MaxRecordsPerBlock = 3;
         manager.RegisterBlock("EMP", uowMock.Object, entity);
@@ -3140,7 +3146,7 @@ public class FormsManagerTests : IDisposable
     // silently discarded on every save.
 
     [Fact]
-    public async Task SaveDirtyBlocksAsync_ConfiguredDefaultSaveOptions_UsesItsMaxRetries()
+    public async Task SaveDirtyBlocksAsync_ConfiguredRetries_DoNotReplayAmbiguousTimeout()
     {
         var uowMock = new Mock<IUnitofWork>();
         uowMock.Setup(u => u.IsDirty).Returns(true);
@@ -3162,9 +3168,8 @@ public class FormsManagerTests : IDisposable
 
         await dirtyStateManager.SaveDirtyBlocksAsync(new List<string> { "EMP" }).ConfigureAwait(false);
 
-        // MaxRetries = 2 means 1 initial attempt + 2 retries = 3 total Commit() calls.
-        // SaveOptions.Default's own MaxRetries (3) would have called Commit() 4 times instead.
-        uowMock.Verify(u => u.Commit(), Times.Exactly(3));
+        // A timeout says nothing about whether the write reached the provider.
+        uowMock.Verify(u => u.Commit(), Times.Once);
     }
 
     #endregion

@@ -17,16 +17,81 @@ namespace TheTechIdea.Beep.Editor.Migration
 {
     public partial class MigrationManager
     {
-        private static readonly ConcurrentDictionary<string, MigrationExecutionCheckpoint> ExecutionCheckpoints = new(StringComparer.OrdinalIgnoreCase);
-        private static readonly ConcurrentDictionary<string, MigrationPlanArtifact> ExecutionPlans = new(StringComparer.OrdinalIgnoreCase);
+        private readonly ConcurrentDictionary<string, string> ExecutionCheckpoints = new(StringComparer.Ordinal);
+        private readonly ConcurrentDictionary<string, MigrationPlanArtifact> ExecutionPlans = new(StringComparer.OrdinalIgnoreCase);
+
+        private MigrationExecutionCheckpoint CreatePlanningCheckpoint(MigrationPlanArtifact plan)
+        {
+            // A preview token reserves intent in this process, but is not a saved execution-start checkpoint.
+            var checkpoint = BuildNewCheckpoint(plan, Guid.NewGuid().ToString("N"));
+            ExecutionCheckpoints[checkpoint.ExecutionToken] = SerializeCheckpointSnapshot(checkpoint);
+            ExecutionPlans[checkpoint.ExecutionToken] = CopyExecutionPlan(plan);
+            return checkpoint;
+        }
 
         public MigrationExecutionCheckpoint CreateExecutionCheckpoint(MigrationPlanArtifact plan, string executionToken = null)
         {
+            if (plan == null) return new MigrationExecutionCheckpoint();
+            if (!BeginOperation(out var scope)) throw new InvalidOperationException("A migration operation is already active.");
+            var previous = _executionScope.Value;
+            var result = new MigrationExecutionResult();
+            _executionScope.Value = scope;
+            try
+            {
+                plan = CopyExecutionPlan(plan);
+                if (!ValidatePlanIntent(plan, out var error)) throw new InvalidOperationException(error);
+                CaptureStorage(scope);
+                executionToken = string.IsNullOrWhiteSpace(executionToken) ? Guid.NewGuid().ToString("N") : executionToken.Trim();
+                var admission = Acquire(scope, executionToken, plan.PlanHash, CancellationToken.None);
+                if (admission.Status != MigrationAdmissionStatus.Acquired)
+                    throw new InvalidOperationException("Checkpoint ownership admission was denied (" + admission.Status + ").");
+                scope.FinishDisposition = MigrationClaimDisposition.SafeToRetry;
+                result.Checkpoint = CreateExecutionCheckpointCore(plan, executionToken, CancellationToken.None);
+                result.CheckpointPersisted = result.Success = true;
+            }
+            catch (MigrationCheckpointPersistenceException ex)
+            {
+                result.RequiresReconciliation = ex.RequiresReconciliation;
+                throw;
+            }
+            finally
+            {
+                if (scope.Lease != null) CompleteExecutionOwnership(scope, result);
+                _executionScope.Value = previous;
+                lock (_bindingGate) _operationActive = false;
+            }
+            if (!result.OwnershipFinished) throw new InvalidOperationException("Checkpoint ownership completion was not acknowledged; reconcile before replay.");
+            return CopySnapshot(result.Checkpoint);
+        }
+
+        private MigrationExecutionCheckpoint CreateExecutionCheckpointCore(MigrationPlanArtifact plan, string executionToken, CancellationToken cancellationToken)
+        {
             if (plan == null)
                 return new MigrationExecutionCheckpoint();
+            if (!ValidatePlanIntent(plan, out var intentError))
+                throw new InvalidOperationException(intentError);
 
             var token = string.IsNullOrWhiteSpace(executionToken) ? Guid.NewGuid().ToString("N") : executionToken.Trim();
-            var checkpoint = ExecutionCheckpoints.GetOrAdd(token, _ => BuildNewCheckpoint(plan, token));
+            var checkpoint = TryLoadPersistedCheckpoint(token);
+            if (checkpoint == null)
+            {
+                checkpoint = BuildNewCheckpoint(plan, token);
+                checkpoint.OwnershipTargetKey = _executionScope.Value.TargetKey;
+                checkpoint.OwnershipStoreIdentity = _executionScope.Value.Storage.ScopeIdentity;
+            }
+            if (!CheckpointScopeMatches(checkpoint)) throw new MigrationCheckpointPersistenceException(checkpoint,
+                new PersistenceWriteResult(PersistenceWriteStatus.Failed), requiresReconciliation: true);
+            if (checkpoint.RequiresReconciliation || checkpoint.CompensationSteps.Count > 0 ||
+                checkpoint.Steps.Any(s => s.Status == MigrationExecutionStepStatus.Running))
+                throw new MigrationCheckpointPersistenceException(checkpoint,
+                    new PersistenceWriteResult(PersistenceWriteStatus.Failed), requiresReconciliation: true);
+            _executionScope.Value.Checkpoint = checkpoint;
+            if (!string.Equals(checkpoint.PlanHash, plan.PlanHash, StringComparison.Ordinal))
+                throw new InvalidOperationException("Execution token belongs to a different migration plan hash.");
+            if (!ValidateCheckpointIntent(checkpoint, plan))
+                throw new MigrationCheckpointPersistenceException(checkpoint,
+                    new PersistenceWriteResult(PersistenceWriteStatus.Failed), requiresReconciliation: true);
+            checkpoint.ApprovedPlan = CopyExecutionPlan(plan);
             checkpoint.UpdatedOnUtc = DateTime.UtcNow;
 
             if (checkpoint.Steps.Count == 0 && plan.Operations.Count > 0)
@@ -39,8 +104,8 @@ namespace TheTechIdea.Beep.Editor.Migration
                     .Max();
             }
 
-            ExecutionPlans[token] = plan;
-            PersistExecutionCheckpoint(checkpoint);
+            ExecutionPlans[token] = CopyExecutionPlan(plan);
+            PersistExecutionCheckpoint(checkpoint, cancellationToken);
             return checkpoint;
         }
 
@@ -54,7 +119,7 @@ namespace TheTechIdea.Beep.Editor.Migration
                 .GetAwaiter().GetResult();
         }
 
-        public async Task<MigrationExecutionResult> ExecuteMigrationPlanAsync(
+        private async Task<MigrationExecutionResult> ExecuteMigrationPlanCoreAsync(
             MigrationPlanArtifact plan,
             MigrationExecutionPolicy policy = null,
             string executionToken = null,
@@ -63,302 +128,442 @@ namespace TheTechIdea.Beep.Editor.Migration
             MigrationPolicyOptions policyOptions = null)
         {
             var result = new MigrationExecutionResult();
-            policy ??= new MigrationExecutionPolicy();
+            var acknowledgedSteps = new HashSet<int>();
+            bool providerInvoked = false;
 
-            if (MigrateDataSource == null)
+            try
             {
-                result.Success = false;
-                result.Message = "Migration data source is not set.";
-                return result;
-            }
-
-            if (plan == null)
-            {
-                result.Success = false;
-                result.Message = "Migration plan is null.";
-                return result;
-            }
-
-            var checkpoint = CreateExecutionCheckpoint(plan, executionToken);
-            result.ExecutionToken = checkpoint.ExecutionToken;
-            result.Checkpoint = checkpoint;
-
-            if (!string.IsNullOrWhiteSpace(checkpoint.PlanHash) &&
-                !string.IsNullOrWhiteSpace(plan.PlanHash) &&
-                !string.Equals(checkpoint.PlanHash, plan.PlanHash, StringComparison.Ordinal))
-            {
-                result.Success = false;
-                result.Message = "Execution token belongs to a different migration plan hash. Create a new execution token or resume the original plan.";
-                checkpoint.HasFailed = true;
-                checkpoint.FailureCategory = "PlanHashMismatch";
-                checkpoint.FailureReason = result.Message;
-                checkpoint.UpdatedOnUtc = DateTime.UtcNow;
-                PersistExecutionCheckpoint(checkpoint);
-                RecordDiagnostic(checkpoint.ExecutionToken, checkpoint.CorrelationId, "exec-plan-hash-mismatch", MigrationDiagnosticSeverity.Error, string.Empty, result.Message, "Do not reuse an execution token across different plan hashes.");
-                RecordExecutionFinished(plan, checkpoint, success: false, notes: result.Message);
-                return result;
-            }
-
-            RecordExecutionStarted(plan, checkpoint);
-            plan.PerformancePlan ??= BuildPerformancePlan(plan);
-
-            plan.CompensationPlan ??= BuildCompensationPlan(plan);
-            var hasHighRisk = plan.Operations.Any(operation =>
-                operation != null &&
-                (operation.RiskLevel == MigrationPlanRiskLevel.High ||
-                 operation.RiskLevel == MigrationPlanRiskLevel.Critical ||
-                 operation.IsDestructive ||
-                 operation.IsTypeNarrowing ||
-                 operation.HasNullabilityTightening));
-            if (hasHighRisk && (plan.CompensationPlan.Actions == null || plan.CompensationPlan.Actions.Count == 0))
-            {
-                result.Success = false;
-                result.Message = "High-risk operations require compensation actions before apply.";
-                RecordDiagnostic(checkpoint.ExecutionToken, checkpoint.CorrelationId, "exec-compensation-missing", MigrationDiagnosticSeverity.Error, string.Empty, result.Message, "Build compensation actions for high-risk operations before apply.");
-                RecordExecutionFinished(plan, checkpoint, success: false, notes: result.Message);
-                return result;
-            }
-
-            plan.RollbackReadinessReport = CheckRollbackReadiness(
-                plan,
-                backupConfirmed: plan.RollbackReadinessReport?.BackupConfirmed ?? false,
-                restoreTestEvidenceProvided: plan.RollbackReadinessReport?.RestoreTestEvidenceProvided ?? false,
-                restoreTestEvidence: plan.RollbackReadinessReport?.RestoreTestEvidence);
-            if (!plan.RollbackReadinessReport.IsReady)
-            {
-                result.Success = false;
-                result.Message = "Rollback readiness checks failed. Backup/restore evidence is required for protected execution.";
-                RecordDiagnostic(checkpoint.ExecutionToken, checkpoint.CorrelationId, "exec-rollback-readiness", MigrationDiagnosticSeverity.Error, string.Empty, result.Message, "Provide backup confirmation and restore-test evidence.");
-                RecordExecutionFinished(plan, checkpoint, success: false, notes: result.Message);
-                return result;
-            }
-
-            // Honor caller-supplied governance options (approver/override for high-risk or
-            // destructive plans) so an approved destructive plan can pass the preflight policy gate.
-            plan.PreflightReport = RunPreflightChecks(plan, policyOptions);
-            if (!plan.PreflightReport.CanApply)
-            {
-                result.Success = false;
-                result.Message = "Preflight blocked migration plan execution.";
-                result.Checkpoint.HasFailed = true;
-                result.Checkpoint.FailureCategory = "Preflight";
-                result.Checkpoint.FailureReason = result.Message;
-                result.Checkpoint.UpdatedOnUtc = DateTime.UtcNow;
-                RecordDiagnostic(checkpoint.ExecutionToken, checkpoint.CorrelationId, "exec-preflight-block", MigrationDiagnosticSeverity.Error, string.Empty, result.Message, "Review preflight findings and regenerate plan if needed.");
-                PersistExecutionCheckpoint(result.Checkpoint);
-                RecordExecutionFinished(plan, checkpoint, success: false, notes: result.Message);
-                return result;
-            }
-            var performancePolicy = plan.PerformancePlan?.Policy ?? new MigrationPerformancePolicy();
-            var runStopwatch = Stopwatch.StartNew();
-            var processedInBatch = 0;
-
-            foreach (var step in checkpoint.Steps.OrderBy(item => item.Sequence))
-            {
-                // Plan-level cancellation: checked between steps, not within a step's
-                // retry sequence. Cancellation mid-step is the caller's responsibility
-                // (the pipeline already honors a token via its own per-step Run).
-                token.ThrowIfCancellationRequested();
-
-                if (step.Status == MigrationExecutionStepStatus.Completed || step.Status == MigrationExecutionStepStatus.Skipped)
-                    continue;
-
-                if (step.DependsOn.Count > 0)
+                if (MigrateDataSource == null)
                 {
-                    var depBlocked = step.DependsOn.Any(dep => checkpoint.Steps.All(item =>
-                        item.Sequence != dep || item.Status != MigrationExecutionStepStatus.Completed));
-                    if (depBlocked)
-                    {
-                        step.Status = MigrationExecutionStepStatus.Failed;
-                        step.Message = "Dependency steps are not complete.";
-                        RecordOperationKindCompleted(step.OperationKind, success: false);
-                        checkpoint.HasFailed = true;
-                        checkpoint.FailureCategory = "Dependency";
-                        checkpoint.FailureReason = step.Message;
-                        checkpoint.UpdatedOnUtc = DateTime.UtcNow;
-                        checkpoint.ElapsedMilliseconds += runStopwatch.ElapsedMilliseconds;
-                        PersistExecutionCheckpoint(checkpoint);
-                        result.Success = false;
-                        var outcomes = DescribeFailureRollbackOutcomes(plan, step);
-                        result.RollbackOutcome = outcomes.rollbackOutcome;
-                        result.CompensationOutcome = outcomes.compensationOutcome;
-                        result.Message = $"Execution blocked at step {step.Sequence} due to dependency failure. {result.RollbackOutcome} {result.CompensationOutcome}";
-                        result.AppliedCount = checkpoint.Steps.Count(item => item.Status == MigrationExecutionStepStatus.Completed);
-                        RecordDiagnostic(checkpoint.ExecutionToken, checkpoint.CorrelationId, "exec-dependency-failed", MigrationDiagnosticSeverity.Error, step.EntityName, step.Message, "Resolve upstream step failures before resume.");
-                        RecordExecutionFinished(plan, checkpoint, success: false, notes: result.Message);
-                        return result;
-                    }
+                    result.Success = false;
+                    result.Message = "Migration data source is not set.";
+                    return result;
                 }
 
-                var stepWatch = Stopwatch.StartNew();
-
-                // ── Per-step retry, delegated to the shared pipeline ─────────────
-                //
-                // The pipeline runs the inner `while (!completed)` loop for us.
-                // On GiveUp, the inner-loop state is captured into closure
-                // variables (giveUpDecision, giveUpMessage, giveUpRequiresIntervention)
-                // so the OUTER code can decide whether to abort the whole plan
-                // (policy.AbortOnStepFailure == true) or continue to the next step.
-                //
-                // The plan-level `token` is passed to the pipeline, so cancelling the
-                // outer token mid-retry will cancel the per-step Backoff sleep (and
-                // any cancellable Run that respects the token).
-                string? giveUpDecision   = null;
-                string? giveUpMessage    = null;
-                bool giveUpRequiresIntervention = false;
-                bool gaveUp = false;
-
-                var stepResult = await RetryPipeline.Instance.ExecuteAsync(new RetryPlan<IErrorsInfo>
+                if (plan == null)
                 {
-                    MaxAttempts = Math.Max(1, policy.MaxTransientRetries + 1),
-                    LoggerTag   = "Migration",
+                    result.Success = false;
+                    result.Message = "Migration plan is null.";
+                    return result;
+                }
 
-                    Backoff = _ => TimeSpan.FromMilliseconds(policy.RetryDelayMilliseconds),
+                if (!ValidatePlanIntent(plan, out var intentError))
+                {
+                    result.Message = intentError;
+                    return result;
+                }
+                if (policy != null && !JTokenEquals(policy, plan.ExecutionPolicy))
+                {
+                    result.Message = "Execution policy differs from the approved plan. Create a policy revision and re-approve it.";
+                    return result;
+                }
+                if (policyOptions != null && !GovernanceMatches(policyOptions, plan.GovernancePolicy))
+                {
+                    result.Message = "Governance policy differs from the approved plan. Create a revision and re-approve it.";
+                    return result;
+                }
+                if (!string.IsNullOrWhiteSpace(policyOptions?.Approver) &&
+                    !string.Equals(policyOptions.ApprovedPlanHash, plan.PlanHash, StringComparison.Ordinal))
+                {
+                    result.Message = "Approval is not bound to the current migration plan hash.";
+                    return result;
+                }
+                // Run from a private copy, not caller-owned lists or metadata references.
+                plan = CopyExecutionPlan(plan);
+                policy = CopySnapshot(plan.ExecutionPolicy);
+                policyOptions = CopySnapshot(policyOptions ?? plan.GovernancePolicy);
+                token.ThrowIfCancellationRequested();
+                var existing = string.IsNullOrWhiteSpace(executionToken) ? null : TryLoadPersistedCheckpoint(executionToken);
+                if (existing != null && existing.PlanHash != plan.PlanHash)
+                { result.Message = "Execution token belongs to a different migration plan hash. Create a new token."; return result; }
+                if (existing?.CompensationCompleted == true)
+                { result.RequiresOperatorIntervention = true; result.Message = "Execution was compensated. Rebuild and re-approve with a new token."; return result; }
+                if (existing != null && !CheckpointScopeMatches(existing))
+                {
+                    result.RequiresReconciliation = result.RequiresOperatorIntervention = true;
+                    result.Message = "Checkpoint ownership scope is legacy or differs from the captured target/store.";
+                    return result;
+                }
+                if (existing != null && (existing.RequiresReconciliation || existing.CompensationSteps.Count > 0 ||
+                    existing.Steps?.Any(item => item.Status == MigrationExecutionStepStatus.Running) == true))
+                {
+                    result.ExecutionToken = existing.ExecutionToken;
+                    result.Checkpoint = existing;
+                    result.RequiresOperatorIntervention = true;
+                    result.RequiresReconciliation = true;
+                    result.Message = "Checkpoint requires provider-state reconciliation before replay.";
+                    return result;
+                }
+                if (existing?.IsCompleted == true && ValidateCheckpointIntent(existing, plan))
+                {
+                    result.ExecutionToken = existing.ExecutionToken;
+                    result.Checkpoint = existing;
+                    result.Success = result.CheckpointPersisted = true;
+                    result.CheckpointPersistenceStatus = PersistenceWriteStatus.Saved;
+                    result.AppliedCount = existing.Steps.Count(s => s.Status == MigrationExecutionStepStatus.Completed);
+                    result.Message = "Execution checkpoint is already completed.";
+                    return result;
+                }
+                var checkpoint = CreateExecutionCheckpointCore(plan, executionToken, token);
+                result.ExecutionToken = checkpoint.ExecutionToken;
+                result.Checkpoint = checkpoint;
+                result.CheckpointPersisted = true;
+                result.CheckpointPersistenceStatus = PersistenceWriteStatus.Saved;
+                foreach (var completed in checkpoint.Steps.Where(item => item.Status == MigrationExecutionStepStatus.Completed))
+                    acknowledgedSteps.Add(completed.Sequence);
+                _executionScope.Value.AcknowledgedCount = acknowledgedSteps.Count;
 
-                    Classify = ctx =>
+                if (!string.IsNullOrWhiteSpace(checkpoint.PlanHash) &&
+                    !string.IsNullOrWhiteSpace(plan.PlanHash) &&
+                    !string.Equals(checkpoint.PlanHash, plan.PlanHash, StringComparison.Ordinal))
+                {
+                    result.Success = false;
+                    result.Message = "Execution token belongs to a different migration plan hash. Create a new execution token or resume the original plan.";
+                    return result;
+                }
+                if (!ValidateCheckpointIntent(checkpoint, plan))
+                {
+                    result.Message = "Execution checkpoint intent is missing or differs from the approved plan. Rebuild and reconcile before resume.";
+                    return result;
+                }
+
+                RecordExecutionStarted(plan, checkpoint);
+                plan.PerformancePlan ??= BuildPerformancePlan(plan);
+
+                plan.CompensationPlan ??= BuildCompensationPlan(plan);
+                var hasHighRisk = plan.Operations.Any(operation =>
+                    operation != null &&
+                    (operation.RiskLevel == MigrationPlanRiskLevel.High ||
+                     operation.RiskLevel == MigrationPlanRiskLevel.Critical ||
+                     operation.IsDestructive ||
+                     operation.IsTypeNarrowing ||
+                     operation.HasNullabilityTightening));
+                if (hasHighRisk && (plan.CompensationPlan.Actions == null || plan.CompensationPlan.Actions.Count == 0))
+                {
+                    result.Success = false;
+                    result.Message = "High-risk operations require compensation actions before apply.";
+                    RecordDiagnostic(checkpoint.ExecutionToken, checkpoint.CorrelationId, "exec-compensation-missing", MigrationDiagnosticSeverity.Error, string.Empty, result.Message, "Build compensation actions for high-risk operations before apply.");
+                    RecordExecutionFinished(plan, checkpoint, success: false, notes: result.Message);
+                    return result;
+                }
+
+                plan.RollbackReadinessReport = CheckRollbackReadiness(
+                    plan,
+                    backupConfirmed: plan.RollbackReadinessReport?.BackupConfirmed ?? false,
+                    restoreTestEvidenceProvided: plan.RollbackReadinessReport?.RestoreTestEvidenceProvided ?? false,
+                    restoreTestEvidence: plan.RollbackReadinessReport?.RestoreTestEvidence);
+                if (!plan.RollbackReadinessReport.IsReady)
+                {
+                    result.Success = false;
+                    result.Message = "Rollback readiness checks failed. Backup/restore evidence is required for protected execution.";
+                    RecordDiagnostic(checkpoint.ExecutionToken, checkpoint.CorrelationId, "exec-rollback-readiness", MigrationDiagnosticSeverity.Error, string.Empty, result.Message, "Provide backup confirmation and restore-test evidence.");
+                    RecordExecutionFinished(plan, checkpoint, success: false, notes: result.Message);
+                    return result;
+                }
+
+                // Honor caller-supplied governance options (approver/override for high-risk or
+                // destructive plans) so an approved destructive plan can pass the preflight policy gate.
+                plan.PreflightReport = RunPreflightChecks(plan, policyOptions);
+                if (!plan.PreflightReport.CanApply)
+                {
+                    result.Success = false;
+                    result.Message = "Preflight blocked migration plan execution.";
+                    result.Checkpoint.HasFailed = true;
+                    result.Checkpoint.FailureCategory = "Preflight";
+                    result.Checkpoint.FailureReason = result.Message;
+                    result.Checkpoint.UpdatedOnUtc = DateTime.UtcNow;
+                    RecordDiagnostic(checkpoint.ExecutionToken, checkpoint.CorrelationId, "exec-preflight-block", MigrationDiagnosticSeverity.Error, string.Empty, result.Message, "Review preflight findings and regenerate plan if needed.");
+                    PersistExecutionCheckpoint(result.Checkpoint, token);
+                    RecordExecutionFinished(plan, checkpoint, success: false, notes: result.Message);
+                    return result;
+                }
+                var performancePolicy = plan.PerformancePlan?.Policy ?? new MigrationPerformancePolicy();
+                var runStopwatch = Stopwatch.StartNew();
+                var processedInBatch = 0;
+
+                var approvedSteps = BuildExecutionSteps(plan.Operations).ToDictionary(item => item.Sequence);
+                var iterations = checkpoint.Steps.OrderBy(item => item.Sequence)
+                    .Select(item => (Progress: item, Intent: approvedSteps[item.Sequence])).ToArray();
+                foreach (var iteration in iterations)
+                {
+                    var step = iteration.Progress;
+                    var intent = iteration.Intent;
+                    // Plan-level cancellation: checked between steps, not within a step's
+                    // retry sequence. Cancellation mid-step is the caller's responsibility
+                    // (the pipeline already honors a token via its own per-step Run).
+                    token.ThrowIfCancellationRequested();
+
+                    if (step.Status == MigrationExecutionStepStatus.Completed || step.Status == MigrationExecutionStepStatus.Skipped)
+                        continue;
+
+                    if (intent.DependsOn.Count > 0)
                     {
-                        if (ctx.LastResult == null) return RetryDecision.Retry;     // exception path — retry
-                        if (IsStepSuccess(ctx.LastResult)) return RetryDecision.Succeed;
-                        var decision = ClassifyFailure(ctx.LastResult.Message, policy);
-                        // MaxTransientRetries is on the policy; MaxAttempts already
-                        // encodes it (1 + MaxTransientRetries) in the plan above.
-                        return decision == "transient" ? RetryDecision.Retry : RetryDecision.GiveUp;
-                    },
-
-                    BeforeAttempt = (ctx, tok) =>
-                    {
-                        step.AttemptCount = ctx.Attempt;
-                        step.Status = MigrationExecutionStepStatus.Running;
-                        PersistExecutionCheckpoint(checkpoint);
-                        return Task.CompletedTask;
-                    },
-
-                    Run = (ctx, tok) =>
-                    {
-                        // ExecuteStep is synchronous in the current code; preserve that
-                        // by wrapping the result in Task.FromResult.
-                        return Task.FromResult(ExecuteStep(step));
-                    },
-
-                    OnSuccess = (ctx, result, tok) =>
-                    {
-                        step.Status = MigrationExecutionStepStatus.Completed;
-                        step.Message = result?.Message ?? "Completed.";
-                        checkpoint.LastCompletedStep = step.Sequence;
-                        checkpoint.HasFailed = false;
-                        checkpoint.FailureCategory = string.Empty;
-                        checkpoint.FailureReason = string.Empty;
-                        progress?.Report(new PassedArgs
+                        var depBlocked = intent.DependsOn.Any(dep => checkpoint.Steps.All(item =>
+                            item.Sequence != dep || (item.Status != MigrationExecutionStepStatus.Completed &&
+                                                     item.Status != MigrationExecutionStepStatus.Skipped)));
+                        if (depBlocked)
                         {
-                            Messege = $"Migration step {step.Sequence} completed: {step.EntityName} [{step.OperationKind}]"
-                        });
-                        return Task.CompletedTask;
-                    },
+                            step.Status = MigrationExecutionStepStatus.Failed;
+                            step.Message = "Dependency steps are not complete.";
+                            RecordOperationKindCompleted(intent.OperationKind, success: false);
+                            checkpoint.HasFailed = true;
+                            checkpoint.FailureCategory = "Dependency";
+                            checkpoint.FailureReason = step.Message;
+                            checkpoint.UpdatedOnUtc = DateTime.UtcNow;
+                            checkpoint.ElapsedMilliseconds += runStopwatch.ElapsedMilliseconds;
+                            PersistExecutionCheckpoint(checkpoint, token);
+                            result.Success = false;
+                            var outcomes = DescribeFailureRollbackOutcomes(plan, step);
+                            result.RollbackOutcome = outcomes.rollbackOutcome;
+                            result.CompensationOutcome = outcomes.compensationOutcome;
+                            result.Message = $"Execution blocked at step {intent.Sequence} due to dependency failure. {result.RollbackOutcome} {result.CompensationOutcome}";
+                            result.AppliedCount = checkpoint.Steps.Count(item => item.Status == MigrationExecutionStepStatus.Completed);
+                            RecordDiagnostic(checkpoint.ExecutionToken, checkpoint.CorrelationId, "exec-dependency-failed", MigrationDiagnosticSeverity.Error, intent.EntityName, step.Message, "Resolve upstream step failures before resume.");
+                            RecordExecutionFinished(plan, checkpoint, success: false, notes: result.Message);
+                            return result;
+                        }
+                    }
 
-                    OnGiveUp = (ctx, result, decision, tok) =>
+                    var stepWatch = Stopwatch.StartNew();
+
+                    // ── Per-step retry, delegated to the shared pipeline ─────────────
+                    //
+                    // The pipeline runs the inner `while (!completed)` loop for us.
+                    // On GiveUp, the inner-loop state is captured into closure
+                    // variables (giveUpDecision, giveUpMessage, giveUpRequiresIntervention)
+                    // so the OUTER code can decide whether to abort the whole plan
+                    // (policy.AbortOnStepFailure == true) or continue to the next step.
+                    //
+                    // The plan-level `token` is passed to the pipeline, so cancelling the
+                    // outer token mid-retry will cancel the per-step Backoff sleep (and
+                    // any cancellable Run that respects the token).
+                    string? giveUpDecision   = null;
+                    string? giveUpMessage    = null;
+                    bool giveUpRequiresIntervention = false;
+                    bool gaveUp = false;
+                    MigrationCheckpointPersistenceException persistenceFailure = null;
+
+                    var stepResult = await RetryPipeline.Instance.ExecuteAsync(new RetryPlan<IErrorsInfo>
                     {
-                        var lastMessage = result?.Message ?? ctx.FailureMessage ?? "Failed.";
-                        giveUpDecision = ClassifyFailure(lastMessage, policy);
-                        giveUpMessage  = lastMessage;
-                        giveUpRequiresIntervention = giveUpDecision == "hard" && policy.RequireOperatorInterventionOnHardFail;
-                        step.Status = MigrationExecutionStepStatus.Failed;
-                        step.Message = lastMessage;
-                        RecordOperationKindCompleted(step.OperationKind, success: false);
-                        checkpoint.HasFailed = true;
-                        checkpoint.FailureCategory = giveUpDecision == "hard" ? "HardFail" : "Failure";
-                        checkpoint.FailureReason = step.Message;
-                        checkpoint.UpdatedOnUtc = DateTime.UtcNow;
-                        step.ElapsedMilliseconds += stepWatch.ElapsedMilliseconds;
-                        checkpoint.ElapsedMilliseconds += runStopwatch.ElapsedMilliseconds;
-                        PersistExecutionCheckpoint(checkpoint);
+                        MaxAttempts = Math.Max(1, policy.MaxTransientRetries + 1),
+                        LoggerTag   = "Migration",
 
+                        Backoff = _ => TimeSpan.FromMilliseconds(policy.RetryDelayMilliseconds),
+
+                        Classify = ctx =>
+                        {
+                            if (persistenceFailure != null) return RetryDecision.GiveUp;
+                            if (IsStepSuccess(ctx.LastResult)) return RetryDecision.Succeed;
+                            // A negative/throwing DDL acknowledgement does not prove no change.
+                            if (providerInvoked) return RetryDecision.GiveUp;
+                            if (ctx.LastResult == null) return RetryDecision.Retry;
+                            var decision = ClassifyFailure(ctx.LastResult.Message, policy);
+                            // MaxTransientRetries is on the policy; MaxAttempts already
+                            // encodes it (1 + MaxTransientRetries) in the plan above.
+                            return decision == "transient" ? RetryDecision.Retry : RetryDecision.GiveUp;
+                        },
+
+                        BeforeAttempt = (ctx, tok) =>
+                        {
+                            var previousStatus = step.Status;
+                            step.AttemptCount = ctx.Attempt;
+                            step.Status = MigrationExecutionStepStatus.Running;
+                            try { PersistExecutionCheckpoint(checkpoint, tok); }
+                            catch (MigrationCheckpointPersistenceException ex)
+                            {
+                                persistenceFailure = ex;
+                                step.Status = previousStatus;
+                            }
+                            return Task.CompletedTask;
+                        },
+
+                        Run = (ctx, tok) =>
+                        {
+                            // ExecuteStep is synchronous in the current code; preserve that
+                            // by wrapping the result in Task.FromResult.
+                            // RetryPipeline intentionally ignores hook exceptions; use an explicit
+                            // admission sentinel so a failed before-attempt save cannot run DDL.
+                            if (persistenceFailure != null)
+                                return Task.FromResult<IErrorsInfo>(new ErrorsInfo { Flag = Errors.Failed, Message = "Checkpoint persistence failed." });
+                            tok.ThrowIfCancellationRequested();
+                            if (CaptureTargetFingerprint() != _executionScope.Value.TargetFingerprint)
+                                throw new InvalidOperationException("Migration target changed during execution.");
+                            providerInvoked = true;
+                            _executionScope.Value.ProviderInvoked = true;
+                            var acknowledgement = ExecuteStep(intent, plan);
+                            if (IsStepSuccess(acknowledgement)) acknowledgedSteps.Add(intent.Sequence);
+                            _executionScope.Value.AcknowledgedCount = acknowledgedSteps.Count;
+                            return Task.FromResult(acknowledgement);
+                        },
+
+                        OnSuccess = (ctx, result, tok) =>
+                        {
+                            step.Status = MigrationExecutionStepStatus.Completed;
+                            step.Message = result?.Message ?? "Completed.";
+                            checkpoint.LastCompletedStep = intent.Sequence;
+                            checkpoint.HasFailed = false;
+                            checkpoint.FailureCategory = string.Empty;
+                            checkpoint.FailureReason = string.Empty;
+                            progress?.Report(new PassedArgs
+                            {
+                                Messege = $"Migration step {intent.Sequence} completed: {intent.EntityName} [{intent.OperationKind}]"
+                            });
+                            return Task.CompletedTask;
+                        },
+
+                        OnGiveUp = (ctx, result, decision, tok) =>
+                        {
+                            if (persistenceFailure != null) return Task.CompletedTask;
+                            gaveUp = true;
+                            var lastMessage = result?.Message ?? ctx.FailureMessage ?? "Failed.";
+                            giveUpDecision = ClassifyFailure(lastMessage, policy);
+                            giveUpMessage  = lastMessage;
+                            giveUpRequiresIntervention = giveUpDecision == "hard" && policy.RequireOperatorInterventionOnHardFail;
+                            step.Status = MigrationExecutionStepStatus.Failed;
+                            step.Message = lastMessage;
+                            RecordOperationKindCompleted(intent.OperationKind, success: false);
+                            checkpoint.HasFailed = true;
+                            checkpoint.FailureCategory = giveUpDecision == "hard" ? "HardFail" : "Failure";
+                            checkpoint.FailureReason = step.Message;
+                            checkpoint.UpdatedOnUtc = DateTime.UtcNow;
+                            step.ElapsedMilliseconds += stepWatch.ElapsedMilliseconds;
+                            checkpoint.ElapsedMilliseconds += runStopwatch.ElapsedMilliseconds;
+                            try { PersistExecutionCheckpoint(checkpoint, tok); }
+                            catch (MigrationCheckpointPersistenceException ex) { persistenceFailure = ex; }
+
+                            RecordDiagnostic(
+                                checkpoint.ExecutionToken,
+                                checkpoint.CorrelationId,
+                                "exec-step-failed",
+                                giveUpRequiresIntervention ? MigrationDiagnosticSeverity.Critical : MigrationDiagnosticSeverity.Error,
+                                intent.EntityName,
+                                step.Message,
+                                string.Empty /* compensation outcome filled below */);
+                            gaveUp = true;
+                            return Task.CompletedTask;
+                        }
+                    }, token /* per-step retry honors plan-level cancellation */);
+
+                    if (persistenceFailure != null) throw persistenceFailure;
+
+                    if (gaveUp)
+                    {
+                        // The pipeline surfaced a GiveUp. Decide whether to abort the
+                        // whole plan (default behavior, preserved exactly) or continue
+                        // to the next step (new behavior, opt-in via policy).
+                        if (policy.AbortOnStepFailure)
+                        {
+                            // Preserve original semantics: build the failure result
+                            // and return. Same shape as the inlined code used to produce.
+                            result.Success = false;
+                            result.RequiresOperatorIntervention = giveUpRequiresIntervention;
+                            var outcomes = DescribeFailureRollbackOutcomes(plan, step);
+                            result.RollbackOutcome      = outcomes.rollbackOutcome;
+                            result.CompensationOutcome  = outcomes.compensationOutcome;
+                            result.Message = result.RequiresOperatorIntervention
+                                ? $"Step {intent.Sequence} failed and requires operator intervention. {policy.OperatorInterventionHint} {result.RollbackOutcome} {result.CompensationOutcome}"
+                                : $"Step {intent.Sequence} failed: {giveUpMessage}. {result.RollbackOutcome} {result.CompensationOutcome}";
+                            result.AppliedCount = checkpoint.Steps.Count(item => item.Status == MigrationExecutionStepStatus.Completed);
+                            result.FailedSteps.Add(intent.Sequence);
+                            RecordExecutionFinished(plan, checkpoint, success: false, notes: result.Message);
+                            return result;
+                        }
+
+                        // policy.AbortOnStepFailure == false: continue to the next step.
+                        // The failure is recorded in checkpoint.Steps[].Status = Failed
+                        // and in result.FailedSteps; the final result will reflect it.
+                        result.FailedSteps.Add(intent.Sequence);
+                    }
+
+                    step.ElapsedMilliseconds += stepWatch.ElapsedMilliseconds;
+                    RecordStepDuration(stepWatch.ElapsedMilliseconds, intent.OperationKind);
+                    RecordOperationKindCompleted(intent.OperationKind, success: true);
+                    checkpoint.UpdatedOnUtc = DateTime.UtcNow;
+                    PersistExecutionCheckpoint(checkpoint, token);
+
+                    processedInBatch++;
+                    if (performancePolicy.EnableThrottledMode && performancePolicy.ThrottleDelayMilliseconds > 0)
+                    {
+                        Thread.Sleep(performancePolicy.ThrottleDelayMilliseconds);
+                    }
+
+                    if (performancePolicy.BatchSize > 0 && processedInBatch >= performancePolicy.BatchSize)
+                    {
+                        processedInBatch = 0;
                         RecordDiagnostic(
                             checkpoint.ExecutionToken,
                             checkpoint.CorrelationId,
-                            "exec-step-failed",
-                            giveUpRequiresIntervention ? MigrationDiagnosticSeverity.Critical : MigrationDiagnosticSeverity.Error,
-                            step.EntityName,
-                            step.Message,
-                            string.Empty /* compensation outcome filled below */);
-                        gaveUp = true;
-                        return Task.CompletedTask;
+                            "exec-batch-boundary",
+                            MigrationDiagnosticSeverity.Info,
+                            intent.EntityName,
+                            $"Batch boundary reached after {performancePolicy.BatchSize} operation(s).",
+                            "Continue with next batch to reduce lock pressure.");
                     }
-                }, token /* per-step retry honors plan-level cancellation */);
-
-                if (gaveUp)
-                {
-                    // The pipeline surfaced a GiveUp. Decide whether to abort the
-                    // whole plan (default behavior, preserved exactly) or continue
-                    // to the next step (new behavior, opt-in via policy).
-                    if (policy.AbortOnStepFailure)
-                    {
-                        // Preserve original semantics: build the failure result
-                        // and return. Same shape as the inlined code used to produce.
-                        result.Success = false;
-                        result.RequiresOperatorIntervention = giveUpRequiresIntervention;
-                        var outcomes = DescribeFailureRollbackOutcomes(plan, step);
-                        result.RollbackOutcome      = outcomes.rollbackOutcome;
-                        result.CompensationOutcome  = outcomes.compensationOutcome;
-                        result.Message = result.RequiresOperatorIntervention
-                            ? $"Step {step.Sequence} failed and requires operator intervention. {policy.OperatorInterventionHint} {result.RollbackOutcome} {result.CompensationOutcome}"
-                            : $"Step {step.Sequence} failed: {giveUpMessage}. {result.RollbackOutcome} {result.CompensationOutcome}";
-                        result.AppliedCount = checkpoint.Steps.Count(item => item.Status == MigrationExecutionStepStatus.Completed);
-                        result.FailedSteps.Add(step.Sequence);
-                        RecordExecutionFinished(plan, checkpoint, success: false, notes: result.Message);
-                        return result;
-                    }
-
-                    // policy.AbortOnStepFailure == false: continue to the next step.
-                    // The failure is recorded in checkpoint.Steps[].Status = Failed
-                    // and in result.FailedSteps; the final result will reflect it.
-                    result.FailedSteps.Add(step.Sequence);
                 }
 
-                step.ElapsedMilliseconds += stepWatch.ElapsedMilliseconds;
-                RecordStepDuration(stepWatch.ElapsedMilliseconds, step.OperationKind);
-                RecordOperationKindCompleted(step.OperationKind, success: true);
+                if (result.FailedSteps.Count > 0)
+                {
+                    checkpoint.IsCompleted = false;
+                    checkpoint.HasFailed = true;
+                    checkpoint.FailureCategory = "PartialFailure";
+                    checkpoint.FailureReason = $"{result.FailedSteps.Count} migration step(s) failed; reconcile before resume.";
+                    checkpoint.ElapsedMilliseconds += runStopwatch.ElapsedMilliseconds;
+                    PersistExecutionCheckpoint(checkpoint, token);
+                    result.Success = false;
+                    result.AppliedCount = checkpoint.Steps.Count(item => item.Status == MigrationExecutionStepStatus.Completed);
+                    result.RequiresOperatorIntervention = policy.RequireOperatorInterventionOnHardFail &&
+                        checkpoint.Steps.Any(item => item.Status == MigrationExecutionStepStatus.Failed &&
+                            ClassifyFailure(item.Message, policy) == "hard");
+                    result.Message = checkpoint.FailureReason;
+                    RecordExecutionFinished(plan, checkpoint, success: false, notes: result.Message);
+                    return result;
+                }
+
+                checkpoint.IsCompleted = true;
+                checkpoint.HasFailed = false;
+                checkpoint.FailureCategory = string.Empty;
+                checkpoint.FailureReason = string.Empty;
+                checkpoint.ElapsedMilliseconds += runStopwatch.ElapsedMilliseconds;
                 checkpoint.UpdatedOnUtc = DateTime.UtcNow;
-                PersistExecutionCheckpoint(checkpoint);
+                PersistExecutionCheckpoint(checkpoint, token);
 
-                processedInBatch++;
-                if (performancePolicy.EnableThrottledMode && performancePolicy.ThrottleDelayMilliseconds > 0)
-                {
-                    Thread.Sleep(performancePolicy.ThrottleDelayMilliseconds);
-                }
-
-                if (performancePolicy.BatchSize > 0 && processedInBatch >= performancePolicy.BatchSize)
-                {
-                    processedInBatch = 0;
-                    RecordDiagnostic(
-                        checkpoint.ExecutionToken,
-                        checkpoint.CorrelationId,
-                        "exec-batch-boundary",
-                        MigrationDiagnosticSeverity.Info,
-                        step.EntityName,
-                        $"Batch boundary reached after {performancePolicy.BatchSize} operation(s).",
-                        "Continue with next batch to reduce lock pressure.");
-                }
+                result.CheckpointPersisted = true;
+                result.CheckpointPersistenceStatus = PersistenceWriteStatus.Saved;
+                result.Success = true;
+                result.AppliedCount = checkpoint.Steps.Count(item => item.Status == MigrationExecutionStepStatus.Completed);
+                result.Message = $"Migration plan executed successfully. Token: {checkpoint.ExecutionToken}";
+                RecordDiagnostic(checkpoint.ExecutionToken, checkpoint.CorrelationId, "exec-complete", MigrationDiagnosticSeverity.Info, string.Empty, result.Message, "Execution completed without blocking failures.");
+                RecordExecutionFinished(plan, checkpoint, success: true, notes: result.Message);
+                return result;
             }
-
-            checkpoint.IsCompleted = true;
-            checkpoint.HasFailed = false;
-            checkpoint.FailureCategory = string.Empty;
-            checkpoint.FailureReason = string.Empty;
-            checkpoint.ElapsedMilliseconds += runStopwatch.ElapsedMilliseconds;
-            checkpoint.UpdatedOnUtc = DateTime.UtcNow;
-            PersistExecutionCheckpoint(checkpoint);
-
-            result.Success = true;
-            result.AppliedCount = checkpoint.Steps.Count(item => item.Status == MigrationExecutionStepStatus.Completed);
-            result.Message = $"Migration plan executed successfully. Token: {checkpoint.ExecutionToken}";
-            RecordDiagnostic(checkpoint.ExecutionToken, checkpoint.CorrelationId, "exec-complete", MigrationDiagnosticSeverity.Info, string.Empty, result.Message, "Execution completed without blocking failures.");
-            RecordExecutionFinished(plan, checkpoint, success: true, notes: result.Message);
-            return result;
+            catch (MigrationCheckpointPersistenceException ex)
+            {
+                var checkpoint = ex.Checkpoint;
+                var primaryFailure = checkpoint.HasFailed ? checkpoint.FailureReason : string.Empty;
+                checkpoint.HasFailed = true;
+                checkpoint.IsCompleted = false;
+                checkpoint.RequiresReconciliation = ex.RequiresReconciliation || providerInvoked || acknowledgedSteps.Count > 0;
+                checkpoint.FailureCategory = "Persistence";
+                checkpoint.FailureReason = string.IsNullOrWhiteSpace(primaryFailure)
+                    ? "Mandatory checkpoint persistence failed." : primaryFailure;
+                result.Success = false;
+                result.ExecutionToken = checkpoint.ExecutionToken;
+                result.Checkpoint = checkpoint;
+                result.CheckpointPersisted = false;
+                result.CheckpointPersistenceStatus = ex.Outcome.Status;
+                result.AppliedCount = acknowledgedSteps.Count;
+                result.RequiresReconciliation = checkpoint.RequiresReconciliation;
+                result.RequiresOperatorIntervention = checkpoint.RequiresReconciliation;
+                result.FailedSteps = checkpoint.Steps.Where(item => item.Status == MigrationExecutionStepStatus.Failed)
+                    .Select(item => item.Sequence).ToList();
+                result.Message = checkpoint.FailureReason + " Checkpoint was not acknowledged (" + ex.Outcome.Status +
+                    "); " + (checkpoint.RequiresReconciliation ? "reconcile provider state before replay." : "no DDL was admitted.");
+                return result;
+            }
         }
 
         public MigrationExecutionResult ResumeMigrationPlan(string executionToken, MigrationExecutionPolicy policy = null, IProgress<PassedArgs> progress = null, MigrationPolicyOptions policyOptions = null)
         {
-            policy ??= new MigrationExecutionPolicy();
             if (string.IsNullOrWhiteSpace(executionToken))
             {
                 return new MigrationExecutionResult
@@ -368,40 +573,8 @@ namespace TheTechIdea.Beep.Editor.Migration
                 };
             }
 
-            // In-memory first, then fall back to the persisted snapshot so resume survives a restart.
-            if (!ExecutionCheckpoints.TryGetValue(executionToken.Trim(), out var checkpoint))
-                checkpoint = TryLoadPersistedCheckpoint(executionToken);
-
-            if (checkpoint == null)
-            {
-                return new MigrationExecutionResult
-                {
-                    Success = false,
-                    Message = $"No checkpoint found for execution token '{executionToken}'."
-                };
-            }
-
-            if (checkpoint.IsCompleted)
-            {
-                return new MigrationExecutionResult
-                {
-                    Success = true,
-                    ExecutionToken = checkpoint.ExecutionToken,
-                    Checkpoint = checkpoint,
-                    ResumedFromCheckpoint = true,
-                    Message = "Execution checkpoint is already completed."
-                };
-            }
-
-            if (!ExecutionPlans.TryGetValue(checkpoint.ExecutionToken, out var plan))
-            {
-                plan = BuildPlanFromCheckpoint(checkpoint);
-                ExecutionPlans[checkpoint.ExecutionToken] = plan;
-            }
-
-            var result = ExecuteMigrationPlan(plan, policy, checkpoint.ExecutionToken, progress, policyOptions);
-            result.ResumedFromCheckpoint = true;
-            return result;
+            return Task.Run(() => ExecuteMigrationPlanWithOwnershipAsync(null, policy,
+                executionToken.Trim(), progress, CancellationToken.None, policyOptions, true)).GetAwaiter().GetResult();
         }
 
         public MigrationExecutionCheckpoint GetExecutionCheckpoint(string executionToken)
@@ -409,10 +582,25 @@ namespace TheTechIdea.Beep.Editor.Migration
             if (string.IsNullOrWhiteSpace(executionToken))
                 return null;
 
-            // In-memory first, then fall back to the persisted snapshot (survives a restart).
-            return ExecutionCheckpoints.TryGetValue(executionToken.Trim(), out var checkpoint)
-                ? checkpoint
-                : TryLoadPersistedCheckpoint(executionToken);
+            var scope = _executionScope.Value;
+            if (scope != null) return CopySnapshot(TryLoadPersistedCheckpoint(executionToken));
+            lock (_bindingGate)
+                scope = new ExecutionScope { Source = _migrationSource, TargetIdentity = _executionTargetIdentity };
+            CaptureStorage(scope);
+            var checkpoint = LoadPersistedCheckpoint(scope, executionToken.Trim());
+            if (checkpoint != null)
+            {
+                if (checkpoint.OwnershipStoreIdentity != scope.Storage.ScopeIdentity || checkpoint.OwnershipTargetKey != scope.TargetKey)
+                    throw new InvalidOperationException("Checkpoint ownership scope differs from the captured target/store.");
+                return CopySnapshot(checkpoint);
+            }
+            if (ExecutionCheckpoints.TryGetValue(executionToken.Trim(), out var preview))
+            {
+                var observation = ReadSnapshot<MigrationExecutionCheckpoint>(preview);
+                if (observation.OwnershipTargetKey == null && observation.OwnershipStoreIdentity == null)
+                    return observation;
+            }
+            return null;
         }
 
         private static MigrationExecutionCheckpoint BuildNewCheckpoint(MigrationPlanArtifact plan, string token)
@@ -423,6 +611,7 @@ namespace TheTechIdea.Beep.Editor.Migration
                 CorrelationId = Guid.NewGuid().ToString("N"),
                 PlanId = plan.PlanId,
                 PlanHash = plan.PlanHash,
+                ApprovedPlan = CopyExecutionPlan(plan),
                 StartedOnUtc = DateTime.UtcNow,
                 UpdatedOnUtc = DateTime.UtcNow,
                 Steps = BuildExecutionSteps(plan.Operations)
@@ -475,7 +664,7 @@ namespace TheTechIdea.Beep.Editor.Migration
             return steps;
         }
 
-        private IErrorsInfo ExecuteStep(MigrationExecutionStep step)
+        private IErrorsInfo ExecuteStep(MigrationExecutionStep step, MigrationPlanArtifact plan)
         {
             if (step == null)
                 return CreateErrorsInfo(Errors.Failed, "Execution step is null.");
@@ -486,10 +675,8 @@ namespace TheTechIdea.Beep.Editor.Migration
             if (step.OperationKind == MigrationPlanOperationKind.Error)
                 return CreateErrorsInfo(Errors.Failed, "Step is marked as plan error and cannot be executed.");
 
-            var entityType = ResolveType(step.EntityTypeName);
-            var desired = entityType != null
-                ? TryGetEntityStructure(entityType)
-                : ResolveCachedEntityStructure(step.EntityTypeName, step.EntityName);
+            var operation = plan.Operations[step.Sequence - 1];
+            var desired = CopySnapshot(operation.SchemaSnapshot?.DesiredSchema);
             if (desired != null && !string.IsNullOrWhiteSpace(step.EntityName))
                 desired.EntityName = step.EntityName;
 
@@ -684,48 +871,30 @@ namespace TheTechIdea.Beep.Editor.Migration
             return false;
         }
 
-        private MigrationPlanArtifact BuildPlanFromCheckpoint(MigrationExecutionCheckpoint checkpoint)
+
+        private sealed class MigrationCheckpointPersistenceException : Exception
         {
-            var plan = new MigrationPlanArtifact
-            {
-                PlanId = checkpoint.PlanId,
-                PlanHash = checkpoint.PlanHash,
-                DataSourceName = MigrateDataSource?.DatasourceName ?? string.Empty,
-                DataSourceType = MigrateDataSource?.DatasourceType ?? DataSourceType.Unknown,
-                DataSourceCategory = MigrateDataSource?.Category ?? DatasourceCategory.NONE
-            };
-
-            foreach (var step in checkpoint.Steps.OrderBy(item => item.Sequence))
-            {
-                plan.Operations.Add(new MigrationPlanOperation
-                {
-                    EntityName = step.EntityName,
-                    EntityTypeName = step.EntityTypeName,
-                    Kind = step.OperationKind,
-                    MissingColumns = step.MissingColumns?.ToList() ?? new List<string>(),
-                    // Carry the constraint/index name through so resume can
-                    // re-derive the right DDL for DropForeignKey / DropIndex
-                    // without re-running planning. Without this, a resumed
-                    // plan loses the FK/Index name and falls back to the
-                    // synthetic step-N identifier in ExecuteStep.
-                    TargetName = step.TargetName ?? string.Empty,
-                    Note = step.Message
-                });
-            }
-
-            return plan;
+            public MigrationExecutionCheckpoint Checkpoint { get; }
+            public PersistenceWriteResult Outcome { get; }
+            public bool RequiresReconciliation { get; }
+            public MigrationCheckpointPersistenceException(MigrationExecutionCheckpoint checkpoint, PersistenceWriteResult outcome, bool requiresReconciliation = false)
+                : base("Mandatory migration checkpoint was not acknowledged.", outcome.Error)
+            { Checkpoint = checkpoint; Outcome = outcome; RequiresReconciliation = requiresReconciliation; }
         }
 
-        private void PersistExecutionCheckpoint(MigrationExecutionCheckpoint checkpoint)
+        private void PersistExecutionCheckpoint(MigrationExecutionCheckpoint checkpoint, CancellationToken token = default)
         {
             if (checkpoint == null) return;
+            var scope = _executionScope.Value;
+            if (scope?.ClaimValidated != true || !CheckpointScopeMatches(checkpoint))
+                throw new InvalidOperationException("Checkpoint mutation requires captured ownership.");
             checkpoint.UpdatedOnUtc = DateTime.UtcNow;
-            ExecutionCheckpoints[checkpoint.ExecutionToken] = checkpoint;
-            MigrationRecordWriter.WriteExecutionSnapshot(
-                _editor,
+            var outcome = MigrationRecordWriter.WriteExecutionSnapshotToStore(
+                scope.Storage,
                 checkpoint,
-                MigrateDataSource?.DatasourceName ?? string.Empty,
-                MigrateDataSource?.DatasourceType ?? DataSourceType.Unknown);
+                scope.DataSourceName, scope.DataSourceType, token);
+            if (!outcome.IsSaved) throw new MigrationCheckpointPersistenceException(checkpoint, outcome);
+            ExecutionCheckpoints.TryRemove(checkpoint.ExecutionToken, out _);
         }
 
         /// <summary>
@@ -736,36 +905,43 @@ namespace TheTechIdea.Beep.Editor.Migration
         /// Returns null when no persisted snapshot exists.
         /// </summary>
         private MigrationExecutionCheckpoint TryLoadPersistedCheckpoint(string executionToken)
+            => LoadPersistedCheckpoint(_executionScope.Value
+                ?? throw new InvalidOperationException("Checkpoint authority requires captured storage."), executionToken);
+
+        private static MigrationExecutionCheckpoint LoadPersistedCheckpoint(ExecutionScope scope, string executionToken)
         {
             if (string.IsNullOrWhiteSpace(executionToken)) return null;
             try
             {
-                var configEditor = _editor?.ConfigEditor;
-                if (configEditor == null) return null;
-                var dsName = MigrateDataSource?.DatasourceName ?? string.Empty;
+                var dsName = scope.DataSourceName;
                 if (string.IsNullOrWhiteSpace(dsName)) return null;
 
-                var history = configEditor.LoadMigrationHistory(dsName);
+                var history = scope.Storage.LoadMigrationHistory(dsName);
                 var record = history?.Migrations?
                     .Where(r => r != null
-                                && string.Equals(r.MigrationId, executionToken.Trim(), StringComparison.OrdinalIgnoreCase)
-                                && string.Equals(r.Name, "ExecuteMigrationPlan.Checkpoint", StringComparison.Ordinal)
-                                && !string.IsNullOrWhiteSpace(r.Notes))
+                                && string.Equals(r.MigrationId, executionToken.Trim(), StringComparison.Ordinal)
+                                && string.Equals(r.Name, "ExecuteMigrationPlan.Checkpoint", StringComparison.Ordinal))
                     .OrderBy(r => r.AppliedOnUtc)
                     .LastOrDefault();
                 if (record == null) return null;
 
-                var checkpoint = JsonSerializer.Deserialize<MigrationExecutionCheckpoint>(record.Notes);
-                if (checkpoint != null)
-                    ExecutionCheckpoints[checkpoint.ExecutionToken] = checkpoint; // re-hydrate for the execute loop
+                var checkpoint = ReadSnapshot<MigrationExecutionCheckpoint>(record.Notes);
+                if (checkpoint == null || !string.Equals(checkpoint.ExecutionToken, executionToken.Trim(), StringComparison.Ordinal) ||
+                    checkpoint.Steps == null || checkpoint.Steps.Any(s => s == null || !Enum.IsDefined(s.Status) || s.AttemptCount < 0) ||
+                    checkpoint.CompensationSteps == null || checkpoint.CompensationSteps.Any(s => s == null ||
+                        s.Sequence < 1 || s.Sequence > checkpoint.Steps.Count || !Enum.IsDefined(s.Status)) ||
+                    checkpoint.CompensationSteps.Select(s => s.Sequence).Distinct().Count() != checkpoint.CompensationSteps.Count ||
+                    checkpoint.CompensationCompleted && checkpoint.CompensationSteps.Any(s => s.Status != MigrationExecutionStepStatus.Completed) ||
+                    checkpoint.IsCompleted && (checkpoint.HasFailed || checkpoint.Steps.Any(s => s.Status is not
+                        (MigrationExecutionStepStatus.Completed or MigrationExecutionStepStatus.Skipped))))
+                    throw new System.IO.InvalidDataException("Persisted checkpoint is missing or has a different execution identity.");
                 return checkpoint;
             }
             catch (Exception ex)
             {
-                _editor?.AddLogMessage("MigrationManager",
-                    $"TryLoadPersistedCheckpoint: could not load persisted checkpoint for '{executionToken}': {ex.Message}",
-                    DateTime.Now, 0, null, Errors.Warning);
-                return null;
+                throw new MigrationCheckpointPersistenceException(
+                    new MigrationExecutionCheckpoint { ExecutionToken = executionToken.Trim(), RequiresReconciliation = true },
+                    new PersistenceWriteResult(PersistenceWriteStatus.Failed, ex), requiresReconciliation: true);
             }
         }
     }

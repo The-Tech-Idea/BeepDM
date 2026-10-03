@@ -20,15 +20,23 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         /// </summary>
         public bool ValidateField(string blockName, string FieldName, object value)
         {
+            using var lifetime = TryEnterCallback();
+            if (lifetime == null) return false;
+            RecordTarget target = null;
             try
             {
+                target = CaptureRecordTarget(blockName, FieldName, "Validation");
+                blockName = target.Registration.Name;
                 // Fire event-based validation (existing behaviour)
                 bool eventValid = _eventManager.TriggerFieldValidation(blockName, FieldName, value);
+                VerifyRecordTarget(target, default);
 
                 // Also run registered validation rules via ValidationManager
                 PrepareValidationContext(blockName);
+                VerifyRecordTarget(target, default);
                 var ruleResult = _validationManager.ValidateItem(blockName, FieldName, value, ValidationTiming.OnChange);
                 bool rulesValid = ruleResult?.IsValid != false;
+                VerifyRecordTarget(target, default);
 
                 // SetItemError/ClearItemError had no caller for this path
                 // before 2026-08-22 (see ItemChanged's own remark on the same
@@ -44,12 +52,16 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                         _itemPropertyManager?.SetItemError(blockName, FieldName, ruleResult.FirstError ?? "Validation failed");
                 }
 
-                return eventValid && rulesValid;
+                return RecordTargetCurrent(target, default) && eventValid && rulesValid;
             }
+            catch (SupersededRecordOperationException) { return false; }
             catch (Exception ex)
             {
-                LogError($"Error validating field '{FieldName}' in block '{blockName}'", ex, blockName);
-                _eventManager.TriggerError(blockName, ex);
+                if (RecordTargetCurrentSafely(target, default))
+                {
+                    LogError($"Error validating field '{FieldName}' in block '{blockName}'", ex, blockName);
+                    if (RecordTargetCurrentSafely(target, default)) _eventManager.TriggerError(blockName, ex);
+                }
                 return false;
             }
         }
@@ -60,22 +72,29 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         /// </summary>
         public bool ValidateBlock(string blockName)
         {
+            using var lifetime = TryEnterCallback();
+            if (lifetime == null) return false;
+            RecordTarget target = null;
             try
             {
                 var blockInfo = GetBlock(blockName);
                 if (blockInfo?.UnitOfWork == null)
                     return true; // No block to validate
 
-                object currentRecord = blockInfo.UnitOfWork.CurrentItem;
+                target = CaptureRecordTarget(blockName, null, "Validation");
+                blockName = target.Registration.Name;
+                object currentRecord = target.Record;
 
                 // Fire event-based validation (existing behaviour)
                 bool eventValid = _eventManager.TriggerRecordValidation(blockName, currentRecord);
+                VerifyRecordTarget(target, default);
 
                 // Build a flat dictionary from current record for ValidationManager
                 bool rulesValid = true;
                 if (currentRecord != null)
                 {
                     PrepareValidationContext(blockName);
+                    VerifyRecordTarget(target, default);
                     // RecordPropertyAccessor.GetAllReadable returns a
                     // case-insensitive Dictionary<string, object>, which
                     // is the same shape ValidationManager.ValidateRecord
@@ -83,11 +102,13 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     // reflection path that re-scanned the record type on
                     // every validation.
                     var recordDict = currentRecord is IDictionary<string, object> dict
-                        ? dict
+                        ? new Dictionary<string, object>(dict, StringComparer.OrdinalIgnoreCase)
                         : RecordPropertyAccessor.GetAllReadable(currentRecord, _dmeEditor);
+                    VerifyRecordTarget(target, default);
 
                     var ruleResult = _validationManager.ValidateRecord(blockName, recordDict, ValidationTiming.Manual);
                     rulesValid = ruleResult?.IsValid != false;
+                    VerifyRecordTarget(target, default);
 
                     // Same 2026-08-22 fix as ValidateField, per item in the
                     // record: only touch a field's error state when this pass
@@ -99,7 +120,10 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     {
                         foreach (var kvp in ruleResult.ItemResults)
                         {
+                            VerifyRecordTarget(target, default);
                             if (kvp.Value.RuleResults.Count == 0) continue;
+                            if (!target.Items.ContainsKey(kvp.Key))
+                                throw new InvalidOperationException($"Validation returned uncaptured item '{kvp.Key}'.");
 
                             if (kvp.Value.IsValid)
                                 _itemPropertyManager?.ClearItemError(blockName, kvp.Key);
@@ -110,12 +134,16 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     }
                 }
 
-                return eventValid && rulesValid;
+                return RecordTargetCurrent(target, default) && eventValid && rulesValid;
             }
+            catch (SupersededRecordOperationException) { return false; }
             catch (Exception ex)
             {
-                LogError($"Error validating block '{blockName}'", ex, blockName);
-                _eventManager.TriggerError(blockName, ex);
+                if (RecordTargetCurrentSafely(target, default))
+                {
+                    LogError($"Error validating block '{blockName}'", ex, blockName);
+                    if (RecordTargetCurrentSafely(target, default)) _eventManager.TriggerError(blockName, ex);
+                }
                 return false;
             }
         }

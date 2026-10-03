@@ -26,6 +26,10 @@ namespace TheTechIdea.Beep.Editor.UOW
         /// </summary>
         public void Clear()
         {
+            RejectMutationDuringRead();
+            InvalidateReadBufferIdentity();
+            System.Threading.Interlocked.Increment(ref _recordTargetRevision);
+            System.Threading.Interlocked.Increment(ref _readTargetRevision);
             try
             {
                 // Detach event handlers before clearing
@@ -340,6 +344,7 @@ namespace TheTechIdea.Beep.Editor.UOW
         /// </summary>
         protected void ItemPropertyChangedHandler(object sender, PropertyChangedEventArgs e)
         {
+            System.Threading.Interlocked.Increment(ref _readTargetRevision);
             if (_suppressNotification) return;
 
             try
@@ -407,6 +412,8 @@ namespace TheTechIdea.Beep.Editor.UOW
         /// </summary>
         protected void Units_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
+            System.Threading.Interlocked.Increment(ref _recordTargetRevision);
+            System.Threading.Interlocked.Increment(ref _readTargetRevision);
             if (_suppressNotification) return;
 
             try

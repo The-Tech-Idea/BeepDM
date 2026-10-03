@@ -4,6 +4,9 @@ using System.Data;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using TheTechIdea.Beep.DataBase;
+using TheTechIdea.Beep.Editor.Importing.Helpers;
+using TheTechIdea.Beep.Workflow.Mapping;
 
 namespace TheTechIdea.Beep.Editor.Schema
 {
@@ -28,6 +31,7 @@ namespace TheTechIdea.Beep.Editor.Schema
             {
                 try
                 {
+                    token.ThrowIfCancellationRequested();
                     void Log(string msg) => log?.Invoke(msg);
 
                     Log("Preflight: initialising data sources…");
@@ -104,9 +108,21 @@ namespace TheTechIdea.Beep.Editor.Schema
                         destStruct = request.DestinationEntityStructure
                                      ?? dest.GetEntityStructure(request.DestinationEntityName, false);
 
+                    sourceStruct = EntityMetadataSnapshot.Capture(sourceStruct);
+                    if (destStruct != null) destStruct = EntityMetadataSnapshot.Capture(destStruct);
+                    if (destExists && destStruct == null)
+                        throw new InvalidOperationException("Existing destination metadata could not be loaded.");
+
+                    if (request.Mapping != null)
+                    {
+                        if (request.Mapping is not EntityDataMap mapped)
+                            throw new InvalidOperationException("Unsupported sync mapping metadata.");
+                        BoundMappingMetadata.Validate(mapped, sourceStruct, destStruct);
+                    }
+
                     // Field-compat (only when not auto-adding)
                     var missing = Array.Empty<string>();
-                    if (!request.AddMissingColumns && destExists && destStruct != null)
+                    if (request.Mapping == null && !request.AddMissingColumns && destExists && destStruct != null)
                     {
                         var destFieldNames = destStruct.Fields?
                             .Select(f => f.FieldName.ToLowerInvariant())
@@ -141,6 +157,7 @@ namespace TheTechIdea.Beep.Editor.Schema
                                 $"Preflight: destination entity '{request.DestinationEntityName}' does not exist and CreateDestinationIfNotExists is false.")
                         };
 
+                    token.ThrowIfCancellationRequested();
                     Log("Preflight: all checks passed.");
 
                     // Capture baseline snapshot
@@ -172,15 +189,22 @@ namespace TheTechIdea.Beep.Editor.Schema
                         DestinationExisted = destExists,
                         MissingDestinationFields = missing,
                         DestinationSnapshot = destSnapshot,
+                        SourceEntityStructure = sourceStruct,
+                        DestinationEntityStructure = destStruct,
+                        SourceData = source,
+                        DestinationData = dest,
                         Status = CreateErrors(Errors.Ok, "Preflight passed.")
                     };
                 }
-                catch (Exception ex)
+                catch (OperationCanceledException) when (token.IsCancellationRequested)
                 {
-                    editor?.Logger?.WriteLog($"SyncSchemaPreflight.RunPreflightAsync: {ex.Message}");
+                    throw;
+                }
+                catch (Exception)
+                {
                     return new SchemaPreflightResult
                     {
-                        Status = CreateErrors(Errors.Failed, $"Preflight exception: {ex.Message}")
+                        Status = CreateErrors(Errors.Failed, "Schema preflight failed; metadata or mapping admission was not completed.")
                     };
                 }
             }, token).ConfigureAwait(false);

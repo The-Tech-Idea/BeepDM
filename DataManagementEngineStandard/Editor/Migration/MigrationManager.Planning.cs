@@ -114,15 +114,13 @@ namespace TheTechIdea.Beep.Editor.Migration
                     // Emit FK/Index plan ops alongside the entity op when the caller
                     // opted in. This ensures the dry-run previews them, the policy
                     // lints them, and the execution orchestrator can apply them.
-                    // The structures used here are the same ones TryGetEntityStructure
-                    // returns (which honors the model-interop cache), so EF Core-shaped
-                    // FKs/indexes are also picked up when applicable.
                     if (primary?.EntityTypeName != null && detectRelationships)
                     {
-                        var structure = TryGetEntityStructure(entityType);
-                        if (structure != null && !string.IsNullOrWhiteSpace(primary.EntityName))
-                            structure.EntityName = primary.EntityName;
+                        var structure = primary.SchemaSnapshot?.DesiredSchema;
+                        var firstRelational = plan.Operations.Count;
                         EmitRelationalArtifactsForEntity(structure, plan.Operations, effectiveApplyForeignKeys, effectiveApplyIndexes);
+                        foreach (var operation in plan.Operations.Skip(firstRelational))
+                            operation.SchemaSnapshot = CopySnapshot(primary.SchemaSnapshot);
                     }
                 }
 
@@ -137,6 +135,7 @@ namespace TheTechIdea.Beep.Editor.Migration
             }
 
             plan.PolicyEvaluation = EvaluateMigrationPlanPolicy(plan, CreateDefaultPolicyOptions());
+            plan.PerformancePlan = BuildPerformancePlan(plan);
             plan.PlanHash = ComputePlanHash(plan);
             plan.ImpactReport = BuildImpactReport(plan);
             plan.DryRunReport = GenerateDryRunReport(plan);
@@ -156,7 +155,7 @@ namespace TheTechIdea.Beep.Editor.Migration
             plan.PerformancePlan = BuildPerformancePlan(plan);
             plan.CiValidationReport = ValidatePlanForCi(plan);
             plan.RolloutGovernanceReport = EvaluateRolloutGovernance(plan);
-            plan.ExecutionCheckpoint = CreateExecutionCheckpoint(plan);
+            plan.ExecutionCheckpoint = CreatePlanningCheckpoint(plan);
             RecordPlanCreated(plan);
             TryTrackMigrationPlan(plan, usesDiscovery ? nameof(BuildMigrationPlan) : nameof(BuildMigrationPlanForTypes));
             return plan;
@@ -169,6 +168,8 @@ namespace TheTechIdea.Beep.Editor.Migration
                 PlanId = Guid.NewGuid().ToString("N"),
                 CreatedOnUtc = DateTime.UtcNow,
                 LifecycleState = MigrationPlanLifecycleState.Draft,
+                PlanHashVersion = CurrentPlanHashVersion,
+                TargetFingerprint = CaptureTargetFingerprint(),
                 DataSourceName = MigrateDataSource?.DatasourceName ?? string.Empty,
                 DataSourceType = MigrateDataSource?.DatasourceType ?? DataSourceType.Unknown,
                 DataSourceCategory = MigrateDataSource?.Category ?? DatasourceCategory.NONE,
@@ -205,7 +206,7 @@ namespace TheTechIdea.Beep.Editor.Migration
 
             try
             {
-                var desired = TryGetEntityStructure(entityType);
+                var desired = CopySnapshot(TryGetEntityStructure(entityType));
                 var entityName = GetEntityName(entityType, desired);
                 baseOp.EntityName = entityName;
 
@@ -228,6 +229,12 @@ namespace TheTechIdea.Beep.Editor.Migration
                 }
 
                 var exists = MigrateDataSource.CheckEntityExist(entityName);
+                desired.EntityName = entityName;
+                baseOp.SchemaSnapshot = new MigrationEntitySnapshot
+                {
+                    DesiredSchema = desired,
+                    ExpectedEntityExists = exists
+                };
                 if (!exists)
                 {
                     baseOp.Kind = MigrationPlanOperationKind.CreateEntity;
@@ -239,6 +246,7 @@ namespace TheTechIdea.Beep.Editor.Migration
                 }
 
                 var current = MigrateDataSource.GetEntityStructure(entityName, true);
+                baseOp.SchemaSnapshot.ExpectedSchema = CopySnapshot(current);
                 if (current == null)
                 {
                     baseOp.Kind = MigrationPlanOperationKind.Error;
@@ -299,6 +307,7 @@ namespace TheTechIdea.Beep.Editor.Migration
                         var dropOp = new MigrationPlanOperation
                         {
                             EntityTypeName = baseOp.EntityTypeName,
+                            SchemaSnapshot = CopySnapshot(baseOp.SchemaSnapshot),
                             EntityName = entityName,
                             Kind = MigrationPlanOperationKind.DropColumn,
                             MissingColumns = droppedColumns,
@@ -433,93 +442,17 @@ namespace TheTechIdea.Beep.Editor.Migration
             }
         }
 
-        private static string ComputePlanHash(MigrationPlanArtifact plan)
-        {
-            var builder = new StringBuilder();
-            builder.Append(plan.DataSourceName).Append('|')
-                .Append(plan.DataSourceType).Append('|')
-                .Append(plan.DataSourceCategory).Append('|')
-                .Append(plan.UsesDiscovery).Append('|')
-                .Append(plan.EntityTypeCount).Append('|')
-                .Append(plan.LifecycleState);
-
-            foreach (var issue in plan.ReadinessIssues
-                .OrderBy(issue => issue.Code, StringComparer.OrdinalIgnoreCase)
-                .ThenBy(issue => issue.EntityName, StringComparer.OrdinalIgnoreCase))
-            {
-                builder.Append("|I:")
-                    .Append(issue.Code).Append(':')
-                    .Append(issue.Severity).Append(':')
-                    .Append(issue.EntityName).Append(':')
-                    .Append(issue.Message);
-            }
-
-            foreach (var operation in plan.Operations
-                .OrderBy(op => op.EntityName, StringComparer.OrdinalIgnoreCase)
-                .ThenBy(op => op.EntityTypeName, StringComparer.OrdinalIgnoreCase)
-                .ThenBy(op => op.Kind))
-            {
-                builder.Append("|O:")
-                    .Append(operation.EntityName).Append(':')
-                    .Append(operation.EntityTypeName).Append(':')
-                    .Append(operation.Kind).Append(':')
-                    .Append(operation.RiskLevel).Append(':')
-                    .Append(operation.Note);
-
-                // Include the constraint/index name in the hash so two plans
-                // that differ only by an FK/index name produce different hashes.
-                // Without this, DetectSchemaDrift and the CI plan-diff can't
-                // tell whether a rename happened between runs.
-                var isRelationalOp = operation.Kind == MigrationPlanOperationKind.AddForeignKey ||
-                                     operation.Kind == MigrationPlanOperationKind.DropForeignKey ||
-                                     operation.Kind == MigrationPlanOperationKind.CreateIndex ||
-                                     operation.Kind == MigrationPlanOperationKind.DropIndex;
-                if (isRelationalOp && !string.IsNullOrWhiteSpace(operation.TargetName))
-                    builder.Append(":T:").Append(operation.TargetName);
-
-                foreach (var column in operation.MissingColumns.OrderBy(name => name, StringComparer.OrdinalIgnoreCase))
-                {
-                    builder.Append(":C:").Append(column);
-                }
-
-                foreach (var fallback in operation.FallbackTasks.OrderBy(task => task, StringComparer.OrdinalIgnoreCase))
-                {
-                    builder.Append(":F:").Append(fallback);
-                }
-            }
-
-            if (plan.ProviderCapabilities != null)
-            {
-                builder.Append("|P:")
-                    .Append(plan.ProviderCapabilities.DataSourceType).Append(':')
-                    .Append(plan.ProviderCapabilities.DataSourceCategory).Append(':')
-                    .Append(plan.ProviderCapabilities.SupportsAlterColumn).Append(':')
-                    .Append(plan.ProviderCapabilities.SupportsRenameEntity).Append(':')
-                    .Append(plan.ProviderCapabilities.SupportsRenameColumn).Append(':')
-                    .Append(plan.ProviderCapabilities.SupportsTransactionalDdl).Append(':')
-                    .Append(plan.ProviderCapabilities.SupportsForeignKeys).Append(':')
-                    .Append(plan.ProviderCapabilities.SupportsIndexes).Append(':')
-                    .Append(plan.ProviderCapabilities.RequiresOfflineWindowForSchemaChanges).Append(':')
-                    .Append(plan.ProviderCapabilities.PortabilityWarning);
-            }
-
-            using var sha = SHA256.Create();
-            var bytes = Encoding.UTF8.GetBytes(builder.ToString());
-            var hash = sha.ComputeHash(bytes);
-            return BitConverter.ToString(hash).Replace("-", string.Empty);
-        }
 
         private void TryTrackMigrationPlan(MigrationPlanArtifact plan, string operationName)
         {
-            // Delegated to MigrationRecordWriter.WritePlanArtifact. The writer
-            // owns the MigrationRecord shape and the try/catch-with-LogMessage
-            // pattern. Behavior is identical to the inlined version.
-            MigrationRecordWriter.WritePlanArtifact(
+            var outcome = MigrationRecordWriter.WritePlanArtifact(
                 _editor,
                 plan,
                 operationName,
                 plan.DataSourceName ?? string.Empty,
                 plan.DataSourceType);
+            plan.PlanPersistenceStatus = outcome.Status;
+            plan.PlanPersistenceErrorCode = outcome.Error?.GetType().Name ?? string.Empty;
         }
 
         // ────────────────────────────────────────────────────────────────────────────────

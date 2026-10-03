@@ -2,6 +2,17 @@
 
 Entity and object mapping utilities.
 
+For independent run definitions, Models `EntityMetadataSnapshot.Capture` copies
+supported entity metadata and nested options with key aliases preserved and no
+source event observers. Legacy EntityStructure.Clone remains shallow. Read
+[snapshot contract](../../../DataManagementModelsStandard/DataBase/METADATA-SNAPSHOTS.md)
+for unsupported graphs, limits and caller coordination. Generated types now use
+[source-sensitive identity](../../ConfigUtil/GENERATED-TYPES.md); bare-name seeds
+cannot override metadata. Existing-target mapped sync now binds captured actual
+provider fields in both directions; read
+[sync admission contract](../BeepSync/STORAGE-AND-OUTCOMES.md). Mapped creation,
+record DQ and collectible assembly lifetime remain open integration gates.
+
 ## Key Components
 - `MappingManager` (static facade)
 - `MappingManager.Conventions.cs` (convention mapping, validation, diff)

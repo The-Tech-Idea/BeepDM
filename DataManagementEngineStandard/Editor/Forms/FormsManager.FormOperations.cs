@@ -189,7 +189,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         /// </summary>
         public async Task<IErrorsInfo> CommitFormAsync()
         {
-            var result = new ErrorsInfo { Flag = Errors.Ok };
+            var result = new FormCommitResult { Flag = Errors.Ok };
 
             try
             {
@@ -259,11 +259,8 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 // Each form's topological sort runs independently; we concatenate
                 // in call-stack order (caller → callee so the child's depends-on-parent
                 // resolution is respected).
-                var orderedAll = new List<string>();
-                foreach (var fm in formsToCommit)
-                    orderedAll.AddRange(fm.BuildCommitOrder().Where(b => allDirtyBlocks.Contains(b))
-                                                               .Concat(allDirtyBlocks.Except(fm.BuildCommitOrder())));
-                orderedAll = orderedAll.Distinct().ToList();
+                var commitTargets = CaptureCommitTargets(dirtyBlocksByForm);
+                result.Blocks = commitTargets.Select(t => t.Outcome).ToList().AsReadOnly();
 
                 // Fire PRE-COMMIT trigger on the form that initiated the commit.
                 //
@@ -314,7 +311,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 // Commit each form's dirty blocks in ordered sequence.
                 // Source-level transaction wrapping: if the data source supports it,
                 // wrap the entire cross-form commit in a single transaction.
-                bool crossFormSuccess = await TryCrossFormTransactionCommitAsync(formsToCommit, orderedAll).ConfigureAwait(false);
+                bool crossFormSuccess = await TryCrossFormTransactionCommitAsync(commitTargets, result).ConfigureAwait(false);
 
                 if (crossFormSuccess)
                 {
@@ -341,11 +338,12 @@ namespace TheTechIdea.Beep.Editor.UOWManager
 
                         foreach (var committedBlockName in committedBlocks)
                         {
-                            fm._systemVariablesManager?.SetBlockStatus(committedBlockName, "QUERY");
-                            fm._systemVariablesManager?.SetRecordStatus(committedBlockName, "QUERY");
+                            var status = fm.GetBlock(committedBlockName)?.UnitOfWork?.IsDirty == true ? "CHANGED" : "QUERY";
+                            fm._systemVariablesManager?.SetBlockStatus(committedBlockName, status);
+                            fm._systemVariablesManager?.SetRecordStatus(committedBlockName, status);
                         }
 
-                        fm._systemVariablesManager?.SetFormStatus("QUERY");
+                        fm._systemVariablesManager?.SetFormStatus(fm.GetDirtyBlocks().Any() ? "CHANGED" : "QUERY");
 
                         // Cross-form shared-block notification: SharedBlockManager.
                         // NotifySharedBlockChanged / its SharedBlockChanged event existed
@@ -391,18 +389,21 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 else
                 {
                     result.Flag = Errors.Failed;
-                    result.Message = "Commit completed with errors";
-                    Status = "Commit completed with errors";
+                    result.Message = result.RequiresReconciliation ? "Commit requires reconciliation; do not replay unknown writes" :
+                        result.Message ?? "Commit completed with errors";
+                    Status = result.Message;
                 }
 
                 return result;
             }
             catch (Exception ex)
             {
-                result.Flag = Errors.Failed;
-                result.Message = ex.Message;
+                result.Flag = result.AllWritesCommitted ? Errors.Ok : Errors.Failed;
+                result.Message = result.AllWritesCommitted ? "Writes committed; a completion notification failed" : ex.Message;
                 result.Ex = ex;
-                Status = $"Error during commit: {ex.Message}";
+                result.Errors.Add(new ErrorsInfo { Flag = result.AllWritesCommitted ? Errors.Warning : Errors.Failed,
+                    Message = ex.Message, Ex = ex });
+                Status = result.Message;
                 LogError("Error during form commit", ex);
                 _eventManager.TriggerError("FORM_COMMIT", ex);
                 return result;

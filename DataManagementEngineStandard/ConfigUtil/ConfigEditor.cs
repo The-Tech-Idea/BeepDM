@@ -26,8 +26,9 @@ namespace TheTechIdea.Beep.ConfigUtil
 	/// <summary>
 	/// Refactored ConfigEditor with specialized managers for different responsibilities
 	/// </summary>
-	public class ConfigEditor : IConfigEditor
+	public class ConfigEditor : IConfigEditor, IMigrationHistoryPersistence, IMigrationExecutionOwnership, IMigrationExecutionStorageProvider, IConnectionConfigurationPersistence, IConnectionProtectionContext
 	{
+        public IConnectionSecretProtector ConnectionSecretProtector { get; }
 		private bool disposedValue;
 
 		// Specialized managers
@@ -46,7 +47,13 @@ namespace TheTechIdea.Beep.ConfigUtil
         /// <param name="containerfolder">The name of the container folder within the folder path. If null or empty, uses the folder path directly.</param>
         /// <param name="configType">The type of configuration being edited.</param>
         public ConfigEditor(IDMLogger logger, IErrorsInfo per, IJsonLoader jsonloader, string folderpath = null, string containerfolder = null, BeepConfigType configType = BeepConfigType.Application)
+            : this(logger, per, jsonloader, folderpath, containerfolder, configType, TheTechIdea.Beep.Security.ConnectionCredentialProtection.Default)
+        { }
+
+        public ConfigEditor(IDMLogger logger, IErrorsInfo per, IJsonLoader jsonloader, string folderpath, string containerfolder,
+            BeepConfigType configType, IConnectionSecretProtector connectionSecretProtector)
 		{
+            ConnectionSecretProtector = connectionSecretProtector ?? throw new ArgumentNullException(nameof(connectionSecretProtector));
 			Logger = logger;
 			ErrorObject = per;
 			JsonLoader = jsonloader;
@@ -54,7 +61,7 @@ namespace TheTechIdea.Beep.ConfigUtil
 
 			// Initialize specialized managers
 			_pathManager = new ConfigPathManager(logger, folderpath, containerfolder);
-			_connectionManager = new DataConnectionManager(logger, jsonloader, _pathManager.ConfigPath);
+			_connectionManager = new DataConnectionManager(logger, jsonloader, _pathManager.ConfigPath, ConnectionSecretProtector);
 			_queryManager = new QueryManager(logger, jsonloader, _pathManager.ConfigPath);
 			_componentManager = new ComponentConfigManager(logger, jsonloader, _pathManager.ConfigPath, _pathManager);
 
@@ -323,6 +330,43 @@ namespace TheTechIdea.Beep.ConfigUtil
 		public void SaveMigrationHistory(MigrationHistory history) => _migrationHistoryManager.Save(history);
 		public void AppendMigrationRecord(string dataSourceName, DataSourceType dataSourceType, MigrationRecord record) =>
 			_migrationHistoryManager.AppendRecord(dataSourceName, dataSourceType, record);
+        public PersistenceWriteResult SaveMigrationHistoryAcknowledged(MigrationHistory history, System.Threading.CancellationToken token = default) =>
+            _migrationHistoryManager.SaveAcknowledged(history, token);
+
+        private TheTechIdea.Beep.Services.Persistence.FileMigrationExecutionOwnership MigrationOwnershipStore()
+        {
+            var root = Config?.ConfigPath;
+            if (string.IsNullOrWhiteSpace(root))
+                throw new InvalidOperationException("Migration ownership requires an explicit configuration root.");
+            return new TheTechIdea.Beep.Services.Persistence.FileMigrationExecutionOwnership(
+                Path.Combine(root, "Migrations", "ExecutionOwnership"));
+        }
+
+        public IMigrationExecutionStorage CaptureMigrationExecutionStorage() =>
+            new TheTechIdea.Beep.Services.Persistence.FileMigrationExecutionStorage(Config?.ConfigPath, JsonLoader, Logger);
+
+        public MigrationExecutionAdmission TryAcquireMigrationExecution(string targetIdentity, string executionToken, string planHash,
+            System.Threading.CancellationToken token = default)
+        {
+            if (token.IsCancellationRequested) return new MigrationExecutionAdmission(MigrationAdmissionStatus.Cancelled);
+            try { return MigrationOwnershipStore().TryAcquireMigrationExecution(targetIdentity, executionToken, planHash, token); }
+            catch (Exception ex) { return new MigrationExecutionAdmission(MigrationAdmissionStatus.Failed, errorCode: ex.GetType().Name); }
+        }
+
+        public MigrationExecutionClaim ReadMigrationExecutionClaim(string targetIdentity) =>
+            MigrationOwnershipStore().ReadMigrationExecutionClaim(targetIdentity);
+
+        public PersistenceWriteResult ReconcileMigrationExecution(string targetIdentity, string expectedClaimId, string actor,
+            string evidenceReference, System.Threading.CancellationToken token = default)
+        {
+            if (token.IsCancellationRequested) return new PersistenceWriteResult(PersistenceWriteStatus.Cancelled);
+            try { return MigrationOwnershipStore().ReconcileMigrationExecution(targetIdentity, expectedClaimId, actor, evidenceReference, token); }
+            catch { return new PersistenceWriteResult(PersistenceWriteStatus.Failed,
+                new InvalidOperationException("Migration ownership store is not available.")); }
+        }
+        public PersistenceWriteResult AppendMigrationRecordAcknowledged(string dataSourceName, DataSourceType dataSourceType,
+            MigrationRecord record, System.Threading.CancellationToken token = default) =>
+            _migrationHistoryManager.AppendAcknowledged(dataSourceName, dataSourceType, record, token);
 		#endregion
 
         #region "Mapping Operations - Delegated to EntityMappingManager"
@@ -336,6 +380,8 @@ namespace TheTechIdea.Beep.ConfigUtil
         public bool DataConnectionExist(ConnectionProperties cn) => _connectionManager.DataConnectionExist(cn);
 		public bool DataConnectionGuidExist(string GuidID) => _connectionManager.DataConnectionGuidExist(GuidID);
 		public void SaveDataconnectionsValues() => _connectionManager.SaveDataConnectionsValues();
+        public PersistenceWriteResult SaveDataConnectionsAcknowledged(System.Threading.CancellationToken token = default) =>
+            _connectionManager.SaveDataConnectionsAcknowledged(token);
 		public List<ConnectionProperties> LoadDataConnectionsValues() => _connectionManager.LoadDataConnectionsValues();
 		public bool DataConnectionExist(string ConnectionName) => _connectionManager.DataConnectionExist(ConnectionName);
 		public bool AddDataConnection(ConnectionProperties cn) => _connectionManager.AddDataConnection(cn);

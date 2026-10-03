@@ -126,6 +126,8 @@ namespace TheTechIdea.Beep.Editor.Importing
     /// <summary>Configuration class for data import operations.</summary>
     public class DataImportConfiguration
     {
+        /// <summary>Optional execution identity; a fresh identity is generated per admission when absent.</summary>
+        public string? ImportRunId { get; set; }
         public string SourceEntityName { get; set; } = string.Empty;
         public string DestEntityName { get; set; } = string.Empty;
         public string SourceDataSourceName { get; set; } = string.Empty;
@@ -135,6 +137,11 @@ namespace TheTechIdea.Beep.Editor.Importing
         public IDataSource? SourceData { get; set; }
         public IDataSource? DestData { get; set; }
         public EntityDataMap? Mapping { get; set; }
+        /// <summary>
+        /// Requires captured source/target metadata and complete, unambiguous mapping admission.
+        /// The target must already exist; this mode never infers or creates a mapped schema.
+        /// </summary>
+        public bool RequireBoundMappingMetadata { get; set; }
         public List<AppFilter> SourceFilters { get; set; } = new();
         public List<string>? SelectedFields { get; set; }
         public List<DefaultValue> DefaultValues { get; set; } = new();
@@ -153,6 +160,13 @@ namespace TheTechIdea.Beep.Editor.Importing
         public object?   LastWatermarkValue { get; set; }
         public List<string> UpsertKeyColumns  { get; set; } = new();
         public List<IDataQualityRule> QualityRules { get; set; } = new();
+        public QualityFailureMode QualityFailureMode { get; set; } = QualityFailureMode.Required;
+        /// <summary>Observed at synchronous evaluation boundaries, not forced preemption. Range 1..60000 ms.</summary>
+        public int QualityRuleTimeoutMs { get; set; } = 5000;
+        [System.Runtime.Serialization.IgnoreDataMember]
+        [System.Text.Json.Serialization.JsonIgnore]
+        [System.Xml.Serialization.XmlIgnore]
+        public IImportRecordAdmission? RecordAdmission { get; set; }
         public SchemaDriftPolicy DriftPolicy { get; set; } = SchemaDriftPolicy.AutoAddColumns;
         public IImportErrorStore? ErrorStore { get; set; }
         public IImportRunHistoryStore? RunHistoryStore { get; set; }
@@ -221,6 +235,7 @@ namespace TheTechIdea.Beep.Editor.Importing
         public bool Replayed        { get; set; }
         public DateTime? ReplayedAt { get; set; }
         public string? TriageNote   { get; set; }
+        public ImportRejectRecovery? Recovery { get; set; }
     }
 
     /// <summary>Abstraction for persisting failed records during import.</summary>

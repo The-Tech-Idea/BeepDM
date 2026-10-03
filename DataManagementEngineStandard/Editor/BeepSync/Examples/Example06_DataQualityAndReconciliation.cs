@@ -12,6 +12,8 @@ using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.Editor.BeepSync;
 using TheTechIdea.Beep.Editor.BeepSync.Helpers;
+using TheTechIdea.Beep.Editor.Importing;
+using TheTechIdea.Beep.Rules;
 
 namespace TheTechIdea.Beep.Editor.BeepSync.Examples
 {
@@ -20,9 +22,13 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Examples
     /// </summary>
     public static class Example06_DataQualityAndReconciliation
     {
-        public static async Task RunAsync(IDMEEditor editor)
+        public static Task RunAsync(IDMEEditor editor) => RunAsync(editor, null);
+
+        public static async Task RunAsync(IDMEEditor editor, IRuleEngine ruleEngine)
         {
-            var syncManager = new BeepSyncManager(editor);
+            ArgumentNullException.ThrowIfNull(ruleEngine);
+            // The host registers the named Boolean record rules and strict threshold action rule.
+            using var syncManager = new BeepSyncManager(editor, new SyncIntegrationContext { RuleEngine = ruleEngine });
             var fieldHelper = new FieldMappingHelper(editor);
 
             var schema = new DataSyncSchema
@@ -44,26 +50,31 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Examples
                     Enabled = true,
 
                     // Rule keys evaluated per record in order.
-                    // First failure routes the record to the reject channel.
+                    // Required rejection denies the row and fails the run without cursor advancement.
                     RuleKeys = new List<string>
                     {
                         "sync.dq.required-fields",   // ContactId, Email must be non-null
                         "sync.dq.email-format",       // Email must match regex
                         "sync.dq.type-validity",      // field types must coerce cleanly
                     },
+                    RecordFailureMode = QualityFailureMode.Required,
+                    OnRecordFailure = DataQualityAction.Quarantine,
 
-                    // Batch-level abort gate: abort if reject rate exceeds MaxRejectRatePercent.
-                    // A Rule Engine key can override this — default is "sync.dq.batch-threshold".
+                    // Once per attempt, including partial failure; action is ContinueRun or AbortRun.
+                    // ContinueRun cannot override the numeric limit or required record rejection.
+                    BatchThresholdEnabled = true,
+                    ThresholdFailureMode = QualityFailureMode.Required,
                     BatchThresholdRuleKey  = "sync.dq.batch-threshold",
-                    MaxRejectRatePercent   = 5.0,      // abort batch if > 5 % rejected
+                    MaxRejectRatePercent   = 5.0,      // reject completion if > 5 % of attempted rows
 
-                    // Rejects are written to this datasource/entity for later investigation.
+                    // This provider/entity must already be open/provisioned; write-only, not automatic replay.
                     RejectChannelDataSourceName = "Quarantine_DB",
                     RejectChannelEntityName     = "ContactRejects",
 
-                    // Fill missing destination fields from EntityDefaultsProfile before DQ eval.
+                    // Compatibility flag, not a separate defaults stage; configure actual import defaults.
                     FillDefaultsBeforeEval = true,
                 },
+                RetryPolicy = new RetryPolicy { MaxAttempts = 1, CheckpointEnabled = true },
 
                 // ── Mapping quality gate ───────────────────────────────────────────
                 MappingPolicy = new SyncMappingPolicy
@@ -117,7 +128,9 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Examples
             await syncManager.SaveSchemasAsync().ConfigureAwait(false);
         }
 
-        public static void Run(IDMEEditor editor) =>
-            RunAsync(editor).GetAwaiter().GetResult();
+        public static void Run(IDMEEditor editor) => RunAsync(editor).GetAwaiter().GetResult();
+
+        public static void Run(IDMEEditor editor, IRuleEngine ruleEngine) =>
+            RunAsync(editor, ruleEngine).GetAwaiter().GetResult();
     }
 }

@@ -70,6 +70,7 @@ namespace TheTechIdea.Beep.Editor.UOW
             TenantFieldName = fieldName;
             TenantId = tenantId;
             TenantFiltersReads = filterReads;
+            InvalidateReadBufferIdentity();
             return this;
         }
 

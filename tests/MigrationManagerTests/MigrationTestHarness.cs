@@ -27,6 +27,11 @@ public sealed class MigrationTestHarness
 
     /// <summary>In-memory per-datasource migration history — persists checkpoints + named records.</summary>
     public MigrationHistory History { get; } = new() { DataSourceName = "testdb", DataSourceType = DataSourceType.SqlServer };
+    public Func<MigrationRecord, PersistenceWriteResult> HistoryWrite { get; set; }
+    public IConfigEditor ConfigOverride { get; set; }
+    public IMigrationExecutionStorage ExecutionStorage { get; set; }
+    public Action? BeforeProviderResolve { get; set; }
+    public Action<EntityStructure>? BeforeCreateEntity { get; set; }
 
     /// <summary>Entity name → desired structure, as the class-creator would produce from a POCO.</summary>
     private readonly Dictionary<Type, EntityStructure> _desiredByType = new();
@@ -36,6 +41,13 @@ public sealed class MigrationTestHarness
 
     /// <summary>Ordered record of every logical op the resolved provider was asked to perform.</summary>
     public List<string> ProviderCalls { get; } = new();
+    public List<EntityStructure> ReceivedEntities { get; } = new();
+    public List<EntityField> ReceivedColumns { get; } = new();
+    public List<(string Name, string[] Columns, Dictionary<string, object> Options)> ReceivedIndexes { get; } = new();
+    public List<(string Name, string[] Columns, string ReferencedEntity, string[] ReferencedColumns, string OnDelete)> ReceivedForeignKeys { get; } = new();
+    public string TargetName { get; set; } = "testdb";
+    public string TargetGuid { get; set; } = "test-target";
+    public ConnectionProperties TargetConnectionProperties { get; set; }
 
     /// <summary>When set, the recording provider fails ops whose name is in this set.</summary>
     public HashSet<string> FailOps { get; } = new(StringComparer.OrdinalIgnoreCase);
@@ -60,9 +72,14 @@ public sealed class MigrationTestHarness
 
     public MigrationTestHarness()
     {
+        ExecutionStorage = new MemoryMigrationExecutionStorage(this);
         _ds.SetupGet(d => d.DatasourceType).Returns(DataSourceType.SqlServer);
         _ds.SetupGet(d => d.Category).Returns(DatasourceCategory.RDBMS);
-        _ds.SetupGet(d => d.DatasourceName).Returns("testdb");
+        _ds.SetupGet(d => d.DatasourceName).Returns(() => TargetName);
+        _ds.SetupGet(d => d.GuidID).Returns(() => TargetGuid);
+        var connection = new Mock<IDataConnection>();
+        connection.SetupGet(c => c.ConnectionProp).Returns(() => TargetConnectionProperties);
+        _ds.SetupGet(d => d.Dataconnection).Returns(connection.Object);
         _ds.SetupGet(d => d.ConnectionStatus).Returns(System.Data.ConnectionState.Open);
         _ds.SetupGet(d => d.ErrorObject).Returns(new ErrorsInfo { Flag = Errors.Ok });
         _ds.SetupGet(d => d.DMEEditor).Returns(() => _editor.Object);
@@ -72,7 +89,14 @@ public sealed class MigrationTestHarness
         _ds.Setup(d => d.GetEntityStructure(It.IsAny<string>(), It.IsAny<bool>()))
            .Returns<string, bool>((name, _) => _existing.TryGetValue(name, out var s) ? s : null);
         _ds.Setup(d => d.CreateEntityAs(It.IsAny<EntityStructure>()))
-           .Returns<EntityStructure>(e => { ProviderCalls.Add($"CreateEntityAs:{e?.EntityName}"); return true; });
+           .Returns<EntityStructure>(e =>
+           {
+               ReceivedEntities.Add(ClonePayload(e));
+               var operation = $"CreateEntityAs:{e?.EntityName}";
+               ProviderCalls.Add(operation);
+               BeforeCreateEntity?.Invoke(e);
+               return !FailOps.Contains("CreateEntityAs") && !FailOps.Contains(operation);
+           });
         _ds.Setup(d => d.ExecuteSql(It.IsAny<string>()))
            .Returns<string>(sql =>
            {
@@ -101,13 +125,24 @@ public sealed class MigrationTestHarness
         _editor.SetupGet(e => e.classCreator).Returns(() => _classCreator.Object);
         _editor.SetupGet(e => e.ErrorObject).Returns(new ErrorsInfo { Flag = Errors.Ok });
         _editor.Setup(e => e.GetMigrationProvider(It.IsAny<IDataSource>()))
-               .Returns(() => new RecordingProvider(this));
+               .Returns(() => { BeforeProviderResolve?.Invoke(); return new RecordingProvider(this); });
 
         // In-memory migration-history store so checkpoint persistence / idempotency round-trip.
         _config.Setup(c => c.LoadMigrationHistory(It.IsAny<string>())).Returns(() => History);
         _config.Setup(c => c.AppendMigrationRecord(It.IsAny<string>(), It.IsAny<DataSourceType>(), It.IsAny<MigrationRecord>()))
                .Callback<string, DataSourceType, MigrationRecord>((_, _, record) => History.Migrations.Add(record));
-        _editor.SetupGet(e => e.ConfigEditor).Returns(() => _config.Object);
+        _config.As<IMigrationHistoryPersistence>()
+            .Setup(c => c.AppendMigrationRecordAcknowledged(It.IsAny<string>(), It.IsAny<DataSourceType>(), It.IsAny<MigrationRecord>(), It.IsAny<CancellationToken>()))
+            .Returns<string, DataSourceType, MigrationRecord, CancellationToken>((_, _, record, token) =>
+            {
+                token.ThrowIfCancellationRequested();
+                var outcome = HistoryWrite?.Invoke(record) ?? new PersistenceWriteResult(PersistenceWriteStatus.Saved);
+                if (outcome.IsSaved) History.Migrations.Add(record);
+                return outcome;
+            });
+        _editor.SetupGet(e => e.ConfigEditor).Returns(() => ConfigOverride ?? _config.Object);
+        _config.As<IMigrationExecutionStorageProvider>().Setup(c => c.CaptureMigrationExecutionStorage())
+            .Returns(() => ExecutionStorage);
     }
 
     public IDataSource DataSource => _ds.Object;
@@ -127,7 +162,10 @@ public sealed class MigrationTestHarness
         return this;
     }
 
-    public MigrationManager Build() => new(Editor, DataSource);
+    public MigrationManager Build() => new(Editor, DataSource) { ExecutionTargetIdentity = "test-target/sqlserver" };
+
+    private static T ClonePayload<T>(T value) => Newtonsoft.Json.JsonConvert.DeserializeObject<T>(
+        Newtonsoft.Json.JsonConvert.SerializeObject(value));
 
     /// <summary>Convenience: an EntityStructure with the given name and simple string fields.</summary>
     public static EntityStructure Entity(string name, params string[] fieldNames)
@@ -168,22 +206,38 @@ public sealed class MigrationTestHarness
         private IErrorsInfo Record(string op, string detail)
         {
             _h.ProviderCalls.Add($"{op}:{detail}");
-            return _h.FailOps.Contains(op)
+            return _h.FailOps.Contains(op) || _h.FailOps.Contains($"{op}:{detail}")
                 ? new ErrorsInfo { Flag = Errors.Failed, Message = $"{op} failed (scripted)." }
                 : new ErrorsInfo { Flag = Errors.Ok, Message = $"{op} ok." };
         }
 
-        public IErrorsInfo CreateEntity(EntityStructure entity) => Record("CreateEntity", entity?.EntityName);
+        public IErrorsInfo CreateEntity(EntityStructure entity)
+        {
+            _h.ReceivedEntities.Add(ClonePayload(entity));
+            return Record("CreateEntity", entity?.EntityName);
+        }
         public IErrorsInfo DropEntity(string entityName) => Record("DropEntity", entityName);
         public IErrorsInfo TruncateEntity(string entityName) => Record("TruncateEntity", entityName);
         public IErrorsInfo RenameEntity(string oldName, string newName) => Record("RenameEntity", $"{oldName}->{newName}");
-        public IErrorsInfo AddColumn(string entityName, EntityField column) => Record("AddColumn", $"{entityName}.{column?.FieldName}");
+        public IErrorsInfo AddColumn(string entityName, EntityField column)
+        {
+            _h.ReceivedColumns.Add(ClonePayload(column));
+            return Record("AddColumn", $"{entityName}.{column?.FieldName}");
+        }
         public IErrorsInfo AlterColumn(string entityName, string columnName, EntityField newColumn) => Record("AlterColumn", $"{entityName}.{columnName}");
         public IErrorsInfo DropColumn(string entityName, string columnName) => Record("DropColumn", $"{entityName}.{columnName}");
         public IErrorsInfo RenameColumn(string entityName, string oldColumnName, string newColumnName) => Record("RenameColumn", $"{entityName}.{oldColumnName}->{newColumnName}");
-        public IErrorsInfo CreateIndex(string entityName, string indexName, string[] columns, Dictionary<string, object> options = null) => Record("CreateIndex", $"{entityName}.{indexName}");
+        public IErrorsInfo CreateIndex(string entityName, string indexName, string[] columns, Dictionary<string, object> options = null)
+        {
+            _h.ReceivedIndexes.Add((indexName, columns.ToArray(), ClonePayload(options)));
+            return Record("CreateIndex", $"{entityName}.{indexName}");
+        }
         public IErrorsInfo DropIndex(string entityName, string indexName) => Record("DropIndex", $"{entityName}.{indexName}");
-        public IErrorsInfo AddForeignKey(string entityName, string[] columnNames, string referencedEntityName, string[] referencedColumnNames, string onDeleteBehavior, string onUpdateBehavior, string constraintName) => Record("AddForeignKey", constraintName ?? entityName);
+        public IErrorsInfo AddForeignKey(string entityName, string[] columnNames, string referencedEntityName, string[] referencedColumnNames, string onDeleteBehavior, string onUpdateBehavior, string constraintName)
+        {
+            _h.ReceivedForeignKeys.Add((constraintName, columnNames.ToArray(), referencedEntityName, referencedColumnNames.ToArray(), onDeleteBehavior));
+            return Record("AddForeignKey", constraintName ?? entityName);
+        }
         public IErrorsInfo DropForeignKey(string entityName, string constraintName) => Record("DropForeignKey", $"{entityName}.{constraintName}");
     }
 }

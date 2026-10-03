@@ -27,7 +27,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
 
         private void HandleBlockFieldChangedForAudit(object sender, BlockFieldChangedEventArgs e)
         {
-            if (_auditManager == null || e == null) return;
+            if (_disposed || _auditManager == null || e == null) return;
             _auditManager.RecordFieldChange(
                 e.BlockName,
                 e.FieldName,

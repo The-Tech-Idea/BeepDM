@@ -1,6 +1,6 @@
 ---
 name: beepdm-unitofwork
-description: Use when writing transactional CRUD in BeepDM — Add / Modify / Delete / Commit against an `Entity` POCO via `UnitofWork<T>`. Hands off to Forms (UI binding), ETL (batch transactional sinks), and Configuration (entity metadata) skills.
+description: Use when writing transactional CRUD in BeepDM via typed UnitofWork entities. Hands off to Forms for UI binding, ETL for bulk sinks, and Configuration for entity metadata.
 ---
 
 # beepdm-unitofwork
@@ -24,17 +24,16 @@ description: Use when writing transactional CRUD in BeepDM — Add / Modify / De
 
 `DataManagementEngineStandard/Editor/UOW/`:
 
-- `UnitofWork.cs` — main class
-- `ObservableBindingList.cs` — change-notifying list (in `Editor/Defaults/` or `Editor/UOW/`)
+- `UnitofWork.Core.cs`, `UnitofWork.CRUD.cs`, `UnitofWork.Core.Extensions.cs`
+- `DataManagementModelsStandard/ObservableBindingList/` owns the binding list
 
 ## Typical Workflow
 
 ```csharp
-var uow = editor.CreateUnitOfWork<Product>();
-uow.AddNew(new Product { Name = "Widget", Price = 29.99m });
-uow.Modify(existingProduct);
-uow.Delete(productToRemove);
-uow.Commit();   // single transaction; success or full rollback
+using var uow = new UnitofWork<Product>(editor, "database", "Products", "Id");
+uow.Add(new Product { Name = "Widget", Price = 29.99m });
+var result = await uow.Commit();
+if (result.Flag != Errors.Ok) { /* inspect Message and secondary Errors */ }
 ```
 
 ## Modes
@@ -42,7 +41,8 @@ uow.Commit();   // single transaction; success or full rollback
 - **AddNew** — entity is queued for INSERT.
 - **Modify** — entity is queued for UPDATE (delta detection by hash / original values).
 - **Delete** — entity is queued for DELETE.
-- **Commit** — runs the queued changes in a single transaction.
+- **Commit** — uses a transaction when the datasource capability matrix supports it;
+  otherwise writes can be partial.
 - **Rollback** (or just drop the UoW) — discards queued changes without touching the datasource.
 
 ## ObservableBindingList
@@ -54,14 +54,24 @@ uow.Commit();   // single transaction; success or full rollback
 | Handoff | Direction | What flows |
 |---|---|---|
 | **beepdm-forms** | ← Forms | Forms calls UoW for every save. UoW is the transactional back-end; Forms is the UX. |
-| **beepdm-etl** | ← ETL | ETL sinks wrap per-record writes in UoW when a transactional target needs it. |
+| **beepdm-etl** | Separate write path | The built-in datasource sink writes directly; its opt-in transactions do not use UOW. |
 | **beepdm-configuration** | ← Config | UoW reads entity metadata from `EntityStructure` (via config cache or runtime discovery). |
 | **beepdm-migration** | ← Migration | UoW assumes the schema already exists. If a column is missing, the UoW call should surface the error. |
 | **beepdm-setup** | ← Setup | After Setup finishes, UoW is the runtime API the app uses for CRUD. |
 
 ## Design Rules
 
-- UoW is **transactional** — Commit either succeeds entirely or rolls back. Do not call Commit in a loop expecting partial success.
+- With transactions, UOW defers OBL acceptance and AfterSave until datasource
+  Commit returns Ok. Failed writes/commit keep changes pending; rollback errors
+  are secondary diagnostics and do not replace the original failure.
+- Confirmed rollback restores generated insert keys. Edits made during commit
+  remain pending as updates, not another insert. Provider rollback failure is not
+  a confirmed recovery; reconcile actual database state before retrying.
+- Consumer AfterSave/PostCommit notification errors are warnings after a confirmed
+  commit, not proof that database writes failed.
+- Direct OBL `CommitAllAsync(..., order, false)` callers must call `AcceptCommit`
+  after database commit or `DiscardCommit` after rollback. Do not use default
+  immediate acceptance to wrap a transaction externally.
 - Delta detection is automatic; do not pre-emptively mark every entity as Modified.
 - Always dispose the UoW (or use `using`); it holds the transaction and change tracker.
 - Use `ObservableBindingList<T>` for UI-bound lists, not `List<T>`.
@@ -73,4 +83,4 @@ uow.Commit();   // single transaction; success or full rollback
 - See **beepdm-etl** for bulk operations.
 - See **beepdm-configuration** for the entity-structure cache.
 - See **beepdm-migration** for schema changes UoW depends on.
-- See `.cursor/unitofwork/SKILL.md` for the deep-dive implementation details.
+- See `tests/FrameworkReliabilityTests/UnitOfWorkTransactionTests.cs` for recovery guarantees and regression cases.

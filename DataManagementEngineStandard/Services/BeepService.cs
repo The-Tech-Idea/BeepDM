@@ -32,6 +32,10 @@ namespace TheTechIdea.Beep.Container.Services
         // Add these fields for thread-safe initialization
         private readonly object _configLock = new object();
         private readonly object _assembliesLock = new object();
+        internal bool RegisterComponentsOnConfigure { get; set; } = true;
+        internal bool LoadDefaultMappings { get; set; } = true;
+        /// <summary>Set before Configure; the configured graph captures this host-owned policy.</summary>
+        public IConnectionSecretProtector ConnectionSecretProtector { get; set; } = TheTechIdea.Beep.Security.ConnectionCredentialProtection.Default;
 
         public BeepService(IServiceCollection services)
         {
@@ -106,6 +110,7 @@ namespace TheTechIdea.Beep.Container.Services
         CancellationTokenSource tokenSource;
         CancellationToken token;
         private bool disposedValue;
+        private int _disposeStarted;
         private bool isconfigloaded = false;
         private bool isassembliesloaded=false;
         private bool isDesignTime;
@@ -123,71 +128,79 @@ namespace TheTechIdea.Beep.Container.Services
         }
         public void Configure(string directorypath, string containername, BeepConfigType configType, bool AddasSingleton = false)
         {
-            try
+            lock (_configLock)
             {
-                // Store configuration parameters
-                AppRepoName = containername ?? "Beep";
-                ConfigureationType = configType;
-
-                // Use EnvironmentService for base path if directorypath is null
-                if (string.IsNullOrEmpty(directorypath))
+                ObjectDisposedException.ThrowIf(disposedValue || Volatile.Read(ref _disposeStarted) != 0, this);
+                if (DMEEditor != null)
+                    throw new InvalidOperationException("This runtime is already configured. Create a new runtime rather than replacing an active graph.");
+                try
                 {
-                    BeepDirectory = EnvironmentService.CreateMainFolder();
-                }
-                else
-                {
-                    BeepDirectory = directorypath;
-                }
+                    // Store configuration parameters
+                    AppRepoName = containername ?? "Beep";
+                    ConfigureationType = configType;
 
-                // Initialize core components
-                Erinfo = new ErrorsInfo();
-                lg = new DMLogger();
-                jsonLoader = new JsonLoader();
-
-                // Determine root path
-                string root = Path.Combine(BeepDirectory, "Beep");
-
-                // Create core services
-                Config_editor = new ConfigEditor(lg, Erinfo, jsonLoader, root, containername, configType);
-                util = new Util(lg, Erinfo, Config_editor);
-                LLoader = CreateAssemblyHandler(Config_editor, Erinfo, lg, util);
-                DMEEditor = new DMEEditor(lg, util, Erinfo, Config_editor, LLoader);
-
-                // Wire the catalog-aware connection repository so all connection
-                // CRUD flows through a single source of truth (scope/profile-aware).
-                var catalogRepo = new BeepConnectionRepository(this);
-                Config_editor.ConnectionCatalogRepository = catalogRepo;
-
-                // Register services if collection provided
-                if (Services != null)
-                {
-                    if (AddasSingleton)
-                        LoadServicesSingleton();
+                    // Use EnvironmentService for base path if directorypath is null
+                    if (string.IsNullOrEmpty(directorypath))
+                    {
+                        BeepDirectory = EnvironmentService.CreateMainFolder();
+                    }
                     else
-                        LoadServicesScoped();
+                    {
+                        BeepDirectory = Path.GetFullPath(directorypath);
+                    }
+
+                    // Initialize core components
+                    Erinfo = new ErrorsInfo();
+                    lg = new DMLogger();
+                    jsonLoader = new JsonLoader();
+
+                    // Determine root path
+                    string root = Path.Combine(BeepDirectory, "Beep");
+                    Directory.CreateDirectory(root);
+
+                    // Create core services
+                    Config_editor = new ConfigEditor(lg, Erinfo, jsonLoader, root, containername, configType, ConnectionSecretProtector);
+                    util = new Util(lg, Erinfo, Config_editor);
+                    LLoader = CreateAssemblyHandler(Config_editor, Erinfo, lg, util);
+                    DMEEditor = new DMEEditor(lg, util, Erinfo, Config_editor, LLoader);
+
+                    // Wire the catalog-aware connection repository so all connection
+                    // CRUD flows through a single source of truth (scope/profile-aware).
+                    var catalogRepo = new BeepConnectionRepository(this);
+                    Config_editor.ConnectionCatalogRepository = catalogRepo;
+
+                    // Register services if collection provided
+                    if (Services != null && RegisterComponentsOnConfigure)
+                    {
+                        if (AddasSingleton)
+                            LoadServicesSingleton();
+                        else
+                            LoadServicesScoped();
+                    }
+
+                    // Initialize arguments
+                    DMEEditor.Passedarguments = new PassedArgs();
+                    DMEEditor.Passedarguments.Objects = new List<ObjectItem>();
+
+                    DMEEditor.ErrorObject.Flag = Errors.Ok;
+
+                    // Load configurations if not already loaded
+                    if (!isconfigloaded)
+                    {
+                        LoadConfigurations(containername);
+                    }
                 }
-
-                // Initialize arguments
-                DMEEditor.Passedarguments = new PassedArgs();
-                DMEEditor.Passedarguments.Objects = new List<ObjectItem>();
-
-                DMEEditor.ErrorObject.Flag = Errors.Ok;
-
-                // Load configurations if not already loaded
-                if (!isconfigloaded)
+                catch (Exception ex)
                 {
-                    LoadConfigurations(containername);
+                    try { lg?.WriteLog($"BeepService configuration failed: {ex.Message}"); }
+                    catch (Exception logError)
+                    {
+                        // Failed initialization still releases its graph when logging is unavailable.
+                        System.Diagnostics.Debug.WriteLine($"Configuration failed: {ex}; logger: {logError}");
+                    }
+                    Dispose();
+                    throw new InvalidOperationException("BeepService configuration failed.", ex);
                 }
-            }
-            catch (Exception ex)
-            {
-                // Create minimal valid state even on error
-          
-
-          
-                // Log the error
-                lg?.WriteLog($"BeepService configuration failed: {ex.Message}");
-                Console.WriteLine($"BeepService configuration failed: {ex.Message}");
             }
         }
 
@@ -205,26 +218,27 @@ namespace TheTechIdea.Beep.Container.Services
 
         public void LoadServicesScoped()
         {
-            Services.AddKeyedScoped<IDMLogger, DMLogger>("Logger");
-            Services.AddKeyedScoped<IConfigEditor, ConfigEditor>("ConfigEditor");
-            Services.AddKeyedScoped<IDMEEditor, DMEEditor>("Editor");
-            Services.AddKeyedScoped<IUtil, Util>("Util");
-            Services.AddKeyedScoped<IJsonLoader, JsonLoader>("JsonLoader");
-            if (_assemblyHandlerType == AssemblyHandlerType.SharedContext)
-                Services.AddKeyedScoped<IAssemblyHandler, SharedContextAssemblyHandler>("AssemblyHandler");
-            else
-                Services.AddKeyedScoped<IAssemblyHandler, AssemblyHandler>("AssemblyHandler");
-
+            RegisterRuntimeServices(ServiceLifetime.Scoped);
         }
         public void LoadServicesSingleton()
         {
-            Services.AddSingleton<IDMLogger>(lg);
-            Services.AddSingleton<IConfigEditor>(Config_editor);
-            Services.AddSingleton<IDMEEditor>(DMEEditor);
-            Services.AddSingleton<IUtil>(util);
-            Services.AddSingleton<IJsonLoader>(jsonLoader);
-            Services.AddSingleton<IAssemblyHandler>(LLoader);
+            RegisterRuntimeServices(ServiceLifetime.Singleton);
+        }
 
+        private void RegisterRuntimeServices(ServiceLifetime lifetime)
+        {
+            if (Services == null) throw new InvalidOperationException("This runtime has no service collection.");
+            if (TheTechIdea.Beep.Container.BeepServiceRegistration.HasRuntimeRegistration(Services)) return;
+            TheTechIdea.Beep.Container.BeepServiceRegistration.AddBeepRuntime(Services, options =>
+            {
+                options.DirectoryPath = BeepDirectory;
+                options.AppRepoName = AppRepoName;
+                options.ConfigType = ConfigureationType;
+                options.ServiceLifetime = lifetime;
+                options.AssemblyHandlerType = AssemblyHandlerType;
+                options.EnableAutoMapping = LoadDefaultMappings;
+                options.EnableAssemblyLoading = false;
+            });
         }
         public void LoadConfigurations(string AppReponame)
         {
@@ -233,11 +247,13 @@ namespace TheTechIdea.Beep.Container.Services
                 if (isconfigloaded)
                     return;
 
-                EnvironmentService.AddAllConnectionConfigurations(this.DMEEditor);
-                EnvironmentService.AddAllDataSourceMappings(this.DMEEditor);
-                EnvironmentService.AddAllDataSourceQueryConfigurations(this.DMEEditor);
-                EnvironmentService.CreateMainFolder();
-                EnvironmentService.CreateAppRepofolder(AppReponame);
+                ObjectDisposedException.ThrowIf(disposedValue || Volatile.Read(ref _disposeStarted) != 0, this);
+                if (LoadDefaultMappings)
+                {
+                    EnvironmentService.AddAllConnectionConfigurations(this.DMEEditor);
+                    EnvironmentService.AddAllDataSourceMappings(this.DMEEditor);
+                    EnvironmentService.AddAllDataSourceQueryConfigurations(this.DMEEditor);
+                }
 
                 isconfigloaded = true;
             }
@@ -251,37 +267,21 @@ namespace TheTechIdea.Beep.Container.Services
         }
         public void LoadAssemblies(Progress<PassedArgs> progress)
         {
-            if (isassembliesloaded)
-            {
-                return;
-            }
-            isassembliesloaded = true;
-            LLoader.LoadAllAssembly(progress, token);
-            Config_editor.LoadedAssemblies = LLoader.Assemblies.Select(c => c.DllLib).ToList();
-            RestoreDriverConfigAndAutoLoad();
-        }
-
-        public void LoadAssemblies()
-        {
+            lock (_configLock)
             lock (_assembliesLock)
             {
-                if (isassembliesloaded)
-                    return;
-
-                Progress<PassedArgs> progress = new Progress<PassedArgs>();
-                tokenSource = tokenSource ?? new CancellationTokenSource();
-                token = tokenSource.Token;
-
-                LLoader.LoadAllAssembly(progress, token);
-
-                if (Config_editor != null && LLoader?.Assemblies != null)
+                ObjectDisposedException.ThrowIf(disposedValue || Volatile.Read(ref _disposeStarted) != 0, this);
+                if (isassembliesloaded) return;
+                if (LLoader == null || Config_editor == null) throw new InvalidOperationException("Configure the runtime before loading assemblies.");
+                LLoader.LoadAllAssembly(progress ?? new Progress<PassedArgs>(), token);
+                if (LLoader.Assemblies != null)
                     Config_editor.LoadedAssemblies = LLoader.Assemblies.Select(c => c.DllLib).ToList();
-
                 RestoreDriverConfigAndAutoLoad();
-
                 isassembliesloaded = true;
             }
         }
+
+        public void LoadAssemblies() => LoadAssemblies(new Progress<PassedArgs>());
 
         private void RestoreDriverConfigAndAutoLoad()
         {
@@ -335,10 +335,7 @@ namespace TheTechIdea.Beep.Container.Services
         public void LoadEnvironments()
         {
             // Load Environments from IBeepEnvironment in Environments
-            if(string.IsNullOrEmpty(EnvironmentService.AppRepoDataPath))
-            {
-                EnvironmentService.CreateAppRepofolder(AppRepoName);
-            }
+            ObjectDisposedException.ThrowIf(disposedValue, this);
             
                 string envpath = Path.Combine(BeepDirectory, "Environments");
                 if (Directory.Exists(envpath))
@@ -357,10 +354,7 @@ namespace TheTechIdea.Beep.Container.Services
         public void SaveEnvironments()
         {
             // Save Environments from IBeepEnvironment in Environments
-            if (string.IsNullOrEmpty(EnvironmentService.AppRepoDataPath))
-            {
-                EnvironmentService.CreateAppRepofolder(AppRepoName);
-            }
+            ObjectDisposedException.ThrowIf(disposedValue, this);
             string envpath = Path.Combine(BeepDirectory, "Environments");
             if (Directory.Exists(envpath))
             {
@@ -373,39 +367,49 @@ namespace TheTechIdea.Beep.Container.Services
                 
             }
         }
-        public  virtual void Dispose(bool disposing)
+        public virtual void Dispose(bool disposing)
         {
-            if (!disposedValue)
+            if (Interlocked.Exchange(ref _disposeStarted, 1) != 0) return;
+            if (!disposing) { disposedValue = true; return; }
+            var logger = lg;
+            void Report(Exception error)
             {
-                if (disposing)
+                try { logger?.WriteLog($"Runtime cleanup failed: {error.Message}"); }
+                catch (Exception logError) { System.Diagnostics.Debug.WriteLine($"Cleanup: {error}; logger: {logError}"); }
+            }
+            try { tokenSource?.Cancel(); }
+            catch (Exception ex) { Report(ex); }
+            lock (_configLock)
+            lock (_assembliesLock)
+            {
+                disposedValue = true;
+                var editor = DMEEditor;
+                var concreteEditor = editor as TheTechIdea.Beep.DMEEditor;
+                var editorConfig = concreteEditor?.ConfigEditor;
+                var editorLoader = concreteEditor?.assemblyHandler;
+                var released = new HashSet<object>(ReferenceEqualityComparer.Instance);
+                void Release(object resource)
                 {
-                    // Dispose managed state (managed objects).
-                    // Check each managed object to see if it implements IDisposable, then call Dispose on it.
-                    DMEEditor?.Dispose();
-                    Config_editor?.Dispose();
-                    //lg?.Dispose();
-                    //util?.Dispose();
-                    //Erinfo?.Dispose();
-                    //jsonLoader?.Dispose();
-                    LLoader?.Dispose();
-
-                    // If you're using any managed resources that need to be disposed, dispose them here.
-                    // For example, if you have a Stream or a SqlConnection, dispose them here.
-                    // stream?.Dispose();
-                    // sqlConnection?.Dispose();
+                    if (resource is not IDisposable disposable || !released.Add(resource)) return;
+                    try { disposable.Dispose(); }
+                    catch (Exception ex) { Report(ex); }
                 }
-
-                // Free unmanaged resources (unmanaged objects) and override the finalizer below.
-                // Set large fields to null.
+                Release(editor);
+                // DMEEditor owns these components; don't dispose its graph twice.
+                if (editor is not TheTechIdea.Beep.DMEEditor || !ReferenceEquals(editorConfig, Config_editor)) Release(Config_editor);
+                if (editor is not TheTechIdea.Beep.DMEEditor || !ReferenceEquals(editorLoader, LLoader)) Release(LLoader);
+                Release(util);
+                Release(jsonLoader);
+                Release(tokenSource);
                 DMEEditor = null;
                 Config_editor = null;
-                lg = null;
-                util = null;
-                Erinfo = null;
-                jsonLoader = null;
                 LLoader = null;
-
-                disposedValue = true;
+                util = null;
+                jsonLoader = null;
+                Erinfo = null;
+                tokenSource = null;
+                Release(logger);
+                lg = null;
             }
         }
         // // TODO: override finalizer only if 'Dispose(bool disposing)' has code to free unmanaged resources

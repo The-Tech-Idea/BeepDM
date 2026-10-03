@@ -9,6 +9,7 @@ using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.Editor.Importing.Interfaces;
 using TheTechIdea.Beep.Report;
 using TheTechIdea.Beep.Utilities;
+using TheTechIdea.Beep.Editor.Importing.Quality;
 
 namespace TheTechIdea.Beep.Editor.Importing.Helpers
 {
@@ -79,96 +80,174 @@ namespace TheTechIdea.Beep.Editor.Importing.Helpers
         /// </summary>
         public async Task<IErrorsInfo> ProcessBatchAsync(IEnumerable<object> batch, DataImportConfiguration config,
             IProgress<PassedArgs> progress, CancellationToken token)
-        {
-            if (batch == null || !batch.Any())
-                return CreateErrorsInfo(Errors.Ok, "No records in batch to process");
+            => await ProcessBatchDetailedAsync(batch, config, progress, token,
+                config?.OnBatchError == BatchErrorStrategy.Retry ? config.MaxRetries : 0).ConfigureAwait(false);
 
+        public async Task<ImportExecutionResult> ProcessBatchDetailedAsync(IEnumerable<object> batch,
+            DataImportConfiguration config, IProgress<PassedArgs> progress, CancellationToken token,
+            int maxRetries = 0)
+        {
             if (config?.DestData == null)
-                return CreateErrorsInfo(Errors.Failed, "Destination data source not configured");
+            {
+                var failed = new ImportExecutionResult();
+                failed.Complete(ImportOutcome.Failed, "Destination data source not configured");
+                return failed;
+            }
+            try
+            {
+                var defaults = ImportDefaultsAdmission.Capture(_editor, config, token);
+                config = defaults.Bind(_editor, config);
+                using var resolverScope = defaults.EnterResolutionScope();
+                var admission = ImportQualityAdmission.Capture(config, token);
+                await admission.ValidateStoreAsync(token).ConfigureAwait(false);
+                token.ThrowIfCancellationRequested();
+                return await ProcessBatchWithAdmissionAsync(batch, config, progress, token, maxRetries, admission).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (token.IsCancellationRequested)
+            {
+                var cancelled = new ImportExecutionResult();
+                cancelled.Complete(ImportOutcome.Cancelled, "Batch processing was cancelled.");
+                return cancelled;
+            }
+            catch (TheTechIdea.Beep.Editor.Defaults.DefaultCatalogReadException)
+            {
+                var failed = new ImportExecutionResult { TransformationAdmissionFailed = true };
+                failed.Complete(ImportOutcome.Failed, "Required defaults catalog admission failed.");
+                return failed;
+            }
+            catch (ImportQualityAdmissionException)
+            {
+                var failed = new ImportExecutionResult { QualityAdmissionFailed = true };
+                failed.Complete(ImportOutcome.Failed, "Required record-quality admission configuration failed.");
+                return failed;
+            }
+        }
+
+        internal async Task<ImportExecutionResult> ProcessBatchWithAdmissionAsync(IEnumerable<object> batch,
+            DataImportConfiguration config, IProgress<PassedArgs> progress, CancellationToken token,
+            int maxRetries, ImportQualityAdmission admission)
+        {
+            var result = new ImportExecutionResult { RunId = admission.RunId };
+            if (config?.DestData == null)
+            {
+                result.Complete(ImportOutcome.Failed, "Destination data source not configured");
+                return result;
+            }
 
             try
             {
-                var batchList = batch.ToList();
-                int recordsProcessed = 0;
-                var errors = new List<string>();
-
-                foreach (var record in batchList)
+                token.ThrowIfCancellationRequested();
+                foreach (var record in batch ?? Enumerable.Empty<object>())
                 {
                     token.ThrowIfCancellationRequested();
-
+                    result.RecordsAttempted++;
+                    object transformed;
                     try
                     {
-                        // Apply transformation pipeline
-                        var transformedRecord = _transformationHelper.ApplyTransformationPipeline(record, config);
-
-                        if (transformedRecord == null)
+                        if (_transformationHelper is IDataImportTransformationOutcome typed)
                         {
-                            errors.Add($"Record {recordsProcessed + 1}: Transformation resulted in null record");
-                            continue;
+                            var transformation = typed.TransformRecord(record, config, token);
+                            token.ThrowIfCancellationRequested();
+                            if (transformation?.Succeeded != true)
+                            {
+                                result.RecordsTransformationFailed++;
+                                AddFailure(result, transformation?.Message ?? "Required transformation returned no outcome.", null);
+                                continue;
+                            }
+                            transformed = transformation.Record;
+                        }
+                        else
+                        {
+                            transformed = _transformationHelper.ApplyTransformationPipeline(record, config);
+                            token.ThrowIfCancellationRequested();
+                        }
+                        if (transformed == null)
+                            throw new InvalidOperationException("Transformation resulted in null record");
+                    }
+                    catch (OperationCanceledException) when (token.IsCancellationRequested) { throw; }
+                    catch (Exception ex)
+                    {
+                        token.ThrowIfCancellationRequested();
+                        result.RecordsTransformationFailed++;
+                        AddFailure(result, ex is ImportTransformationException failure
+                            ? failure.Message : "Required transformation failed.", null);
+                        continue;
+                    }
+
+                    if (!await admission.AdmitAsync(transformed, result, token).ConfigureAwait(false)) continue;
+
+                    IErrorsInfo acknowledgement = null;
+                    Exception writeException = null;
+                    for (int attempt = 0; attempt <= Math.Max(0, maxRetries); attempt++)
+                    {
+                        token.ThrowIfCancellationRequested();
+                        result.WriteAttempts++;
+                        try
+                        {
+                            acknowledgement = await Task.Run(() =>
+                                config.DestData.InsertEntity(config.DestEntityName, transformed), token).ConfigureAwait(false);
+                        }
+                        catch (OperationCanceledException) when (token.IsCancellationRequested)
+                        {
+                            result.HasUncertainWrites = true;
+                            throw;
+                        }
+                        catch (Exception ex)
+                        {
+                            // A provider may throw after applying the write. Never replay it blindly.
+                            writeException = ex;
+                            result.HasUncertainWrites = true;
+                            break;
                         }
 
-                        // Insert the transformed record
-                        await Task.Run(() => 
+                        if (acknowledgement?.Flag == Errors.Ok) break;
+                        if (acknowledgement == null || acknowledgement.Flag != Errors.Failed)
                         {
-                            var insertResult = config.DestData.InsertEntity(config.DestEntityName, transformedRecord);
-                            if (insertResult?.Flag == Errors.Failed)
-                            {
-                                errors.Add($"Record {recordsProcessed + 1}: {insertResult.Message}");
-                            }
-                        }, token);
-
-                        recordsProcessed++;
-
-                        // Report progress for this record
-                        _progressHelper.ReportProgress(progress, 
-                            $"Processed {recordsProcessed} records in current batch", 
-                            recordsProcessed);
+                            result.HasUncertainWrites = true;
+                            break;
+                        }
+                        if (attempt < Math.Max(0, maxRetries))
+                            await Task.Delay(TimeSpan.FromMilliseconds(200 * (attempt + 1)), token).ConfigureAwait(false);
                     }
-                    catch (Exception recordEx)
+
+                    if (writeException == null && acknowledgement?.Flag == Errors.Ok)
                     {
-                        var errorMsg = $"Record {recordsProcessed + 1}: {recordEx.Message}";
-                        errors.Add(errorMsg);
-                        _progressHelper.LogError("Batch Processing", recordEx);
+                        result.RecordsSucceeded++;
+                        _progressHelper.ReportProgress(progress,
+                            $"Acknowledged {result.RecordsSucceeded} writes in current batch", result.RecordsSucceeded);
+                    }
+                    else
+                    {
+                        AddFailure(result, writeException?.Message ?? acknowledgement?.Message ??
+                            "Datasource returned no write acknowledgement", writeException);
                     }
                 }
-
-                // Log batch completion
-                var batchMessage = $"Batch completed: {recordsProcessed} records processed";
-                if (errors.Any())
-                {
-                    batchMessage += $", {errors.Count} errors";
-                }
-
-                _progressHelper.LogImport(batchMessage, recordsProcessed);
-
-                // Return result based on success rate
-                if (errors.Any() && recordsProcessed == 0)
-                {
-                    return CreateErrorsInfo(Errors.Failed, 
-                        $"Batch processing failed completely. Errors: {string.Join("; ", errors)}");
-                }
-                else if (errors.Any())
-                {
-                    return CreateErrorsInfo(Errors.Ok, 
-                        $"Batch processing completed with {errors.Count} errors out of {batchList.Count} records. " +
-                        $"First error: {errors.First()}");
-                }
-                else
-                {
-                    return CreateErrorsInfo(Errors.Ok, 
-                        $"Batch processing completed successfully. {recordsProcessed} records processed.");
-                }
+                result.Complete(result.RecordsFailed == 0 ? ImportOutcome.Completed :
+                    result.RecordsSucceeded > 0 ? ImportOutcome.Partial : ImportOutcome.Failed,
+                    $"Batch completed: {result.RecordsSucceeded} acknowledged writes, {result.RecordsFailed} failed records.");
             }
-            catch (OperationCanceledException)
+            catch (OperationCanceledException) when (token.IsCancellationRequested)
             {
-                _progressHelper.LogImport("Batch processing was cancelled", 0);
-                throw; // Re-throw to let caller handle cancellation
+                result.Complete(ImportOutcome.Cancelled, "Batch processing was cancelled.");
             }
             catch (Exception ex)
             {
-                _progressHelper.LogError("Batch Processing", ex);
-                return CreateErrorsInfo(Errors.Failed, $"Batch processing error: {ex.Message}");
+                result.Complete(ImportOutcome.Failed, $"Batch processing error: {ex.Message}");
+                result.Ex = ex;
             }
+            _progressHelper.LogImport(result.Message, result.RecordsSucceeded);
+            return result;
+        }
+
+        private static void AddFailure(ImportExecutionResult result, string message, Exception exception)
+        {
+            result.RecordsFailed++;
+            result.Errors.Add(new ErrorsInfo
+            {
+                Flag = Errors.Failed,
+                Message = $"Record {result.RecordsAttempted}: {message}",
+                Ex = exception
+            });
         }
 
         /// <summary>
@@ -250,38 +329,7 @@ namespace TheTechIdea.Beep.Editor.Importing.Helpers
         /// </summary>
         public async Task<IErrorsInfo> ProcessBatchWithRetryAsync(IEnumerable<object> batch, DataImportConfiguration config,
             IProgress<PassedArgs> progress, CancellationToken token, int maxRetries = 3)
-        {
-            int retryCount = 0;
-            Exception lastException = null;
-
-            while (retryCount <= maxRetries)
-            {
-                try
-                {
-                    return await ProcessBatchAsync(batch, config, progress, token).ConfigureAwait(false);
-                }
-                catch (OperationCanceledException)
-                {
-                    throw; // Don't retry on cancellation
-                }
-                catch (Exception ex)
-                {
-                    lastException = ex;
-                    retryCount++;
-
-                    if (retryCount <= maxRetries)
-                    {
-                        var delay = TimeSpan.FromSeconds(Math.Pow(2, retryCount)); // Exponential backoff
-                        _progressHelper.LogImport($"Batch processing failed, retrying in {delay.TotalSeconds} seconds (attempt {retryCount + 1}/{maxRetries + 1})", 0);
-                        
-                        await Task.Delay(delay, token).ConfigureAwait(false);
-                    }
-                }
-            }
-
-            return CreateErrorsInfo(Errors.Failed, 
-                $"Batch processing failed after {maxRetries + 1} attempts. Last error: {lastException?.Message}");
-        }
+            => await ProcessBatchDetailedAsync(batch, config, progress, token, maxRetries).ConfigureAwait(false);
 
         /// <summary>
         /// Creates an IErrorsInfo object with the specified flag and message

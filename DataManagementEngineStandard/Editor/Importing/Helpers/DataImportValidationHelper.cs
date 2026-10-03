@@ -61,10 +61,16 @@ namespace TheTechIdea.Beep.Editor.Importing.Helpers
             // Validate entity structures if provided
             if (config.SourceEntityStructure != null && config.DestEntityStructure != null)
             {
-                var entityValidation = ValidateEntityCompatibility(config.SourceEntityStructure, config.DestEntityStructure);
+                var entityValidation = config.RequireBoundMappingMetadata
+                    ? ValidateBoundMapping(config)
+                    : ValidateEntityCompatibility(config.SourceEntityStructure, config.DestEntityStructure);
                 if (entityValidation.Flag == Errors.Failed)
                     return entityValidation;
             }
+
+            if (config.RequireBoundMappingMetadata &&
+                (config.SourceEntityStructure == null || config.DestEntityStructure == null || config.Mapping == null))
+                return CreateErrorsInfo(Errors.Failed, "Bound mapping metadata is required before import.");
 
             // Validate batch size
             if (config.BatchSize <= 0)
@@ -79,6 +85,20 @@ namespace TheTechIdea.Beep.Editor.Importing.Helpers
             }
 
             return CreateErrorsInfo(Errors.Ok, "Import configuration is valid");
+        }
+
+        private IErrorsInfo ValidateBoundMapping(DataImportConfiguration config)
+        {
+            try
+            {
+                BoundMappingMetadata.ValidateConfiguration(config);
+                BoundMappingMetadata.ValidateGeneratedTarget(_editor, config);
+                return CreateErrorsInfo(Errors.Ok, "Bound mapping metadata is valid.");
+            }
+            catch (Exception)
+            {
+                return CreateErrorsInfo(Errors.Failed, "Bound mapping metadata is missing, ambiguous or incomplete.");
+            }
         }
 
         /// <summary>

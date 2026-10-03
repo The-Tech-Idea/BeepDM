@@ -227,9 +227,8 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Interfaces
 
         /// <summary>
         /// Navigates the block's cursor to the first record of <paramref name="pageNumber"/> and
-        /// returns the resulting <see cref="PageInfo"/>. Combines <see cref="Paging"/>'s
-        /// <c>SetCurrentPage</c> with the actual cursor move -- calling <c>Paging</c> alone would
-        /// update the paging state without moving the cursor.
+        /// returns acknowledged local <see cref="PageInfo"/> or null. This does not fetch a
+        /// provider page. Optional IFormsLocalPaging outcomes retain partial cursor/observer evidence.
         /// </summary>
         Task<PageInfo> LoadPageAsync(string blockName, int pageNumber, CancellationToken ct = default);
 

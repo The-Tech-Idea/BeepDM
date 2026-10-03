@@ -1,100 +1,92 @@
 using System;
-using System.Collections.Concurrent;
+using System.Collections.Generic;
 using TheTechIdea.Beep.Editor.Forms.Models;
 using TheTechIdea.Beep.Editor.UOWManager.Interfaces;
 
-namespace TheTechIdea.Beep.Editor.Forms.Helpers
+namespace TheTechIdea.Beep.Editor.Forms.Helpers;
+
+/// <summary>Bookkeeping only; neither fetch-ahead nor datasource reads are performed here.</summary>
+public class PagingManager : IPagingManager, ILocalPagingPublication
 {
-    /// <summary>
-    /// Manages per-block paging state for virtual scrolling — Phase 7.
-    /// Does not load data itself; callers re-execute their query after calling <see cref="SetCurrentPage"/>.
-    /// </summary>
-    public class PagingManager : IPagingManager
+    private sealed class State
     {
-        private sealed class BlockPageState
+        internal int Size = 50, Page = 1, Depth = 1;
+        internal long Count;
+        internal bool CountKnown;
+        internal object Token = new();
+    }
+    private readonly object _gate = new();
+    private readonly Dictionary<string, State> _states = new(StringComparer.OrdinalIgnoreCase);
+    private State Get(string name)
+    {
+        if (!_states.TryGetValue(name, out var state)) _states[name] = state = new();
+        return state;
+    }
+    private static PageInfo Copy(State s) => new() { PageSize = s.Size, PageNumber = s.Page, TotalRecords = s.Count };
+    private static int Clamp(int page, int size, long count)
+    {
+        var pages = size > 0 && count > 0 ? count / size + (count % size == 0 ? 0 : 1) : 1;
+        return (int)Math.Max(1, Math.Min((long)page, pages));
+    }
+    public void SetPageSize(string blockName, int pageSize)
+    {
+        if (string.IsNullOrWhiteSpace(blockName) || pageSize < 0) return;
+        lock (_gate) { var s = Get(blockName); s.Size = pageSize; s.Page = Clamp(s.Page, s.Size, s.Count); s.Token = new(); }
+    }
+    public int GetPageSize(string blockName) { lock (_gate) return string.IsNullOrWhiteSpace(blockName) ? 50 : Get(blockName).Size; }
+    public PageInfo GetCurrentPage(string blockName) { lock (_gate) return Copy(Get(blockName ?? string.Empty)); }
+    public PageInfo SetCurrentPage(string blockName, int pageNumber)
+    {
+        if (string.IsNullOrWhiteSpace(blockName)) return new();
+        lock (_gate) { var s = Get(blockName); s.Page = Clamp(pageNumber, s.Size, s.Count); s.Token = new(); return Copy(s); }
+    }
+    public void SetTotalRecordCount(string blockName, long count)
+    {
+        if (string.IsNullOrWhiteSpace(blockName)) return;
+        lock (_gate) { var s = Get(blockName); s.Count = Math.Max(0, count); s.CountKnown = true; s.Page = Clamp(s.Page, s.Size, s.Count); s.Token = new(); }
+    }
+    public bool TryGetStoredCount(string blockName, out long count)
+    {
+        lock (_gate)
         {
-            public int PageSize { get; set; } = 50;
-            public int CurrentPageNumber { get; set; } = 1;
-            public long TotalRecords { get; set; }
-            public int FetchAheadDepth { get; set; } = 1;
+            count = 0;
+            if (string.IsNullOrWhiteSpace(blockName) || !_states.TryGetValue(blockName, out var s) || !s.CountKnown) return false;
+            count = s.Count; return true;
         }
-
-        private readonly ConcurrentDictionary<string, BlockPageState> _states = new();
-
-        // ── helpers ──────────────────────────────────────────────────────────
-
-        private BlockPageState GetOrCreate(string blockName)
-            => _states.GetOrAdd(blockName, _ => new BlockPageState());
-
-        // ── IPagingManager ───────────────────────────────────────────────────
-
-        /// <summary>Sets the page size for a block.</summary>
-        public void SetPageSize(string blockName, int pageSize)
+    }
+    public long GetTotalRecordCount(string blockName) => TryGetStoredCount(blockName, out var count) ? count : 0;
+    public void SetFetchAheadDepth(string blockName, int depth)
+    {
+        if (string.IsNullOrWhiteSpace(blockName)) return;
+        lock (_gate) { var s = Get(blockName); s.Depth = Math.Max(0, depth); s.Token = new(); }
+    }
+    public int GetFetchAheadDepth(string blockName) { lock (_gate) return string.IsNullOrWhiteSpace(blockName) ? 1 : Get(blockName).Depth; }
+    public void ResetPaging(string blockName) { if (!string.IsNullOrWhiteSpace(blockName)) lock (_gate) _states.Remove(blockName); }
+    public LocalPagePlan PrepareLocalPage(string blockName, int pageNumber, long loadedCount)
+    {
+        if (string.IsNullOrWhiteSpace(blockName) || pageNumber <= 0 || loadedCount < 0) throw new ArgumentException("Invalid local page request.");
+        lock (_gate)
         {
-            if (string.IsNullOrWhiteSpace(blockName) || pageSize <= 0) return;
-            GetOrCreate(blockName).PageSize = pageSize;
+            var s = Get(blockName);
+            if (s.Size == 0) throw new NotSupportedException("Local paging is disabled by page size zero.");
+            return new(blockName, s.Token, s.Size, Clamp(pageNumber, s.Size, loadedCount), loadedCount);
         }
-
-        /// <summary>Returns the configured page size for a block.</summary>
-        public int GetPageSize(string blockName)
-            => string.IsNullOrWhiteSpace(blockName) ? 50 : GetOrCreate(blockName).PageSize;
-
-        /// <summary>Returns current paging information for a block.</summary>
-        public PageInfo GetCurrentPage(string blockName)
+    }
+    public bool TryPublishLocalPage(LocalPagePlan plan, Action publishOwnedState)
+    {
+        ArgumentNullException.ThrowIfNull(plan); ArgumentNullException.ThrowIfNull(publishOwnedState);
+        lock (_gate)
         {
-            var state = GetOrCreate(blockName ?? string.Empty);
-            return BuildPageInfo(state);
+            if (!_states.TryGetValue(plan.BlockName, out var s) || !ReferenceEquals(s.Token, plan.Token)) return false;
+            s.Token = new();
+            publishOwnedState();
+            s.Page = plan.PageNumber; s.Count = plan.TotalRecords; s.CountKnown = true;
+            return true;
         }
-
-        /// <summary>Sets the current page number for a block and returns the updated page info.</summary>
-        public PageInfo SetCurrentPage(string blockName, int pageNumber)
-        {
-            if (string.IsNullOrWhiteSpace(blockName)) return new PageInfo();
-            var state = GetOrCreate(blockName);
-            int totalPages = state.PageSize > 0
-                ? (int)Math.Ceiling((double)state.TotalRecords / state.PageSize)
-                : 1;
-            state.CurrentPageNumber = Math.Max(1, Math.Min(pageNumber, Math.Max(1, totalPages)));
-            return BuildPageInfo(state);
-        }
-
-        /// <summary>Sets the total record count for a block.</summary>
-        public void SetTotalRecordCount(string blockName, long count)
-        {
-            if (string.IsNullOrWhiteSpace(blockName)) return;
-            GetOrCreate(blockName).TotalRecords = Math.Max(0, count);
-        }
-
-        /// <summary>Returns the total record count for a block.</summary>
-        public long GetTotalRecordCount(string blockName)
-            => string.IsNullOrWhiteSpace(blockName) ? 0 : GetOrCreate(blockName).TotalRecords;
-
-        /// <summary>Sets the fetch-ahead depth for a block.</summary>
-        public void SetFetchAheadDepth(string blockName, int depth)
-        {
-            if (string.IsNullOrWhiteSpace(blockName)) return;
-            GetOrCreate(blockName).FetchAheadDepth = Math.Max(0, depth);
-        }
-
-        /// <summary>Returns the fetch-ahead depth for a block.</summary>
-        public int GetFetchAheadDepth(string blockName)
-            => string.IsNullOrWhiteSpace(blockName) ? 1 : GetOrCreate(blockName).FetchAheadDepth;
-
-        /// <summary>Clears paging state for a block.</summary>
-        public void ResetPaging(string blockName)
-        {
-            if (string.IsNullOrWhiteSpace(blockName)) return;
-            _states.TryRemove(blockName, out _);
-        }
-
-        // ── private ──────────────────────────────────────────────────────────
-
-        private static PageInfo BuildPageInfo(BlockPageState state)
-            => new PageInfo
-            {
-                PageNumber = state.CurrentPageNumber,
-                PageSize = state.PageSize,
-                TotalRecords = state.TotalRecords
-            };
+    }
+    public bool IsLocalPageCurrent(LocalPagePlan plan)
+    {
+        ArgumentNullException.ThrowIfNull(plan);
+        lock (_gate) return _states.TryGetValue(plan.BlockName, out var s) && ReferenceEquals(s.Token, plan.Token);
     }
 }

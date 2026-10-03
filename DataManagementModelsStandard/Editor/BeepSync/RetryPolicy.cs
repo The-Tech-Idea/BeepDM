@@ -46,8 +46,8 @@ namespace TheTechIdea.Beep.Editor.BeepSync
         public int MaxResumeWindowHours { get; set; } = 24;
 
         /// <summary>
-        /// When <c>true</c>, a checkpoint is saved after each successfully committed batch,
-        /// enabling mid-run resume on transient failures.
+        /// When <c>true</c>, require acknowledged run checkpoints before importing and at completion.
+        /// Offset replay still requires explicit provider ordering/idempotency and reconciliation.
         /// </summary>
         public bool CheckpointEnabled { get; set; } = true;
     }

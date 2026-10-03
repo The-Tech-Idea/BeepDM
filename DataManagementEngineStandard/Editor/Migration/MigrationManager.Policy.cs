@@ -8,7 +8,7 @@ namespace TheTechIdea.Beep.Editor.Migration
     {
         public MigrationPolicyEvaluation EvaluateMigrationPlanPolicy(MigrationPlanArtifact plan, MigrationPolicyOptions options = null)
         {
-            var effectiveOptions = options ?? new MigrationPolicyOptions();
+            var effectiveOptions = options ?? plan?.GovernancePolicy ?? new MigrationPolicyOptions();
             var evaluation = new MigrationPolicyEvaluation
             {
                 EnvironmentTier = effectiveOptions.EnvironmentTier,

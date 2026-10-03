@@ -1,10 +1,15 @@
 using System;
 using System.Collections.Concurrent;
 using System.IO;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using TheTechIdea.Beep.Services;
+using TheTechIdea.Beep.Services.Persistence;
+using TheTechIdea.Beep.Editor.Importing.Storage;
 
 namespace TheTechIdea.Beep.Editor.Importing.Sync
 {
@@ -15,51 +20,66 @@ namespace TheTechIdea.Beep.Editor.Importing.Sync
     public sealed class FileWatermarkStore : IWatermarkStore
     {
         private readonly string _folder;
-        private readonly SemaphoreSlim _lock = new(1, 1);
 
-        public FileWatermarkStore()
+        public FileWatermarkStore() : this(Path.Combine(EnvironmentService.CreateAppfolder("Importing"), "Watermarks"))
         {
-            var root = EnvironmentService.CreateAppfolder("Importing");
-            _folder = Path.Combine(root, "Watermarks");
+        }
+
+        public FileWatermarkStore(string folder)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(folder);
+            _folder = Path.GetFullPath(folder);
             Directory.CreateDirectory(_folder);
         }
 
-        public async Task SaveWatermarkAsync(string contextKey, object value, CancellationToken token = default)
+        public Task SaveWatermarkAsync(string contextKey, object value, CancellationToken token = default)
         {
-            await _lock.WaitAsync(token).ConfigureAwait(false);
-            try
+            token.ThrowIfCancellationRequested();
+            var path = GetPath(contextKey);
+            var json = JsonSerializer.Serialize(new WatermarkEntry
             {
-                var path = GetPath(contextKey);
-                var json = JsonSerializer.Serialize(new WatermarkEntry { Value = value?.ToString() });
-                await File.WriteAllTextAsync(path, json, token).ConfigureAwait(false);
-            }
-            finally { _lock.Release(); }
+                Version = 1, ContextKey = contextKey, Value = TypedCursorCodec.Encode(value, 0)
+            });
+            return AtomicFileStore.UpdateTextAsync(path, current =>
+            {
+                if (current != null) DecodeEntry(current, contextKey);
+                return json;
+            }, token);
         }
 
         public async Task<object?> LoadWatermarkAsync(string contextKey, CancellationToken token = default)
         {
-            var path = GetPath(contextKey);
-            if (!File.Exists(path)) return null;
-
-            var json = await File.ReadAllTextAsync(path, token).ConfigureAwait(false);
-            var entry = JsonSerializer.Deserialize<WatermarkEntry>(json);
-            return entry?.Value;
+            token.ThrowIfCancellationRequested();
+            var json = await AtomicFileStore.ReadTextAsync(GetPath(contextKey), token).ConfigureAwait(false);
+            return json == null ? null : DecodeEntry(json, contextKey);
         }
 
         public Task ClearWatermarkAsync(string contextKey, CancellationToken token = default)
         {
-            var path = GetPath(contextKey);
-            if (File.Exists(path)) File.Delete(path);
-            return Task.CompletedTask;
+            token.ThrowIfCancellationRequested();
+            return AtomicFileStore.DeleteAsync(GetPath(contextKey), token);
         }
 
-        private string GetPath(string contextKey)
+        private string GetPath(string contextKey) => ImportStorePaths.Resolve(_folder, contextKey, ".watermark.json");
+
+        private static object DecodeEntry(string json, string contextKey)
         {
-            var safe = string.Join("_", contextKey.Split(Path.GetInvalidFileNameChars()));
-            return Path.Combine(_folder, $"{safe}.watermark.json");
+            var entry = JsonSerializer.Deserialize<WatermarkEntry>(json);
+            if (entry?.Version != 1 || entry.Value == null)
+                throw new InvalidDataException("Unsupported or missing watermark envelope version.");
+            if (!string.Equals(entry.ContextKey, contextKey, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidDataException("Watermark context identity does not match the requested store.");
+            return TypedCursorCodec.Decode(entry.Value, 0);
         }
 
-        private sealed class WatermarkEntry { public string? Value { get; set; } }
+        private sealed class WatermarkEntry
+        {
+            public int Version { get; set; }
+            public string ContextKey { get; set; }
+            public TypedCursorValue Value { get; set; }
+        }
+
+
     }
 
     /// <summary>
@@ -69,18 +89,27 @@ namespace TheTechIdea.Beep.Editor.Importing.Sync
     public sealed class InMemoryWatermarkStore : IWatermarkStore
     {
         private readonly ConcurrentDictionary<string, object> _store = new(StringComparer.OrdinalIgnoreCase);
+        private static readonly object NullValue = new();
 
         public Task SaveWatermarkAsync(string contextKey, object value, CancellationToken token = default)
         {
-            _store[contextKey] = value;
+            token.ThrowIfCancellationRequested();
+            ArgumentException.ThrowIfNullOrWhiteSpace(contextKey);
+            _store[contextKey] = value ?? NullValue;
             return Task.CompletedTask;
         }
 
-        public Task<object?> LoadWatermarkAsync(string contextKey, CancellationToken token = default) =>
-            Task.FromResult(_store.TryGetValue(contextKey, out var v) ? v : null);
+        public Task<object?> LoadWatermarkAsync(string contextKey, CancellationToken token = default)
+        {
+            token.ThrowIfCancellationRequested();
+            ArgumentException.ThrowIfNullOrWhiteSpace(contextKey);
+            return Task.FromResult(_store.TryGetValue(contextKey, out var value) && !ReferenceEquals(value, NullValue) ? value : null);
+        }
 
         public Task ClearWatermarkAsync(string contextKey, CancellationToken token = default)
         {
+            token.ThrowIfCancellationRequested();
+            ArgumentException.ThrowIfNullOrWhiteSpace(contextKey);
             _store.TryRemove(contextKey, out _);
             return Task.CompletedTask;
         }

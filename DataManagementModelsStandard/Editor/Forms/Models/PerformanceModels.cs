@@ -24,20 +24,23 @@ namespace TheTechIdea.Beep.Editor.Forms.Models
         /// <summary>Number of records per page.</summary>
         public int PageSize { get; set; } = 50;
 
-        /// <summary>Total records available in the data source for the current query.</summary>
+        /// <summary>Records in the declared result scope; local paging reports loaded records, not a remote count hint.</summary>
         public long TotalRecords { get; set; }
 
         /// <summary>Total number of pages (computed).</summary>
-        public int TotalPages => PageSize > 0 ? (int)Math.Ceiling((double)TotalRecords / PageSize) : 0;
+        public long TotalPagesLong => PageSize > 0 && TotalRecords > 0
+            ? TotalRecords / PageSize + (TotalRecords % PageSize == 0 ? 0 : 1) : 0;
+        public int TotalPages => checked((int)TotalPagesLong);
 
         /// <summary>Whether a previous page exists.</summary>
         public bool HasPrevious => PageNumber > 1;
 
         /// <summary>Whether a next page exists.</summary>
-        public bool HasNext => PageNumber < TotalPages;
+        public bool HasNext => PageNumber < TotalPagesLong;
 
         /// <summary>0-based index of the first record on this page (useful for skip/take).</summary>
-        public int Skip => (PageNumber - 1) * PageSize;
+        public long SkipLong => checked(((long)PageNumber - 1) * PageSize);
+        public int Skip => checked((int)SkipLong);
     }
 
     /// <summary>Cache hit/miss statistics snapshot.</summary>

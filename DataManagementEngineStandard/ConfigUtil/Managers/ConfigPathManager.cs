@@ -51,8 +51,7 @@ namespace TheTechIdea.Beep.ConfigUtil.Managers
                 }
                 catch (Exception ex)
                 {
-                    _logger?.WriteLog($"Warning: Invalid folderpath '{folderpath}': {ex.Message}. Using default path.");
-                    basePath = GetDefaultApplicationDataPath();
+                    throw new IOException($"Cannot use explicit configuration root '{folderpath}'.", ex);
                 }
             }
             else
@@ -80,9 +79,7 @@ namespace TheTechIdea.Beep.ConfigUtil.Managers
             catch (Exception ex)
             {
                 _logger?.WriteLog($"Error creating directory '{basePath}': {ex.Message}");
-                // Fall back to a temp directory if all else fails
-                basePath = Path.Combine(Path.GetTempPath(), "BeepConfig");
-                Directory.CreateDirectory(basePath);
+                throw new IOException($"Cannot create configuration directory '{basePath}'.", ex);
             }
 
             return basePath;

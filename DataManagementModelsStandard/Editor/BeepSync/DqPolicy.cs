@@ -1,12 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using TheTechIdea.Beep.Editor.Importing;
 
 namespace TheTechIdea.Beep.Editor.BeepSync
 {
     /// <summary>
-    /// Policy that controls which Data Quality gate rules are evaluated on each batch
-    /// before records are written to the destination.
+    /// Policy for per-record post-transform/pre-write Data Quality gates.
+    /// Threshold admission is captured separately; default integration retains legacy compatibility.
     /// Stored on <see cref="DataSyncSchema.DqPolicy"/>.
     /// </summary>
     public class DqPolicy
@@ -22,18 +23,27 @@ namespace TheTechIdea.Beep.Editor.BeepSync
         /// Rules are applied in order; the first failure routes the record to the reject channel.
         /// </summary>
         public List<string> RuleKeys { get; set; } = new List<string>();
+        /// <summary>Required lookup/evaluation failures deny a row; Advisory failures produce warnings.</summary>
+        public QualityFailureMode RecordFailureMode { get; set; } = QualityFailureMode.Required;
+        public DataQualityAction OnRecordFailure { get; set; } = DataQualityAction.Block;
 
         /// <summary>
-        /// Rule key evaluated at the end of each batch to decide whether
-        /// the run should be aborted due to a high reject rate.
+        /// Rule key evaluated once after an attempt's admitted imports (both directions),
+        /// including partial failures. Outputs must contain action: ContinueRun or AbortRun.
         /// Defaults to <c>sync.dq.batch-threshold</c>.
         /// </summary>
         public string BatchThresholdRuleKey { get; set; } = "sync.dq.batch-threshold";
 
+        /// <summary>Explicit opt-out for record-only policies; enabled thresholds require a rule by default.</summary>
+        public bool BatchThresholdEnabled { get; set; } = true;
+
+        /// <summary>Required decisions/errors block completion; Advisory decisions/errors produce counted evidence.</summary>
+        public QualityFailureMode ThresholdFailureMode { get; set; } = QualityFailureMode.Required;
+
         /// <summary>
-        /// Maximum percentage of records that may be rejected before the batch-threshold
-        /// rule triggers an <c>AbortRun</c> action (0–100; 0 = unlimited).
-        /// Only used as a fallback when the rule engine is unavailable.
+        /// Finite 0-100 limit. Reject rate is quality-rejected rows / attempted import rows,
+        /// combined across admitted directions. Empty attempts have rate zero.
+        /// Exceeding this limit or an AbortRun action rejects the threshold decision.
         /// </summary>
         public double MaxRejectRatePercent { get; set; } = 5.0;
 
@@ -49,9 +59,8 @@ namespace TheTechIdea.Beep.Editor.BeepSync
         public string RejectChannelEntityName { get; set; }
 
         /// <summary>
-        /// When <c>true</c>, the <see cref="SyncIntegrationContext.DefaultsManager"/> is
-        /// invoked to fill missing destination fields <em>before</em> DQ rules are evaluated.
-        /// Requires <see cref="SyncDefaultsPolicy.ApplyOnInsert"/> to also be set.
+        /// Retained compatibility property, not an additional default stage.
+        /// Record admission observes the result of the configured import transformation/default pipeline.
         /// </summary>
         public bool FillDefaultsBeforeEval { get; set; } = true;
     }

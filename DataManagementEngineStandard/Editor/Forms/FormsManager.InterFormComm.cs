@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Threading;
 using TheTechIdea.Beep.Editor.UOW;
 using TheTechIdea.Beep.Editor.UOWManager.Interfaces;
 using TheTechIdea.Beep.Editor.Forms.Models;
@@ -9,6 +10,45 @@ namespace TheTechIdea.Beep.Editor.UOWManager
 {
     public partial class FormsManager
     {
+        private readonly object _messageSubscriptionLock = new();
+        private readonly List<OwnedMessageHandler> _ownedMessageHandlers = new();
+
+        private sealed class OwnedMessageHandler : IDisposable
+        {
+            private readonly WeakReference<FormsManager> _owner;
+            private Action<FormMessage> _handler;
+            internal readonly string MessageType;
+            internal IDisposable BusLease;
+            internal OwnedMessageHandler(FormsManager owner, string type, Action<FormMessage> handler)
+            { _owner = new(owner); MessageType = type; _handler = handler; }
+            internal void Deliver(FormMessage message)
+            {
+                if (_owner.TryGetTarget(out var owner) && !owner._disposed)
+                {
+                    using var callback = owner.TryEnterCallback();
+                    if (callback != null) Volatile.Read(ref _handler)?.Invoke(message);
+                }
+            }
+            public void Dispose()
+            {
+                Interlocked.Exchange(ref _handler, null);
+                Interlocked.Exchange(ref BusLease, null)?.Dispose();
+            }
+        }
+
+        private void DetachOwnedMessages(string messageType = null)
+        {
+            List<OwnedMessageHandler> retired;
+            lock (_messageSubscriptionLock)
+            {
+                retired = _ownedMessageHandlers.FindAll(h => messageType == null ||
+                    string.Equals(h.MessageType, messageType, StringComparison.OrdinalIgnoreCase));
+                foreach (var handler in retired) _ownedMessageHandlers.Remove(handler);
+            }
+            foreach (var handler in retired)
+                CleanupAction($"Message subscription: {handler.MessageType}", handler.Dispose);
+        }
+
         #region Oracle Forms Inter-Form Communication Built-ins
 
         // ── Global variables (:GLOBAL.*) ────────────────────────────────────
@@ -92,14 +132,31 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         /// </summary>
         public void SubscribeToMessage(string messageType, Action<FormMessage> handler)
         {
+            ObjectDisposedException.ThrowIf(_disposed, this);
             if (string.IsNullOrWhiteSpace(messageType) || handler == null) return;
-            _messageBus?.Subscribe(_currentFormName ?? string.Empty, messageType, handler);
+            var owned = new OwnedMessageHandler(this, messageType, handler);
+            try
+            {
+                if (_messageBus is IOwnedFormMessageSubscriptions leases)
+                    owned.BusLease = leases.SubscribeOwned(_currentFormName ?? string.Empty, messageType, owned.Deliver);
+                else _messageBus?.Subscribe(_currentFormName ?? string.Empty, messageType, owned.Deliver);
+                lock (_messageSubscriptionLock)
+                {
+                    ObjectDisposedException.ThrowIf(_disposed, this);
+                    _ownedMessageHandlers.Add(owned);
+                }
+            }
+            catch
+            {
+                CleanupAction($"Failed message subscription: {messageType}", owned.Dispose);
+                throw;
+            }
         }
 
         /// <summary>Unsubscribe this form from a specific message type.</summary>
         public void UnsubscribeFromMessage(string messageType)
         {
-            _messageBus?.Unsubscribe(_currentFormName ?? string.Empty, messageType);
+            if (!string.IsNullOrWhiteSpace(messageType)) DetachOwnedMessages(messageType);
         }
 
         // ── Shared block access ──────────────────────────────────────────────

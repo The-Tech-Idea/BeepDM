@@ -27,7 +27,7 @@ namespace TheTechIdea.Beep.Utilities
         private static AssemblyBuilder assemblyBuilder;
         private static ModuleBuilder moduleBuilder;
 
-        /// <summary>Caches generated types to improve performance.</summary>
+        /// <summary>Advisory type mirror. Generated entries use full name plus source-v2 hash, never bare-name admission.</summary>
         /// <remarks>
         /// Concurrent because this is public, static and shared by every data
         /// source driver. It was a plain Dictionary, so two threads resolving
@@ -38,6 +38,8 @@ namespace TheTechIdea.Beep.Utilities
         /// </remarks>
         public static readonly ConcurrentDictionary<string, Type> typeCache =
             new ConcurrentDictionary<string, Type>();
+        private static readonly object generatedCacheGate = new();
+        private static readonly Queue<KeyValuePair<string, Type>> generatedCacheEntries = new();
 
         /// <summary>Maintains namespace mappings for types, keyed by full type name.</summary>
         /// <remarks>
@@ -89,6 +91,8 @@ namespace TheTechIdea.Beep.Utilities
                 throw new ArgumentNullException(nameof(editor));
             if (string.IsNullOrEmpty(typeName))
                 throw new ArgumentException("Type name cannot be null or empty.", nameof(typeName));
+            if (fields == null || fields.Count == 0)
+                throw new ArgumentException("Fields must contain destination metadata.", nameof(fields));
 
             // Namespace resolution
             string fullNamespace = string.IsNullOrEmpty(classNamespace)
@@ -97,20 +101,21 @@ namespace TheTechIdea.Beep.Utilities
 
             string fullTypeName = $"{fullNamespace}.{typeName}";
 
-            if (typeCache.TryGetValue(fullTypeName, out var cached))
-                return cached;
-
-            EntityStructure entity = new EntityStructure { Fields = fields, EntityName = typeName };
+            var entity = EntityMetadataSnapshot.Capture(new EntityStructure { Fields = fields, EntityName = typeName });
             string code = ConvertPOCOClassToEntity(editor, entity, fullNamespace);
 
-            var compiled = RoslynCompiler.CompileClassTypeandAssembly(typeName, code);
-            if (compiled == null)
-                throw new InvalidOperationException($"Failed to compile type '{typeName}' in namespace '{fullNamespace}'.");
-
-            // GetOrAdd rather than an indexer assignment: two threads racing on
-            // the same entity both compile, and the loser must return the type
-            // the winner published so callers never see two Types for one entity.
-            return typeCache.GetOrAdd(fullTypeName, compiled.Item1);
+            var compiled = RoslynCompiler.CompileClassTypeandAssembly(fullTypeName, code);
+            if (compiled?.Item1 == null)
+                throw new InvalidOperationException("Generated source does not contain the requested entity type.");
+            var cacheKey = fullTypeName + "::source-v2:" + RoslynCompiler.GeneratedSourceHash(code);
+            lock (generatedCacheGate)
+            {
+                // Public entries are an advisory mirror, never schema admission authority.
+                if (typeCache.TryAdd(cacheKey, compiled.Item1)) generatedCacheEntries.Enqueue(new(cacheKey, compiled.Item1));
+                while (generatedCacheEntries.Count > 256)
+                    ((ICollection<KeyValuePair<string, Type>>)typeCache).Remove(generatedCacheEntries.Dequeue());
+            }
+            return compiled.Item1;
         }
 
         public static object CreateNewObject(IDMEEditor editor, string classNamespace, string dataSourceName, string typeName, List<EntityField> fields)
@@ -120,8 +125,9 @@ namespace TheTechIdea.Beep.Utilities
             // MyType/MyObject are kept for callers that still read them. They are
             // a convenience, not the mechanism — GetOrCreateType is.
             MyType = type;
-            MyObject = Activator.CreateInstance(type);
-            return MyObject;
+            var instance = Activator.CreateInstance(type);
+            MyObject = instance;
+            return instance;
         }
         /// <summary>
         /// Creates a new dynamic object based on the specified parameters.
@@ -140,8 +146,9 @@ namespace TheTechIdea.Beep.Utilities
 
             var type = GetOrCreateType(editor, classNamespace, null, typeName, fields);
             MyType = type;
-            MyObject = Activator.CreateInstance(type);
-            return MyObject;
+            var instance = Activator.CreateInstance(type);
+            MyObject = instance;
+            return instance;
         }
 
         /// <summary>Generates or retrieves a namespace for a type.</summary>

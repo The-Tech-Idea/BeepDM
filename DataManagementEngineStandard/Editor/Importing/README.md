@@ -2,6 +2,14 @@
 
 Data import subsystem built around `DataImportManager`.
 
+Read [Transformation Outcomes](TRANSFORMATION-OUTCOMES.md) for strict configured
+stage failures, typed outcomes, cancellation, legacy behavior changes and remaining
+quality/default-catalog gates. A failed transformation is never an acknowledged write.
+
+Read [Reject Recovery](REJECT-RECOVERY.md) for durable IDs, operator preparation,
+exclusive claims, actual acknowledged replay, sync direction policy and blocked
+uncertain writes. Row recovery does not complete a failed sync run or advance cursors.
+
 ## Main Type
 - `DataImportManager` (partial class: core + enhanced API)
 

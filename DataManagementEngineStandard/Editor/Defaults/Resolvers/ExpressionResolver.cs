@@ -40,6 +40,8 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
             
             try
             {
+                if (RequiredDefaultResolution.Current != null && GetType() == typeof(ExpressionResolver))
+                    return RequiredExpressionEvaluator.Resolve(rule, Editor, parameters);
                 return upperRule switch
                 {
                     _ when upperRule.StartsWith("EXPRESSION(") || upperRule.StartsWith("EVAL(") => HandleExpression(rule, parameters),
@@ -378,6 +380,9 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
             {
                 expression = expression.Trim();
 
+                if (RequiredDefaultResolution.Current != null && RequiredBuiltInRule.IsQuotedLiteral(expression))
+                    return RemoveQuotes(expression);
+
                 // Handle boolean expressions first
                 if (expression.Contains("=") || expression.Contains("<") || expression.Contains(">") ||
                     expression.Contains("AND") || expression.Contains("OR") || expression.Contains("NOT"))
@@ -497,7 +502,8 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
                     {
                         var left = GetNumericValue(parts[0].Trim(), parameters);
                         var right = GetNumericValue(parts[1].Trim(), parameters);
-                        return right != 0 ? left / right : 0;
+                        if (right == 0) { LogWarning("Arithmetic division by zero."); return 0; }
+                        return left / right;
                     }
                 }
 
@@ -512,7 +518,20 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
 
         private object GetValueFromExpression(string expression, IPassedArgs parameters)
         {
+            if (RequiredDefaultResolution.Current != null)
+            {
+                if (expression.Trim().StartsWith("'") || expression.Trim().StartsWith("\"")) return RemoveQuotes(expression);
+                if (TryConvert<double>(expression, out double number)) return number;
+                if (bool.TryParse(expression, out bool boolean)) return boolean;
+                if (string.Equals(expression.Trim(), "null", StringComparison.OrdinalIgnoreCase)) return null;
+            }
             expression = RemoveQuotes(expression);
+
+            if (RequiredDefaultResolution.Current != null && parameters?.ReturnData is { } record)
+            {
+                try { return TheTechIdea.Beep.Helpers.RecordFieldAccess.Read(record, expression); }
+                catch (Exception ex) { LogWarning($"Expression field access failed: {ex.GetType().Name}"); return null; }
+            }
 
             // Try to get from object properties first
             var targetObject = GetParameterValue<object>(parameters, "Object") ??
@@ -528,9 +547,9 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
                         return property.GetValue(targetObject);
                     }
                 }
-                catch
+                catch (Exception ex)
                 {
-                    // Ignore property access errors
+                    LogWarning($"Expression field access failed: {ex.GetType().Name}");
                 }
             }
 
@@ -547,6 +566,7 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
             if (TryConvert<double>(expression, out double direct))
                 return direct;
 
+            LogWarning("Arithmetic operand could not be resolved.");
             return 0;
         }
 

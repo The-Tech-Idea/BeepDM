@@ -6,9 +6,19 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Models
     /// <summary>
     /// Represents an item/field definition with Oracle Forms-compatible properties.
     /// UI-agnostic version that can be used by any UI framework.
+    /// Enabled/Visible setters configure the item; getters include its runtime security overlay.
     /// </summary>
     public class ItemInfo
     {
+        private bool _configuredEnabled = true, _configuredVisible = true;
+        private RuntimePermissionOverlay _securityPermissions;
+
+        internal bool ConfiguredEnabled => _configuredEnabled;
+        internal bool ConfiguredVisible => _configuredVisible;
+
+        internal void PublishSecurityPermissions(Guid owner, long revision, bool enabled, bool visible) =>
+            RuntimePermissionOverlay.Publish(ref _securityPermissions,
+                new RuntimePermissionOverlay(owner, revision, true, true, true, true, enabled, visible));
         #region Identification
         
         /// <summary>
@@ -38,12 +48,12 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Models
         /// <summary>
         /// Oracle Forms: ENABLED - Field can be edited
         /// </summary>
-        public bool Enabled { get; set; } = true;
+        public bool Enabled { get => _configuredEnabled && (System.Threading.Volatile.Read(ref _securityPermissions)?.Enabled ?? true); set => _configuredEnabled = value; }
         
         /// <summary>
         /// Oracle Forms: VISIBLE - Field is shown
         /// </summary>
-        public bool Visible { get; set; } = true;
+        public bool Visible { get => _configuredVisible && (System.Threading.Volatile.Read(ref _securityPermissions)?.Visible ?? true); set => _configuredVisible = value; }
         
         /// <summary>
         /// Oracle Forms: QUERY_ALLOWED - Can be used in query mode
@@ -296,8 +306,8 @@ namespace TheTechIdea.Beep.Editor.UOWManager.Models
                 BlockName = BlockName,
                 BoundProperty = BoundProperty,
                 Required = Required,
-                Enabled = Enabled,
-                Visible = Visible,
+                Enabled = ConfiguredEnabled,
+                Visible = ConfiguredVisible,
                 QueryAllowed = QueryAllowed,
                 InsertAllowed = InsertAllowed,
                 UpdateAllowed = UpdateAllowed,

@@ -54,6 +54,7 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
         /// <param name="ex">Optional exception</param>
         protected virtual void LogError(string message, Exception ex = null)
         {
+            if (RequiredDefaultResolution.Report(failure: true)) return;
             var fullMessage = ex != null ? $"{message}: {ex.Message}" : message;
             Editor.AddLogMessage(ResolverName, fullMessage, DateTime.Now, -1, "", Errors.Failed);
         }
@@ -64,6 +65,7 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
         /// <param name="message">Info message</param>
         protected virtual void LogInfo(string message)
         {
+            if (RequiredDefaultResolution.Report(failure: false)) return;
             Editor.AddLogMessage(ResolverName, message, DateTime.Now, -1, "", Errors.Ok);
         }
 
@@ -73,6 +75,7 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
         /// <param name="message">Warning message</param>
         protected virtual void LogWarning(string message)
         {
+            if (RequiredDefaultResolution.Report(failure: true)) return;
             Editor.AddLogMessage(ResolverName, message, DateTime.Now, -1, "", Errors.Warning);
         }
 
@@ -141,6 +144,9 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
         /// <returns>Array of parameter strings</returns>
         protected virtual string[] SplitParameters(string parameterString)
         {
+            if (RequiredDefaultResolution.Current != null)
+                return RequiredBuiltInRule.SplitArguments(parameterString);
+
             if (string.IsNullOrWhiteSpace(parameterString))
                 return new string[0];
 
@@ -222,6 +228,9 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
                     result = (T)(object)value;
                     return true;
                 }
+
+                if (RequiredDefaultResolution.Current != null)
+                    value = RemoveQuotes(value);
 
                 result = (T)Convert.ChangeType(value, typeof(T));
                 return true;

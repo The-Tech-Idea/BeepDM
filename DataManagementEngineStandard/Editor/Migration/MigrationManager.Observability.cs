@@ -32,6 +32,8 @@ namespace TheTechIdea.Beep.Editor.Migration
         {
             if (plan == null)
                 return null;
+            if (!ValidatePlanIntent(plan, out var intentError))
+                throw new InvalidOperationException(intentError);
 
             plan.LifecycleState = MigrationPlanLifecycleState.Approved;
             var audit = CreateAuditEvent(
@@ -145,7 +147,7 @@ namespace TheTechIdea.Beep.Editor.Migration
             };
         }
 
-        private static void AddAuditEvent(MigrationAuditEvent audit)
+        private void AddAuditEvent(MigrationAuditEvent audit)
         {
             if (audit == null)
                 return;
@@ -165,7 +167,7 @@ namespace TheTechIdea.Beep.Editor.Migration
             global.Enqueue(audit);
         }
 
-        private static void AddDiagnostic(MigrationDiagnosticEntry diagnostic)
+        private void AddDiagnostic(MigrationDiagnosticEntry diagnostic)
         {
             if (diagnostic == null)
                 return;
@@ -306,7 +308,7 @@ namespace TheTechIdea.Beep.Editor.Migration
                 _opKindFailureCounts.AddOrUpdate(key, 1, (_, value) => value + 1);
         }
 
-        private static void RecordDiagnostic(
+        private void RecordDiagnostic(
             string executionToken,
             string correlationId,
             string operationCode,

@@ -18,7 +18,7 @@ namespace TheTechIdea.Beep.Helpers
     /// </summary>
     public static class DataSourceLifecycleHelper
     {
-        private static readonly Dictionary<string, IDataSource> _dataSourceCache = new Dictionary<string, IDataSource>();
+        private static readonly Dictionary<string, IDataSource> _legacyDataSourceCache = new Dictionary<string, IDataSource>();
         private static readonly object _cacheLock = new object();
 
         /// <summary>
@@ -28,93 +28,89 @@ namespace TheTechIdea.Beep.Helpers
         /// <param name="editor">DME Editor instance for logging and configuration</param>
         /// <param name="validateConnection">Whether to validate connection before creation</param>
         /// <returns>Created and validated IDataSource instance</returns>
-        public static async Task<IDataSource> CreateDataSourceAsync(
-            ConnectionProperties connection, 
-            IDMEEditor editor,
-            bool validateConnection = true)
+        public static Task<IDataSource> CreateDataSourceAsync(
+            ConnectionProperties connection, IDMEEditor editor, bool validateConnection = true)
         {
-            if (connection == null)
-                throw new ArgumentNullException(nameof(connection));
-            if (editor == null)
-                throw new ArgumentNullException(nameof(editor));
+            ArgumentNullException.ThrowIfNull(connection);
+            ArgumentNullException.ThrowIfNull(editor);
+            return EditorDataSourceRegistry.GetOrCreateAsync(editor, connection,
+                () => CreateUncachedDataSourceAsync(connection, editor, validateConnection));
+        }
 
+        internal static Task<IDataSource> CreateLocalDataSourceAsync(ConnectionProperties connection, IDMEEditor editor, string handler)
+        {
+            ArgumentNullException.ThrowIfNull(connection);
+            return EditorDataSourceRegistry.GetOrCreateAsync(editor, connection,
+                () => CreateUncachedDataSourceAsync(connection, editor, false, handler));
+        }
+
+        private static async Task<IDataSource> CreateUncachedDataSourceAsync(
+            ConnectionProperties connection, IDMEEditor editor, bool validateConnection, string localHandler = null)
+        {
+            IDataSource source = null;
             try
             {
-                // Validate connection properties first
                 if (validateConnection)
                 {
-                    var validationResult = ValidationHelper.ValidateConnectionProperties(connection);
-                    if (!validationResult.IsValid)
+                    var validation = ValidationHelper.ValidateConnectionProperties(connection);
+                    if (!validation.IsValid)
                     {
-                        var errorMessage = $"Connection validation failed: {string.Join(", ", validationResult.Errors)}";
-                        editor.AddLogMessage("Error", errorMessage, DateTime.Now, 0, connection.ConnectionName, Errors.Failed);
+                        editor.AddLogMessage("Error", string.Join(", ", validation.Errors), DateTime.Now, 0, connection.ConnectionName, Errors.Failed);
                         return null;
                     }
                 }
-
-                // Get data source class definition
-                var classDefinition = GetDataSourceClassDefinition(connection, editor);
-                if (classDefinition == null)
+                var definition = localHandler == null ? GetDataSourceClassDefinition(connection, editor) :
+                    editor.ConfigEditor.DataSourcesClasses.FirstOrDefault(candidate => string.Equals(candidate.className, localHandler, StringComparison.OrdinalIgnoreCase));
+                if (definition == null) throw new InvalidOperationException("No datasource class matches the configured driver.");
+                source = await CreateDataSourceInstanceAsync(connection, definition, editor).ConfigureAwait(false);
+                if (source == null) return null;
+                ConfigureDataSource(source, connection, editor);
+                if (localHandler != null)
                 {
-                    editor.AddLogMessage("Error", "Could not find data source class definition", DateTime.Now, 0, connection.ConnectionName, Errors.Failed);
-                    return null;
+                    if (source is not ILocalDB) throw new InvalidOperationException("The requested local datasource does not implement ILocalDB.");
+                    source.Dataconnection.DataSourceDriver = editor.ConfigEditor.DataDriversClasses.FirstOrDefault(driver =>
+                        string.Equals(driver.classHandler, localHandler, StringComparison.OrdinalIgnoreCase))
+                        ?? throw new InvalidOperationException("No driver matches the requested local handler.");
+                    source.Dataconnection.ReplaceValueFromConnectionString();
                 }
-
-                // Create the data source instance
-                var dataSource = await CreateDataSourceInstanceAsync(connection, classDefinition, editor);
-                if (dataSource == null)
-                    return null;
-
-                // Configure and validate the data source
-                ConfigureDataSource(dataSource, connection, editor);
-
-                // Register in cache if creation successful
-                RegisterDataSource(dataSource);
-
-                editor.AddLogMessage("Success", $"Data source '{connection.ConnectionName}' created successfully", 
-                    DateTime.Now, 0, connection.ConnectionName, Errors.Ok);
-
-                return dataSource;
+                return source;
             }
             catch (Exception ex)
             {
-                ErrorHandlingHelper.HandleException(ex, $"Creating data source '{connection?.ConnectionName}'", editor);
+                EditorDataSourceRegistry.Report(editor, $"Creating datasource '{connection.ConnectionName}' failed", ex);
+                if (source != null) await DisposeDataSourceAsync(source).ConfigureAwait(false);
                 return null;
             }
         }
 
-        /// <summary>
-        /// Gets an existing data source from cache or creates a new one using the provided factory.
-        /// </summary>
-        /// <param name="name">Data source name</param>
-        /// <param name="connectionFactory">Factory function to create connection properties</param>
-        /// <param name="editor">DME Editor instance</param>
-        /// <returns>Cached or newly created IDataSource instance</returns>
-        public static async Task<IDataSource> GetOrCreateDataSourceAsync(
-            string name, 
-            Func<ConnectionProperties> connectionFactory, 
-            IDMEEditor editor)
+        /// <summary>Resolves a datasource only within the supplied editor's ownership.</summary>
+        public static Task<IDataSource> GetOrCreateDataSourceAsync(
+            string name, Func<ConnectionProperties> connectionFactory, IDMEEditor editor)
         {
-            if (string.IsNullOrEmpty(name))
-                throw new ArgumentNullException(nameof(name));
-            if (connectionFactory == null)
-                throw new ArgumentNullException(nameof(connectionFactory));
-            if (editor == null)
-                throw new ArgumentNullException(nameof(editor));
-
-            lock (_cacheLock)
-            {
-                // Check cache first
-                if (_dataSourceCache.TryGetValue(name, out var cachedDataSource) && 
-                    IsDataSourceValid(cachedDataSource))
-                {
-                    return cachedDataSource;
-                }
-            }
-
-            // Create new data source
+            ArgumentException.ThrowIfNullOrEmpty(name);
+            ArgumentNullException.ThrowIfNull(connectionFactory);
+            ArgumentNullException.ThrowIfNull(editor);
+            var cached = EditorDataSourceRegistry.Find(editor, name);
+            if (cached != null) return Task.FromResult(cached);
             var connection = connectionFactory();
-            return await CreateDataSourceAsync(connection, editor);
+            if (connection == null || !string.Equals(connection.ConnectionName, name, StringComparison.OrdinalIgnoreCase))
+                throw new ArgumentException("The factory must return the requested connection identity.", nameof(connectionFactory));
+            return CreateDataSourceAsync(connection, editor);
+        }
+
+        /// <summary>Gets a cached datasource from the supplied editor, never another host.</summary>
+        public static IDataSource GetCachedDataSource(IDMEEditor editor, string name) =>
+            EditorDataSourceRegistry.Find(editor, name);
+
+        /// <summary>Returns a snapshot of editor-owned datasource references.</summary>
+        public static List<IDataSource> GetAllCachedDataSources(IDMEEditor editor) =>
+            EditorDataSourceRegistry.Snapshot(editor);
+
+        /// <summary>Stops this editor's registry and releases its current sources.</summary>
+        public static Task DisposeAllAsync(IDMEEditor editor)
+        {
+            EditorDataSourceRegistry.Stop(editor);
+            return Task.CompletedTask;
         }
 
         /// <summary>
@@ -212,6 +208,7 @@ namespace TheTechIdea.Beep.Helpers
         /// Registers a data source in the internal cache.
         /// </summary>
         /// <param name="dataSource">Data source to register</param>
+        [Obsolete("Process-wide compatibility cache. Normal runtime operations use an explicit editor.")]
         public static void RegisterDataSource(IDataSource dataSource)
         {
             if (dataSource == null || string.IsNullOrEmpty(dataSource.DatasourceName))
@@ -219,7 +216,7 @@ namespace TheTechIdea.Beep.Helpers
 
             lock (_cacheLock)
             {
-                _dataSourceCache[dataSource.DatasourceName] = dataSource;
+                _legacyDataSourceCache[dataSource.DatasourceName] = dataSource;
             }
         }
 
@@ -227,6 +224,7 @@ namespace TheTechIdea.Beep.Helpers
         /// Unregisters a data source from the cache without disposing it.
         /// </summary>
         /// <param name="name">Name of the data source to unregister</param>
+        [Obsolete("Process-wide compatibility cache. Normal runtime operations use an explicit editor.")]
         public static void UnregisterDataSource(string name)
         {
             if (string.IsNullOrEmpty(name))
@@ -234,7 +232,7 @@ namespace TheTechIdea.Beep.Helpers
 
             lock (_cacheLock)
             {
-                _dataSourceCache.Remove(name);
+                _legacyDataSourceCache.Remove(name);
             }
         }
 
@@ -242,42 +240,41 @@ namespace TheTechIdea.Beep.Helpers
         /// Safely disposes a data source with proper cleanup.
         /// </summary>
         /// <param name="dataSource">Data source to dispose</param>
-        public static async Task DisposeDataSourceAsync(IDataSource dataSource)
+        public static Task DisposeDataSourceAsync(IDataSource dataSource)
         {
-            if (dataSource == null)
-                return;
-
+            if (dataSource == null) return Task.CompletedTask;
+            lock (_cacheLock)
+            {
+                if (_legacyDataSourceCache.TryGetValue(dataSource.DatasourceName ?? "", out var cached) && ReferenceEquals(cached, dataSource))
+                    _legacyDataSourceCache.Remove(dataSource.DatasourceName);
+            }
+            if (EditorDataSourceRegistry.ReleaseOwned(dataSource)) return Task.CompletedTask;
             try
             {
-                // Unregister from cache first
-                UnregisterDataSource(dataSource.DatasourceName);
-
-                // Close connection if open
-                if (dataSource.ConnectionStatus == ConnectionState.Open)
-                {
-                    await Task.Run(() => dataSource.Closeconnection());
-                }
-
-                // Dispose the data source
-                dataSource.Dispose();
+                if (dataSource.ConnectionStatus == ConnectionState.Open) dataSource.Closeconnection();
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // Log but don't throw during disposal
+                // This compatibility overload has no editor/logger; still release after failed close.
+                System.Diagnostics.Debug.WriteLine($"Datasource close failed: {ex}");
             }
+            try { dataSource.Dispose(); }
+            catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Datasource disposal failed: {ex}"); }
+            return Task.CompletedTask;
         }
 
         /// <summary>
         /// Disposes all cached data sources.
         /// </summary>
+        [Obsolete("Process-wide compatibility cache. Normal runtime operations use an explicit editor.")]
         public static async Task DisposeAllAsync()
         {
             List<IDataSource> dataSourcesToDispose;
 
             lock (_cacheLock)
             {
-                dataSourcesToDispose = _dataSourceCache.Values.ToList();
-                _dataSourceCache.Clear();
+                dataSourcesToDispose = _legacyDataSourceCache.Values.ToList();
+                _legacyDataSourceCache.Clear();
             }
 
             var disposalTasks = dataSourcesToDispose.Select(DisposeDataSourceAsync);
@@ -289,6 +286,7 @@ namespace TheTechIdea.Beep.Helpers
         /// </summary>
         /// <param name="name">Data source name</param>
         /// <returns>Cached data source or null if not found</returns>
+        [Obsolete("Process-wide compatibility cache. Normal runtime operations use an explicit editor.")]
         public static IDataSource GetCachedDataSource(string name)
         {
             if (string.IsNullOrEmpty(name))
@@ -296,7 +294,7 @@ namespace TheTechIdea.Beep.Helpers
 
             lock (_cacheLock)
             {
-                _dataSourceCache.TryGetValue(name, out var dataSource);
+                _legacyDataSourceCache.TryGetValue(name, out var dataSource);
                 return IsDataSourceValid(dataSource) ? dataSource : null;
             }
         }
@@ -305,11 +303,12 @@ namespace TheTechIdea.Beep.Helpers
         /// Gets all cached data sources.
         /// </summary>
         /// <returns>List of cached data sources</returns>
+        [Obsolete("Process-wide compatibility cache. Normal runtime operations use an explicit editor.")]
         public static List<IDataSource> GetAllCachedDataSources()
         {
             lock (_cacheLock)
             {
-                return _dataSourceCache.Values.Where(IsDataSourceValid).ToList();
+                return _legacyDataSourceCache.Values.Where(IsDataSourceValid).ToList();
             }
         }
 
@@ -327,8 +326,9 @@ namespace TheTechIdea.Beep.Helpers
                     .FirstOrDefault(x => x.className != null && 
                                    x.className.Equals(driversConfig.classHandler, StringComparison.InvariantCultureIgnoreCase));
             }
-            catch
+            catch (Exception ex)
             {
+                EditorDataSourceRegistry.Report(editor, "Driver resolution failed", ex);
                 return null;
             }
         }
@@ -474,40 +474,16 @@ namespace TheTechIdea.Beep.Helpers
 
         private static void ConfigureDataSource(IDataSource dataSource, ConnectionProperties connection, IDMEEditor editor)
         {
-            try
+            dataSource.DatasourceName = connection.ConnectionName;
+            if (!string.IsNullOrEmpty(connection.GuidID)) dataSource.GuidID = connection.GuidID;
+            dataSource.Dataconnection ??= new TheTechIdea.Beep.Connections.DefaulDataConnection();
+            dataSource.Dataconnection.ConnectionProp = connection;
+            dataSource.Dataconnection.DataSourceDriver = ConnectionHelper.LinkConnection2Drivers(connection, editor.ConfigEditor);
+            dataSource.Entities ??= new List<EntityStructure>();
+            if (dataSource.Entities.Count == 0 && !connection.IsInMemory)
             {
-                if (dataSource != null)
-                {
-                    // Set GUID if not already set
-                    if (string.IsNullOrEmpty(dataSource.GuidID) && !string.IsNullOrEmpty(connection.GuidID))
-                    {
-                        dataSource.GuidID = connection.GuidID;
-                    }
-
-                    // Load entities if not in-memory and available
-                    if (dataSource.Entities.Count == 0 && 
-                        dataSource.Dataconnection?.ConnectionProp?.IsInMemory == false)
-                    {
-                        try
-                        {
-                            var entitiesData = editor.ConfigEditor.LoadDataSourceEntitiesValues(dataSource.DatasourceName);
-                            if (entitiesData?.Entities != null)
-                            {
-                                dataSource.Entities = entitiesData.Entities;
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            // Log but don't fail data source creation for this
-                            editor.AddLogMessage("Warning", $"Could not load entities for {dataSource.DatasourceName}: {ex.Message}", 
-                                DateTime.Now, 0, dataSource.DatasourceName, Errors.Ok);
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                ErrorHandlingHelper.HandleException(ex, $"Configuring data source '{connection.ConnectionName}'", editor);
+                var entities = editor.ConfigEditor.LoadDataSourceEntitiesValues(connection.ConnectionName);
+                if (entities?.Entities != null) dataSource.Entities = entities.Entities;
             }
         }
 

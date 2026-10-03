@@ -28,7 +28,7 @@ namespace TheTechIdea.Beep.Editor.UOW
         public ErrorsInfo Delete(Func<T, bool> predicate)
         {
             var errorsInfo = new ErrorsInfo();
-            
+
             if (!Validateall())
             {
                 errorsInfo.Message = "Validation Failed";
@@ -42,14 +42,14 @@ namespace TheTechIdea.Beep.Editor.UOW
                 if (entity != null)
                 {
                     // Raise pre-delete event
-                    var eventArgs = new UnitofWorkParams 
-                    { 
-                        Cancel = false, 
+                    var eventArgs = new UnitofWorkParams
+                    {
+                        Cancel = false,
                         EventAction = EventAction.PreDelete,
                         Record = entity
                     };
                     PreDelete?.Invoke(this, eventArgs);
-                    
+
                     if (eventArgs.Cancel)
                     {
                         errorsInfo.Message = eventArgs.Messege ?? "Delete operation cancelled";
@@ -69,8 +69,8 @@ namespace TheTechIdea.Beep.Editor.UOW
                     }
 
                     // Raise post-delete event
-                    PostDelete?.Invoke(this, new UnitofWorkParams 
-                    { 
+                    PostDelete?.Invoke(this, new UnitofWorkParams
+                    {
                         EventAction = EventAction.PostDelete,
                         Record = entity
                     });
@@ -86,10 +86,10 @@ namespace TheTechIdea.Beep.Editor.UOW
             }
             catch (Exception ex)
             {
-                DMEEditor.AddLogMessage("UnitofWork", 
-                    $"Error deleting entity: {ex.Message}", 
+                DMEEditor.AddLogMessage("UnitofWork",
+                    $"Error deleting entity: {ex.Message}",
                     DateTime.Now, -1, null, Errors.Failed);
-                
+
                 errorsInfo.Message = $"Delete failed: {ex.Message}";
                 errorsInfo.Flag = Errors.Failed;
             }
@@ -126,7 +126,7 @@ namespace TheTechIdea.Beep.Editor.UOW
         public IErrorsInfo Delete()
         {
             var errorsInfo = new ErrorsInfo();
-            
+
             if (CurrentItem == null)
             {
                 errorsInfo.Message = "No current item selected";
@@ -137,7 +137,7 @@ namespace TheTechIdea.Beep.Editor.UOW
             var deleteResult = Delete(entity => entity.Equals(CurrentItem));
             errorsInfo.Message = deleteResult.Message;
             errorsInfo.Flag = deleteResult.Flag;
-            
+
             return errorsInfo;
         }
 
@@ -149,28 +149,28 @@ namespace TheTechIdea.Beep.Editor.UOW
         public async Task<IErrorsInfo> DeleteAsync(T doc)
         {
             DMEEditor.ErrorObject.Flag = Errors.Ok;
-            
+
             if (!IsRequirmentsValidated())
             {
                 return DMEEditor.ErrorObject;
             }
-            
+
             // Raise pre-delete event
-            var eventArgs = new UnitofWorkParams 
-            { 
-                Cancel = false, 
+            var eventArgs = new UnitofWorkParams
+            {
+                Cancel = false,
                 EventAction = EventAction.PreDelete,
                 Record = doc
             };
             PreDelete?.Invoke(this, eventArgs);
-            
+
             if (eventArgs.Cancel)
             {
                 DMEEditor.ErrorObject.Flag = Errors.Failed;
                 DMEEditor.ErrorObject.Message = eventArgs.Messege ?? "Delete operation cancelled";
                 return DMEEditor.ErrorObject;
             }
-            
+
             if (doc == null)
             {
                 DMEEditor.ErrorObject.Flag = Errors.Failed;
@@ -181,17 +181,17 @@ namespace TheTechIdea.Beep.Editor.UOW
             try
             {
                 IErrorsInfo retval = DeleteDoc(doc);
-                
+
                 if (retval.Flag == Errors.Ok)
                 {
                     // Raise post-delete event
-                    PostDelete?.Invoke(this, new UnitofWorkParams 
-                    { 
+                    PostDelete?.Invoke(this, new UnitofWorkParams
+                    {
                         EventAction = EventAction.PostDelete,
                         Record = doc
                     });
                 }
-                
+
                 return retval;
             }
             catch (Exception ex)
@@ -211,7 +211,7 @@ namespace TheTechIdea.Beep.Editor.UOW
         public IErrorsInfo DeleteDoc(T doc)
         {
             IErrorsInfo retval;
-            
+
             try
             {
                 if (!IsInListMode)
@@ -238,14 +238,14 @@ namespace TheTechIdea.Beep.Editor.UOW
             }
             catch (Exception ex)
             {
-                retval = new ErrorsInfo 
-                { 
-                    Flag = Errors.Failed, 
+                retval = new ErrorsInfo
+                {
+                    Flag = Errors.Failed,
                     Message = $"Delete failed: {ex.Message}",
                     Ex = ex
                 };
             }
-            
+
             return retval;
         }
 
@@ -253,7 +253,7 @@ namespace TheTechIdea.Beep.Editor.UOW
 
         #region Read Operations
 
-     
+
 
         #endregion
 
@@ -267,8 +267,16 @@ namespace TheTechIdea.Beep.Editor.UOW
         /// <returns>Result of the commit operation</returns>
         public async Task<IErrorsInfo> Commit(IProgress<PassedArgs> progress, CancellationToken token)
         {
+            if (Interlocked.CompareExchange(ref _commitAdmission, 1, 0) != 0)
+                return new ErrorsInfo { Flag = Errors.Failed, Message = "A commit or unresolved enlisted write is already active." };
+            try { return await CommitOwnedAsync(progress, token).ConfigureAwait(false); }
+            finally { Volatile.Write(ref _commitAdmission, 0); }
+        }
+
+        private async Task<IErrorsInfo> CommitOwnedAsync(IProgress<PassedArgs> progress, CancellationToken token)
+        {
             var result = new ErrorsInfo { Flag = Errors.Ok };
-            
+
             if (!IsInListMode && !GetIsDirty())
             {
                 result.Message = "No changes to commit";
@@ -278,13 +286,13 @@ namespace TheTechIdea.Beep.Editor.UOW
             try
             {
                 // Raise pre-commit event
-                var preCommitArgs = new UnitofWorkParams 
-                { 
-                    Cancel = false, 
-                    EventAction = EventAction.PreCommit 
+                var preCommitArgs = new UnitofWorkParams
+                {
+                    Cancel = false,
+                    EventAction = EventAction.PreCommit
                 };
                 PreCommit?.Invoke(this, preCommitArgs);
-                
+
                 if (preCommitArgs.Cancel)
                 {
                     result.Flag = Errors.Failed;
@@ -325,14 +333,39 @@ namespace TheTechIdea.Beep.Editor.UOW
                         }
                     }
 
+                    CommitResult pendingCommit = null;
+                    var transactionCommitted = false;
+                    var generatedKeys = new List<(T Item, PropertyInfo Property, object Original)>();
+                    var keyNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                    var appliedKeys = new Dictionary<(T Item, PropertyInfo Property), object>();
                     try
                     {
-                        var oblCommitResult = await CommitChangesToDataSource(progress, token).ConfigureAwait(false);
+                        if (useTransaction)
+                        {
+                            if (!string.IsNullOrWhiteSpace(PrimaryKey)) keyNames.Add(PrimaryKey);
+                            if (!string.IsNullOrWhiteSpace(GuidKey)) keyNames.Add(GuidKey);
+                            foreach (var field in EntityStructure?.Fields ?? new List<EntityField>())
+                                if (field.IsAutoIncrement) keyNames.Add(field.FieldName);
+                            foreach (var item in Units.GetPendingChanges().Added)
+                                foreach (var property in typeof(T).GetProperties().Where(p => p.CanRead && p.CanWrite && keyNames.Contains(p.Name)))
+                                    generatedKeys.Add((item, property, property.GetValue(item)));
+                        }
+
+                        var oblCommitResult = await CommitChangesToDataSource(progress, token, !useTransaction, item =>
+                        {
+                            foreach (var key in generatedKeys.Where(key => ReferenceEquals(key.Item, item)))
+                                appliedKeys[(key.Item, key.Property)] = key.Property.GetValue(key.Item);
+                        }).ConfigureAwait(false);
+                        pendingCommit = oblCommitResult;
+                        if (useTransaction)
+                        {
+                            foreach (var key in appliedKeys)
+                                Units.ConfirmGeneratedValue(pendingCommit, key.Key.Item, key.Key.Property.Name, key.Value);
+                        }
 
                         if (!oblCommitResult.AllSucceeded)
                         {
                             // Some items failed — rollback transaction
-                            if (useTransaction) DataSource.EndTransaction(new PassedArgs());
                             result.Flag = Errors.Failed;
 
                             // Name the first failure. "1 of 1 items failed" says
@@ -353,38 +386,87 @@ namespace TheTechIdea.Beep.Editor.UOW
                         // Commit transaction
                         if (useTransaction)
                         {
+                            token.ThrowIfCancellationRequested();
                             var commitResult = DataSource.Commit(new PassedArgs());
-                            if (commitResult.Flag != Errors.Ok)
+                            if (commitResult?.Flag != Errors.Ok)
                             {
                                 result.Flag = Errors.Failed;
-                                result.Message = $"Transaction commit failed: {commitResult.Message}";
+                                result.Message = $"Transaction commit failed: {commitResult?.Message}";
                                 return result;
+                            }
+                            transactionCommitted = true;
+                            Units.AcceptCommit(pendingCommit);
+                            result.Errors.AddRange(pendingCommit.NotificationErrors);
+                            try
+                            {
+                                progress?.Report(new PassedArgs
+                                {
+                                    ParameterInt1 = pendingCommit.SuccessCount,
+                                    ParameterInt2 = pendingCommit.TotalCount,
+                                    ParameterString1 = $"Committed {pendingCommit.SuccessCount} entities"
+                                });
+                            }
+                            catch (Exception notificationError)
+                            {
+                                result.Errors.Add(new ErrorsInfo { Flag = Errors.Warning, Message = notificationError.Message, Ex = notificationError });
                             }
                         }
                     }
-                    catch (Exception)
+                    catch (Exception ex)
                     {
-                        // Rollback on error
-                        if (useTransaction) DataSource.EndTransaction(new PassedArgs());
+                        result.Message = $"Commit failed: {ex.Message}";
                         throw;
                     }
+                    finally
+                    {
+                        if (useTransaction && !transactionCommitted)
+                        {
+                            if (pendingCommit != null) Units.DiscardCommit(pendingCommit);
+                            try
+                            {
+                                var rollback = DataSource.EndTransaction(new PassedArgs());
+                                if (rollback?.Flag != Errors.Ok)
+                                {
+                                    result.Errors.Add(new ErrorsInfo { Flag = Errors.Failed, Message = $"Rollback failed: {rollback?.Message}" });
+                                }
+                                else
+                                {
+                                    foreach (var key in generatedKeys)
+                                        if (appliedKeys.TryGetValue((key.Item, key.Property), out var applied) &&
+                                            Equals(key.Property.GetValue(key.Item), applied))
+                                            key.Property.SetValue(key.Item, key.Original);
+                                }
+                            }
+                            catch (Exception rollbackError)
+                            {
+                                result.Errors.Add(new ErrorsInfo { Flag = Errors.Failed, Message = $"Rollback failed: {rollbackError.Message}", Ex = rollbackError });
+                            }
+                        }
+                    }
                 }
-                
-                // OBL's CommitAllAsync already called AcceptChanges per-item for succeeded items.
-                // Clear auxiliary key tracking dictionaries.
+
+                // Tracking was accepted after commit (or per acknowledged nontransactional write).
                 DeletedUnits.Clear();
                 InsertedKeys.Clear();
                 UpdatedKeys.Clear();
                 DeletedKeys.Clear();
 
                 // Raise post-commit event
-                PostCommit?.Invoke(this, new UnitofWorkParams 
-                { 
-                    EventAction = EventAction.PostCommit 
-                });
+                try
+                {
+                    PostCommit?.Invoke(this, new UnitofWorkParams { EventAction = EventAction.PostCommit });
+                }
+                catch (Exception notificationError)
+                {
+                    result.Errors.Add(new ErrorsInfo { Flag = Errors.Warning, Message = $"Write committed but PostCommit failed: {notificationError.Message}", Ex = notificationError });
+                }
 
                 result.Message = "Changes committed successfully";
-                OnPropertyChanged(nameof(IsDirty));
+                try { OnPropertyChanged(nameof(IsDirty)); }
+                catch (Exception notificationError)
+                {
+                    result.Errors.Add(new ErrorsInfo { Flag = Errors.Warning, Message = notificationError.Message, Ex = notificationError });
+                }
             }
             catch (OperationCanceledException)
             {
@@ -396,9 +478,9 @@ namespace TheTechIdea.Beep.Editor.UOW
                 result.Flag = Errors.Failed;
                 result.Message = $"Commit failed: {ex.Message}";
                 result.Ex = ex;
-                
-                DMEEditor.AddLogMessage("UnitofWork", 
-                    $"Commit error: {ex.Message}", 
+
+                DMEEditor.AddLogMessage("UnitofWork",
+                    $"Commit error: {ex.Message}",
                     DateTime.Now, -1, null, Errors.Failed);
             }
 
@@ -420,8 +502,10 @@ namespace TheTechIdea.Beep.Editor.UOW
         /// <returns>Result of the rollback operation</returns>
         public async Task<IErrorsInfo> Rollback()
         {
+            if (Volatile.Read(ref _commitAdmission) != 0)
+                return new ErrorsInfo { Flag = Errors.Failed, Message = "Resolve the active commit before discarding edits." };
             var result = new ErrorsInfo { Flag = Errors.Ok };
-            
+
             try
             {
                 // Only end a transaction on a source that has them.
@@ -482,9 +566,9 @@ namespace TheTechIdea.Beep.Editor.UOW
                 result.Flag = Errors.Failed;
                 result.Message = $"Rollback failed: {ex.Message}";
                 result.Ex = ex;
-                
-                DMEEditor.AddLogMessage("UnitofWork", 
-                    $"Rollback error: {ex.Message}", 
+
+                DMEEditor.AddLogMessage("UnitofWork",
+                    $"Rollback error: {ex.Message}",
                     DateTime.Now, -1, null, Errors.Failed);
             }
 
@@ -495,14 +579,16 @@ namespace TheTechIdea.Beep.Editor.UOW
         /// Commits individual changes to the data source using OBL's CommitAllAsync.
         /// OBL handles ordering, BeforeSave/AfterSave events, validation blocking, and per-item tracking cleanup.
         /// </summary>
-        private async Task<CommitResult> CommitChangesToDataSource(IProgress<PassedArgs> progress, CancellationToken token)
+        private async Task<CommitResult> CommitChangesToDataSource(IProgress<PassedArgs> progress, CancellationToken token,
+            bool acceptChanges = true, Action<T> captureGeneratedValues = null)
         {
             var commitResult = await Units.CommitAllAsync(
                 insertAsync: async (item) =>
                 {
                     token.ThrowIfCancellationRequested();
                     _defaultsHelper?.ApplyInsertDefaults(item);
-                    return InsertDoc(item);
+                    try { return InsertDoc(item); }
+                    finally { captureGeneratedValues?.Invoke(item); }
                 },
                 updateAsync: async (item) =>
                 {
@@ -521,11 +607,11 @@ namespace TheTechIdea.Beep.Editor.UOW
                     }
                     return new ErrorsInfo { Flag = Errors.Ok, Message = "Deleted from collection" };
                 },
-                CommitOrder
+                CommitOrder, acceptChanges
             );
 
             // Report progress
-            if (progress != null)
+            if (progress != null && acceptChanges)
             {
                 progress.Report(new PassedArgs
                 {
@@ -708,18 +794,18 @@ namespace TheTechIdea.Beep.Editor.UOW
                 if (UpdateLog == null || UpdateLog.Count == 0)
                     return true;
 
-                var json = System.Text.Json.JsonSerializer.Serialize(UpdateLog, new System.Text.Json.JsonSerializerOptions 
-                { 
-                    WriteIndented = true 
+                var json = System.Text.Json.JsonSerializer.Serialize(UpdateLog, new System.Text.Json.JsonSerializerOptions
+                {
+                    WriteIndented = true
                 });
-                
+
                 System.IO.File.WriteAllText(pathandname, json);
                 return true;
             }
             catch (Exception ex)
             {
-                DMEEditor.AddLogMessage("UnitofWork", 
-                    $"Error saving log: {ex.Message}", 
+                DMEEditor.AddLogMessage("UnitofWork",
+                    $"Error saving log: {ex.Message}",
                     DateTime.Now, -1, null, Errors.Failed);
                 return false;
             }
@@ -731,40 +817,40 @@ namespace TheTechIdea.Beep.Editor.UOW
 
         /// <summary>Event fired before creating a new entity</summary>
         public event EventHandler<UnitofWorkParams> PreCreate;
-        
+
         /// <summary>Event fired after creating a new entity</summary>
         public event EventHandler<UnitofWorkParams> PostCreate;
-        
+
         /// <summary>Event fired before inserting to data source</summary>
         public event EventHandler<UnitofWorkParams> PreInsert;
-        
+
         /// <summary>Event fired after inserting to data source</summary>
         public event EventHandler<UnitofWorkParams> PostInsert;
-        
+
         /// <summary>Event fired before updating in data source</summary>
         public event EventHandler<UnitofWorkParams> PreUpdate;
-        
+
         /// <summary>Event fired after updating in data source</summary>
         public event EventHandler<UnitofWorkParams> PostUpdate;
-        
+
         /// <summary>Event fired before deleting from data source</summary>
         public event EventHandler<UnitofWorkParams> PreDelete;
-        
+
         /// <summary>Event fired after deleting from data source</summary>
         public event EventHandler<UnitofWorkParams> PostDelete;
-        
+
         /// <summary>Event fired before querying data</summary>
         public event EventHandler<UnitofWorkParams> PreQuery;
-        
+
         /// <summary>Event fired after querying data</summary>
         public event EventHandler<UnitofWorkParams> PostQuery;
-        
+
         /// <summary>Event fired before committing changes</summary>
         public event EventHandler<UnitofWorkParams> PreCommit;
-        
+
         /// <summary>Event fired after committing changes</summary>
         public event EventHandler<UnitofWorkParams> PostCommit;
-        
+
         /// <summary>Event fired after property changes</summary>
         public event EventHandler<UnitofWorkParams> PostEdit;
 
@@ -791,8 +877,8 @@ namespace TheTechIdea.Beep.Editor.UOW
             OnItemReverted?.Invoke(this, new UnitofWorkParams
             {
                 EventAction = EventAction.PostEdit,
-                Record      = item,
-                EntityName  = EntityName
+                Record = item,
+                EntityName = EntityName
             });
 
             return true;
@@ -836,7 +922,7 @@ namespace TheTechIdea.Beep.Editor.UOW
 
             if (deepCopy)
             {
-                var json   = System.Text.Json.JsonSerializer.Serialize(item);
+                var json = System.Text.Json.JsonSerializer.Serialize(item);
                 return System.Text.Json.JsonSerializer.Deserialize<T>(json);
             }
 
@@ -866,7 +952,7 @@ namespace TheTechIdea.Beep.Editor.UOW
         public void EnableUndo(bool enable, int maxDepth = 100)
         {
             IsUndoEnabled = enable;
-            MaxUndoDepth  = maxDepth;
+            MaxUndoDepth = maxDepth;
         }
 
         /// <summary>Performs an undo operation. Alias for <see cref="Undo"/>.</summary>

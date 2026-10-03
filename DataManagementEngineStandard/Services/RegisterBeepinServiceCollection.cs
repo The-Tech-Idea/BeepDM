@@ -238,9 +238,16 @@ namespace TheTechIdea.Beep.Container
                 // Prefer the AssemblyHandler's LoadedAssemblies when available - that is the
                 // authoritative list of what just got loaded and is robust against isolated
                 // AssemblyLoadContexts. Falls back to a full AppDomain scan otherwise.
-                var loader = beepService.LLoader;
-                _services.AddBeepViewModels(loader);
-                _services.AddBeepViews(loader);
+                if (_assembliesToScan != null)
+                {
+                    _services.AddBeepViewModels(_assembliesToScan);
+                    _services.AddBeepViews(_assembliesToScan);
+                }
+                else
+                {
+                    _services.AddBeepViewModels(beepService.LLoader);
+                    _services.AddBeepViews(beepService.LLoader);
+                }
             }
 
             return beepService;
@@ -299,439 +306,221 @@ namespace TheTechIdea.Beep.Container
     /// </summary>
     public static class BeepServiceRegistration
     {
-        #region Private Fields
-        private static readonly object _lockObject = new object();
-        private static volatile bool _isInitialized = false;
-        private static volatile bool _isMappingCreated = false;
-        private static IBeepService _cachedBeepService;
-        private static string _beepDataPath;
-        private static IServiceCollection _currentServices;
-        #endregion
+        private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<IDMEEditor, RuntimeOwner> Owners = new();
 
-        #region Core Registration Methods
-
-        /// <summary>
-        /// Registers Beep services with fluent builder API for discoverable configuration.
-        /// Returns a builder interface that supports method chaining with IntelliSense.
-        /// </summary>
-        /// <param name="services">The service collection to extend.</param>
-        /// <returns>A fluent builder interface for configuring BeepService.</returns>
-        /// <exception cref="ArgumentNullException">Thrown when services is null.</exception>
-        /// <example>
-        /// <code>
-        /// services.AddBeepServices()
-        ///     .WithDirectory(AppContext.BaseDirectory)
-        ///     .WithAppRepo("MyApp")
-        ///     .WithMapping()
-        ///     .AsSingleton()
-        ///     .Build();
-        /// </code>
-        /// </example>
-        public static IBeepServiceBuilder AddBeepServices(this IServiceCollection services)
+        private sealed class RuntimeOwner
         {
-            if (services == null)
-                throw new ArgumentNullException(nameof(services));
-
-            return new BeepServiceBuilder(services);
+            internal RuntimeOwner(IBeepService service, IServiceCollection services)
+            {
+                Service = new WeakReference<IBeepService>(service);
+                Services = services;
+            }
+            internal WeakReference<IBeepService> Service { get; }
+            internal IServiceCollection Services { get; }
         }
 
-        /// <summary>
-        /// Registers Beep services with comprehensive configuration and error handling.
-        /// This overload supports the traditional Action&lt;BeepServiceOptions&gt; pattern.
-        /// </summary>
-        /// <param name="services">The service collection to extend.</param>
-        /// <param name="configure">Configuration action for Beep service options.</param>
-        /// <returns>The configured IBeepService instance.</returns>
-        /// <exception cref="ArgumentNullException">Thrown when services or configure is null.</exception>
-        /// <exception cref="InvalidOperationException">Thrown when services are already registered or configuration fails.</exception>
-        public static IBeepService AddBeepServices(this IServiceCollection services, 
-            Action<BeepServiceOptions> configure)
+        private sealed class RuntimeRegistration
         {
-            if (services == null)
-                throw new ArgumentNullException(nameof(services));
-            if (configure == null)
-                throw new ArgumentNullException(nameof(configure));
+            internal RuntimeRegistration(BeepServiceOptions options) => Options = options;
+            internal BeepServiceOptions Options { get; }
+        }
 
+        public static IBeepServiceBuilder AddBeepServices(this IServiceCollection services) =>
+            new BeepServiceBuilder(services ?? throw new ArgumentNullException(nameof(services)));
+
+        /// <summary>
+        /// Registers provider-owned runtimes without creating an eager startup instance.
+        /// Each provider/scope owns the graph according to the captured lifetime.
+        /// </summary>
+        public static IServiceCollection AddBeepRuntime(this IServiceCollection services, Action<BeepServiceOptions> configure)
+        {
+            ArgumentNullException.ThrowIfNull(services);
+            ArgumentNullException.ThrowIfNull(configure);
             var options = new BeepServiceOptions();
             configure(options);
-            options.Validate();
+            RegisterRuntime(services, options);
+            return services;
+        }
 
+        /// <summary>
+        /// Legacy eager entry point. The returned standalone runtime is caller-owned,
+        /// independent of runtimes later resolved from DI. Prefer AddBeepRuntime for hosting.
+        /// </summary>
+        public static IBeepService AddBeepServices(this IServiceCollection services, Action<BeepServiceOptions> configure)
+        {
+            ArgumentNullException.ThrowIfNull(services);
+            ArgumentNullException.ThrowIfNull(configure);
+            var options = new BeepServiceOptions();
+            configure(options);
             return RegisterBeepServicesInternal(services, options);
         }
 
-        /// <summary>
-        /// Registers Beep services with simple parameters (backward compatibility).
-        /// </summary>
-        /// <param name="services">The service collection to extend.</param>
-        /// <param name="directoryPath">Directory path for Beep data storage.</param>
-        /// <param name="containerName">Name of the container.</param>
-        /// <param name="configType">Type of configuration.</param>
-        /// <param name="addAsSingleton">Whether to register as singleton (default: true).</param>
-        /// <returns>The configured IBeepService instance.</returns>
-        public static IBeepService Register(this IServiceCollection services, 
-            string directoryPath, 
-            string containerName, 
-            BeepConfigType configType, 
-            bool addAsSingleton = true)
-        {
-            if (services == null)
-                throw new ArgumentNullException(nameof(services));
-            if (string.IsNullOrWhiteSpace(directoryPath))
-                throw new ArgumentException("Directory path cannot be null or empty.", nameof(directoryPath));
-            if (string.IsNullOrWhiteSpace(containerName))
-                throw new ArgumentException("Container name cannot be null or empty.", nameof(containerName));
-
-            var options = new BeepServiceOptions
+        public static IBeepService Register(this IServiceCollection services, string directoryPath,
+            string containerName, BeepConfigType configType, bool addAsSingleton = true) =>
+            RegisterBeepServicesInternal(services, new BeepServiceOptions
             {
-                DirectoryPath = directoryPath,
-                AppRepoName = containerName,
-                ConfigType = configType,
-                ServiceLifetime = addAsSingleton ? ServiceLifetime.Singleton : ServiceLifetime.Scoped,
-                EnableAutoMapping = true,
-                EnableAssemblyLoading = true
-            };
+                DirectoryPath = directoryPath, AppRepoName = containerName, ConfigType = configType,
+                ServiceLifetime = addAsSingleton ? ServiceLifetime.Singleton : ServiceLifetime.Scoped
+            });
 
-            return RegisterBeepServicesInternal(services, options);
-        }
-
-        /// <summary>
-        /// Registers Beep services as scoped services (for web applications).
-        /// </summary>
-        /// <param name="services">The service collection to extend.</param>
-        /// <returns>The service collection for method chaining.</returns>
-        public static IServiceCollection RegisterScoped(this IServiceCollection services)
-        {
-            if (services == null)
-                throw new ArgumentNullException(nameof(services));
-
-            lock (_lockObject)
+        public static IServiceCollection RegisterScoped(this IServiceCollection services) =>
+            AddBeepRuntime(services, options =>
             {
-                if (_isInitialized)
-                {
-                    throw new InvalidOperationException("Beep services have already been registered. " +
-                        "Multiple registrations are not supported.");
-                }
+                options.DirectoryPath = AppContext.BaseDirectory;
+                options.ServiceLifetime = ServiceLifetime.Scoped;
+                options.EnableAssemblyLoading = false;
+            });
 
-                services.AddScoped<IBeepService>(serviceProvider =>
-                {
-                    if (_cachedBeepService != null)
-                        return _cachedBeepService;
-
-                    return new BeepService(services);
-                });
-
-                _isInitialized = true;
-                _currentServices = services;
-                return services;
-            }
-        }
-
-        #endregion
-
-        #region Mapping and Configuration Methods
-
-        /// <summary>
-        /// Creates mappings for the Beep service with error handling and logging.
-        /// </summary>
-        /// <param name="beepService">The Beep service instance.</param>
-        /// <returns>The service collection for method chaining.</returns>
         public static IServiceCollection CreateMapping(this IBeepService beepService)
         {
-            if (beepService == null)
-                throw new ArgumentNullException(nameof(beepService));
-
-            lock (_lockObject)
-            {
-                if (_isMappingCreated)
-                {
-                    // Already created, return early
-                    return GetCurrentServices();
-                }
-
-                try
-                {
-                    EnvironmentService.AddAllConnectionConfigurations(beepService.DMEEditor);
-                    EnvironmentService.AddAllDataSourceMappings(beepService.DMEEditor);
-                    EnvironmentService.AddAllDataSourceQueryConfigurations(beepService.DMEEditor);
-                    
-                    _isMappingCreated = true;
-                }
-                catch (Exception ex)
-                {
-                    throw new InvalidOperationException("Failed to create Beep mappings.", ex);
-                }
-
-                return GetCurrentServices();
-            }
+            ArgumentNullException.ThrowIfNull(beepService);
+            ArgumentNullException.ThrowIfNull(beepService.DMEEditor);
+            EnvironmentService.AddAllConnectionConfigurations(beepService.DMEEditor);
+            EnvironmentService.AddAllDataSourceMappings(beepService.DMEEditor);
+            EnvironmentService.AddAllDataSourceQueryConfigurations(beepService.DMEEditor);
+            return Owners.TryGetValue(beepService.DMEEditor, out var owner) ? owner.Services :
+                (beepService as BeepService)?.Services ?? new ServiceCollection();
         }
 
-        /// <summary>
-        /// Creates mappings asynchronously with progress reporting and cancellation support.
-        /// </summary>
-        /// <param name="beepService">The Beep service instance.</param>
-        /// <param name="progress">Optional progress reporter.</param>
-        /// <param name="cancellationToken">Cancellation token.</param>
-        /// <returns>Task representing the async operation.</returns>
-        public static async Task CreateMappingAsync(this IBeepService beepService,
-            IProgress<PassedArgs> progress = null,
+        public static async Task CreateMappingAsync(this IBeepService beepService, IProgress<PassedArgs> progress = null,
             CancellationToken cancellationToken = default)
         {
-            if (beepService == null)
-                throw new ArgumentNullException(nameof(beepService));
-
+            ArgumentNullException.ThrowIfNull(beepService);
             await Task.Run(() =>
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                
-                progress?.Report(new PassedArgs { 
-                    Messege = "Creating connection configurations...",
-                    EventType = "Progress"
-                });
-
+                progress?.Report(new PassedArgs { Messege = "Creating connection configurations...", EventType = "Progress" });
                 EnvironmentService.AddAllConnectionConfigurations(beepService.DMEEditor);
-                
                 cancellationToken.ThrowIfCancellationRequested();
-                
-                progress?.Report(new PassedArgs { 
-                    Messege = "Creating data source mappings...",
-                    EventType = "Progress"
-                });
-
                 EnvironmentService.AddAllDataSourceMappings(beepService.DMEEditor);
-                
                 cancellationToken.ThrowIfCancellationRequested();
-                
-                progress?.Report(new PassedArgs { 
-                    Messege = "Creating query configurations...",
-                    EventType = "Progress"
-                });
-
                 EnvironmentService.AddAllDataSourceQueryConfigurations(beepService.DMEEditor);
-                
-                progress?.Report(new PassedArgs { 
-                    Messege = "Mapping creation completed successfully.",
-                    EventType = "Completed"
-                });
-                
-            }, cancellationToken);
-
-            lock (_lockObject)
-            {
-                _isMappingCreated = true;
-            }
+                progress?.Report(new PassedArgs { Messege = "Mapping creation completed successfully.", EventType = "Completed" });
+            }, cancellationToken).ConfigureAwait(false);
         }
 
-        #endregion
+        public static string GetMainFolder() => EnvironmentService.CreateMainFolder();
 
-        #region Utility Methods
-
-        /// <summary>
-        /// Gets or creates the main Beep data folder.
-        /// </summary>
-        /// <returns>Path to the main Beep data folder.</returns>
-        public static string GetMainFolder()
-        {
-            if (string.IsNullOrEmpty(_beepDataPath))
-            {
-                _beepDataPath = EnvironmentService.CreateMainFolder();
-            }
-            return _beepDataPath;
-        }
-
-        /// <summary>
-        /// Gets the configured Beep service instance from IDMEEditor.
-        /// This method provides backward compatibility with existing code.
-        /// </summary>
-        /// <param name="dmeEditor">The DME Editor instance.</param>
-        /// <returns>The configured IBeepService instance.</returns>
-        /// <exception cref="InvalidOperationException">Thrown when Beep services are not properly registered.</exception>
         public static IBeepService GetBeepService(this IDMEEditor dmeEditor)
         {
-            if (_cachedBeepService == null)
-            {
-                throw new InvalidOperationException("Beep services have not been registered. " +
-                    "Call Register() or AddBeepServices() first.");
-            }
-            return _cachedBeepService;
+            ArgumentNullException.ThrowIfNull(dmeEditor);
+            if (Owners.TryGetValue(dmeEditor, out var owner) && owner.Service.TryGetTarget(out var service) &&
+                ReferenceEquals(service.DMEEditor, dmeEditor))
+                return service;
+            throw new InvalidOperationException("This editor is not attached to a live Beep runtime. Resolve IBeepService from its provider.");
         }
 
-        /// <summary>
-        /// Gets the Beep service instance from the service provider.
-        /// </summary>
-        /// <param name="serviceProvider">The service provider.</param>
-        /// <returns>The configured IBeepService instance.</returns>
         public static IBeepService GetBeepService(this IServiceProvider serviceProvider)
         {
-            if (serviceProvider == null)
-                throw new ArgumentNullException(nameof(serviceProvider));
-
+            ArgumentNullException.ThrowIfNull(serviceProvider);
             return serviceProvider.GetRequiredService<IBeepService>();
         }
 
-        /// <summary>
-        /// Validates the current Beep service configuration.
-        /// </summary>
-        /// <returns>True if configuration is valid; otherwise, false.</returns>
-        public static bool ValidateConfiguration()
-        {
-            return _cachedBeepService?.ValidateConfiguration() ?? false;
-        }
+        [Obsolete("There is no process-wide runtime. Resolve IBeepService and use its ValidateConfiguration extension.")]
+        public static bool ValidateConfiguration() => false;
 
-        /// <summary>
-        /// Gets configuration summary for debugging purposes.
-        /// </summary>
-        /// <returns>Configuration summary string.</returns>
-        public static string GetConfigurationSummary()
-        {
-            if (_cachedBeepService == null)
-                return "Beep services not initialized.";
+        [Obsolete("There is no process-wide runtime. Resolve IBeepService and use its GetConfigurationSummary extension.")]
+        public static string GetConfigurationSummary() => "No process-wide Beep runtime. Resolve IBeepService from its owning provider.";
 
-            return $"Container: {_cachedBeepService.AppRepoName}, " +
-                   $"Type: {_cachedBeepService.ConfigureationType}, " +
-                   $"Directory: {_cachedBeepService.BeepDirectory}, " +
-                   $"Initialized: {_isInitialized}, " +
-                   $"Mapping Created: {_isMappingCreated}";
-        }
+        /// <summary>Compatibility no-op: registration state is now owned by each service collection.</summary>
+        [Obsolete("Registration is collection-local. Create a new service collection instead of resetting process state.")]
+        public static void ResetRegistrationState(bool force = false) { }
 
-        /// <summary>
-        /// Resets the registration state (primarily for testing purposes).
-        /// </summary>
-        /// <param name="force">Whether to force reset even if services are running.</param>
-        public static void ResetRegistrationState(bool force = false)
-        {
-            if (!force && (_cachedBeepService?.DMEEditor != null))
-            {
-                throw new InvalidOperationException("Cannot reset while services are active. " +
-                    "Use force=true to override.");
-            }
-
-            lock (_lockObject)
-            {
-                _isInitialized = false;
-                _isMappingCreated = false;
-                _cachedBeepService = null;
-                _beepDataPath = null;
-                _currentServices = null;
-            }
-        }
-
-        #endregion
-
-        #region Private Implementation Methods
-
-        /// <summary>
-        /// Internal method for registering Beep services with comprehensive error handling.
-        /// Made internal to support the fluent builder API.
-        /// </summary>
         internal static IBeepService RegisterBeepServicesInternal(IServiceCollection services, BeepServiceOptions options)
         {
-            lock (_lockObject)
+            ArgumentNullException.ThrowIfNull(services);
+            var snapshot = Snapshot(options);
+            lock (services)
             {
-                if (_isInitialized)
-                {
-                    if (_cachedBeepService == null)
-                        throw new InvalidOperationException("Beep services registration is in progress or failed. " +
-                            "Multiple concurrent registrations are not supported.");
-
-                    // Already booted once in this process, so skip the one-time global setup (folder
-                    // creation, mappings) — but STILL register into the collection we were handed.
-                    // _isInitialized is process-wide while the collection is per-container, so
-                    // returning early without registering leaves the caller's container with no
-                    // IBeepService at all. That happens to any second container in a process: a test
-                    // assembly with more than one host, a host that re-registers, or an app that
-                    // boots a child container. The failure is silent here and surfaces far away as
-                    // "No service for type 'IBeepService' has been registered".
-                    RegisterServiceWithLifetime(services, _cachedBeepService, options.ServiceLifetime);
-                    _currentServices = services;
-                    return _cachedBeepService;
-                }
-
-                try
-                {
-                    _currentServices = services;
-
-                    // Create and configure BeepService
-                    _cachedBeepService = CreateBeepServiceInstance(services, options);
-
-                    // Register based on specified lifetime
-                    RegisterServiceWithLifetime(services, _cachedBeepService, options.ServiceLifetime);
-
-                    // Initialize folder structure
-                    _beepDataPath = EnvironmentService.CreateMainFolder();
-
-                    // Create mappings if enabled
-                    if (options.EnableAutoMapping)
-                    {
-                        BeepServiceRegistration.CreateMapping(_cachedBeepService);
-                    }
-
-                    _isInitialized = true;
-                    return _cachedBeepService;
-                }
-                catch (Exception ex)
-                {
-                    // Reset state on failure
-                    _isInitialized = false;
-                    _cachedBeepService = null;
-                    throw new InvalidOperationException("Failed to register Beep services.", ex);
-                }
+                EnsureUnregistered(services);
+                // The public legacy return signature requires an eager usable instance.
+                // Never capture it in DI factories: its lifetime belongs to the caller.
+                var standalone = CreateRuntime(services, snapshot);
+                try { RegisterRuntime(services, snapshot); }
+                catch { standalone.Dispose(); throw; }
+                return standalone;
             }
         }
 
-        /// <summary>
-        /// Creates a BeepService instance with proper dependency injection.
-        /// </summary>
-        private static IBeepService CreateBeepServiceInstance(IServiceCollection services, BeepServiceOptions options)
-        {
-            var beepService = new BeepService(services);
-            beepService.AssemblyHandlerType = options.AssemblyHandlerType;
-            beepService.Configure(
-                options.DirectoryPath,
-                options.AppRepoName,
-                options.ConfigType,
-                options.ServiceLifetime == ServiceLifetime.Singleton);
+        internal static bool HasRuntimeRegistration(IServiceCollection services) =>
+            services.Any(descriptor => descriptor.ServiceType == typeof(RuntimeRegistration));
 
-            return beepService;
+        private static void EnsureUnregistered(IServiceCollection services)
+        {
+            if (services.IsReadOnly)
+                throw new InvalidOperationException("Beep must be registered before building the service provider.");
+            if (services.Any(descriptor => descriptor.ServiceType == typeof(IBeepService)))
+                throw new InvalidOperationException("This collection already contains IBeepService. Use a separate collection for another runtime configuration.");
         }
 
-        /// <summary>
-        /// Registers the service with the specified lifetime.
-        /// </summary>
-        private static void RegisterServiceWithLifetime(IServiceCollection services, IBeepService beepService, ServiceLifetime lifetime)
+        private static void RegisterRuntime(IServiceCollection services, BeepServiceOptions options)
         {
-            switch (lifetime)
+            var snapshot = Snapshot(options);
+            lock (services)
             {
-                case ServiceLifetime.Singleton:
-                    services.AddSingleton<IBeepService>(beepService);
-                    break;
-                case ServiceLifetime.Scoped:
-                    services.AddScoped<IBeepService>(_ => beepService);
-                    break;
-                case ServiceLifetime.Transient:
-                    services.AddTransient<IBeepService>(_ => beepService);
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(lifetime), lifetime, "Unsupported service lifetime.");
+                EnsureUnregistered(services);
+                services.AddSingleton(new RuntimeRegistration(snapshot));
+                services.Add(new ServiceDescriptor(typeof(IBeepService),
+                    _ => CreateRuntime(services, snapshot), snapshot.ServiceLifetime));
+                AddComponent(services, snapshot.ServiceLifetime, "Editor", runtime => runtime.DMEEditor);
+                AddComponent(services, snapshot.ServiceLifetime, "ConfigEditor", runtime => runtime.Config_editor);
+                AddComponent(services, snapshot.ServiceLifetime, "Logger", runtime => runtime.lg);
+                AddComponent(services, snapshot.ServiceLifetime, "Util", runtime => runtime.util);
+                AddComponent(services, snapshot.ServiceLifetime, "JsonLoader", runtime => runtime.jsonLoader);
+                AddComponent(services, snapshot.ServiceLifetime, "AssemblyHandler", runtime => runtime.LLoader);
+                AddComponent(services, snapshot.ServiceLifetime, "Errors", runtime => runtime.Erinfo);
             }
         }
 
-        /// <summary>
-        /// Gets the current service collection.
-        /// </summary>
-        private static IServiceCollection GetCurrentServices()
+        private static void AddComponent<T>(IServiceCollection services, ServiceLifetime lifetime,
+            string key, Func<IBeepService, T> select) where T : class
         {
-            return _currentServices ?? new ServiceCollection();
+            if (!services.Any(descriptor => !descriptor.IsKeyedService && descriptor.ServiceType == typeof(T)))
+                services.Add(new ServiceDescriptor(typeof(T), provider => select(provider.GetRequiredService<IBeepService>()), lifetime));
+            if (!services.Any(descriptor => descriptor.IsKeyedService && descriptor.ServiceType == typeof(T) && Equals(descriptor.ServiceKey, key)))
+                services.Add(new ServiceDescriptor(typeof(T), key, (provider, _) => select(provider.GetRequiredService<IBeepService>()), lifetime));
         }
 
-        /// <summary>
-        /// Extension method to check if a service is already registered.
-        /// </summary>
-        private static bool HasService<T>(this IServiceCollection services)
+        private static BeepServiceOptions Snapshot(BeepServiceOptions options)
         {
-            return services.Any(x => x.ServiceType == typeof(T));
+            ArgumentNullException.ThrowIfNull(options);
+            options.Validate();
+            return new BeepServiceOptions
+            {
+                DirectoryPath = Path.GetFullPath(options.DirectoryPath), AppRepoName = options.AppRepoName,
+                ConfigType = options.ConfigType, ServiceLifetime = options.ServiceLifetime,
+                EnableAutoMapping = options.EnableAutoMapping, EnableAssemblyLoading = options.EnableAssemblyLoading,
+                EnableConfigurationValidation = options.EnableConfigurationValidation,
+                InitializationTimeout = options.InitializationTimeout, AssemblyHandlerType = options.AssemblyHandlerType,
+                ConnectionSecretProtector = options.ConnectionSecretProtector,
+                AdditionalProperties = new Dictionary<string, object>(options.AdditionalProperties ?? new Dictionary<string, object>())
+            };
         }
 
-        #endregion
+        private static BeepService CreateRuntime(IServiceCollection services, BeepServiceOptions options)
+        {
+            var runtime = new BeepService(services)
+            {
+                RegisterComponentsOnConfigure = false, LoadDefaultMappings = options.EnableAutoMapping,
+                AssemblyHandlerType = options.AssemblyHandlerType,
+                ConnectionSecretProtector = options.ConnectionSecretProtector ?? TheTechIdea.Beep.Security.ConnectionCredentialProtection.Default
+            };
+            try
+            {
+                runtime.Configure(options.DirectoryPath, options.AppRepoName, options.ConfigType,
+                    options.ServiceLifetime == ServiceLifetime.Singleton);
+                if (options.EnableAssemblyLoading) runtime.LoadAssemblies();
+                if (options.EnableConfigurationValidation && !runtime.ValidateConfiguration())
+                    throw new BeepServiceStateException("Runtime configuration is incomplete.");
+                Owners.Add(runtime.DMEEditor, new RuntimeOwner(runtime, services));
+                return runtime;
+            }
+            catch
+            {
+                runtime.Dispose();
+                throw;
+            }
+        }
     }
 
     #region Configuration Classes
@@ -741,6 +530,8 @@ namespace TheTechIdea.Beep.Container
     /// </summary>
     public class BeepServiceOptions
     {
+        /// <summary>Optional host-owned credential policy captured by this runtime, not a process-global setting.</summary>
+        public IConnectionSecretProtector ConnectionSecretProtector { get; set; }
         /// <summary>
         /// Gets or sets the directory path for Beep data storage.
         /// </summary>
@@ -809,6 +600,14 @@ namespace TheTechIdea.Beep.Container
                     "AppRepoName cannot be null or empty. Please specify a name for the application repository/container.",
                     nameof(AppRepoName),
                     AppRepoName);
+
+            if (AppRepoName is "." or ".." || Path.IsPathRooted(AppRepoName) ||
+                AppRepoName.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0 ||
+                AppRepoName.Contains('/') || AppRepoName.Contains('\\'))
+                throw new BeepServiceValidationException("AppRepoName must be a single valid folder name.", nameof(AppRepoName), AppRepoName);
+
+            if (!Enum.IsDefined(typeof(AssemblyHandlerType), AssemblyHandlerType))
+                throw new BeepServiceValidationException("Invalid assembly handler type.", nameof(AssemblyHandlerType), AssemblyHandlerType);
 
             if (InitializationTimeout <= TimeSpan.Zero)
                 throw new BeepServiceValidationException(

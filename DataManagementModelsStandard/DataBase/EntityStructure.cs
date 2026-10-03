@@ -320,6 +320,7 @@ private int _id;
         Filters = new List<AppFilter>();
     }
 
+    /// <summary>Legacy shallow copy. Use EntityMetadataSnapshot.Capture for owned run metadata.</summary>
     public object Clone()
     {
         return this.MemberwiseClone();
@@ -562,9 +563,10 @@ private int _id;
             IsNotMapped = false;
 
         }
+        /// <summary>Copies field values without retaining the source's event subscribers.</summary>
         public EntityField Clone()
         {
-            return this.Clone();
+            return (EntityField)CopyWithoutObservers();
         }
     }
 

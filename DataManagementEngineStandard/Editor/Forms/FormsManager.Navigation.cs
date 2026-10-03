@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Editor.UOWManager.Models;
@@ -67,13 +68,15 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             return await NavigateToRecordInternalAsync(blockName, recordIndex, recordHistory: true).ConfigureAwait(false);
         }
 
-        private async Task<bool> NavigateToRecordInternalAsync(string blockName, int recordIndex, bool recordHistory)
+        private async Task<bool> NavigateToRecordInternalAsync(string blockName, int recordIndex, bool recordHistory,
+            Action check = null, Action beforeMove = null, Action afterMove = null, CancellationToken ct = default)
         {
             if (string.IsNullOrWhiteSpace(blockName) || recordIndex < 0)
                 return false;
 
             try
             {
+                check?.Invoke();
                 var blockInfo = GetBlock(blockName);
                 if (blockInfo?.UnitOfWork == null)
                 {
@@ -100,7 +103,10 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 // wants to force validation, call
                 // ValidateBlock explicitly. Documented here.
                 if (previousIndex == recordIndex)
+                {
+                    check?.Invoke(); afterMove?.Invoke();
                     return true;
+                }
 
                 if (Configuration?.Navigation?.ValidateBeforeNavigation == true)
                 {
@@ -114,6 +120,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 // Check for unsaved changes before navigation
                 if (!await CheckAndHandleUnsavedChangesAsync(blockName).ConfigureAwait(false))
                     return false;
+                check?.Invoke();
 
                 // Trigger navigation event
                 var args = new NavigationTriggerEventArgs(blockName, _currentFormName, NavigationType.ToRecord)
@@ -121,6 +128,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     TargetIndex = recordIndex
                 };
                 OnNavigate?.Invoke(this, args);
+                check?.Invoke();
                 
                 if (args.Cancel)
                 {
@@ -144,11 +152,13 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 // fire points and TriggerContext.ForRecord usage exactly.
                 if (previousIndex >= 0)
                 {
-                    await _triggerManager.FireBlockTriggerAsync(
+                    var postRecord = await _triggerManager.FireBlockTriggerAsync(
                         TriggerType.PostRecord, blockName,
                         TriggerContext.ForRecord(
                             TriggerType.PostRecord, blockName,
-                            blockInfo.UnitOfWork.CurrentItem, previousIndex, _dmeEditor)).ConfigureAwait(false);
+                            blockInfo.UnitOfWork.CurrentItem, previousIndex, _dmeEditor), ct).ConfigureAwait(false);
+                    check?.Invoke();
+                    if (check != null && postRecord == TriggerResult.Cancelled) return false;
                 }
 
                 // Perform the navigation
@@ -156,12 +166,15 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 bool success;
                 try
                 {
+                    check?.Invoke(); beforeMove?.Invoke();
                     success = PerformRecordNavigation(blockInfo, recordIndex);
                 }
                 finally { ResumeSync(blockName); }
 
                 if (success)
                 {
+                    afterMove?.Invoke();
+                    check?.Invoke();
                     var currentIndex = blockInfo.UnitOfWork.Units != null
                         ? GetCurrentIndex(blockInfo.UnitOfWork.Units)
                         : previousIndex;
@@ -170,6 +183,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     // -- see G0.36 in gaps.md and NavigateAsync's identical call above.
                     _systemVariablesManager?.UpdateForRecordChange(
                         blockName, currentIndex, blockInfo.UnitOfWork.TotalItemCount);
+                    check?.Invoke();
 
                     // LockManager tracks "current index" per block itself
                     // (_currentIndex), separately from the real UnitOfWork
@@ -186,24 +200,30 @@ namespace TheTechIdea.Beep.Editor.UOWManager
 
                     // PRE-RECORD on entering the new record, then
                     // WHEN-NEW-RECORD-INSTANCE once it is the current one.
-                    await _triggerManager.FireBlockTriggerAsync(
+                    var preRecord = await _triggerManager.FireBlockTriggerAsync(
                         TriggerType.PreRecord, blockName,
                         TriggerContext.ForRecord(
                             TriggerType.PreRecord, blockName,
-                            blockInfo.UnitOfWork.CurrentItem, currentIndex, _dmeEditor)).ConfigureAwait(false);
+                            blockInfo.UnitOfWork.CurrentItem, currentIndex, _dmeEditor), ct).ConfigureAwait(false);
+                    check?.Invoke();
+                    if (check != null && preRecord == TriggerResult.Cancelled)
+                        throw new InvalidOperationException("PRE-RECORD cannot undo an acknowledged local page.");
 
                     // Synchronize detail blocks
                     await SynchronizeDetailBlocksAsync(blockName).ConfigureAwait(false);
+                    check?.Invoke();
 
                     await _triggerManager.FireBlockTriggerAsync(
                         TriggerType.WhenNewRecordInstance, blockName,
                         TriggerContext.ForRecord(
                             TriggerType.WhenNewRecordInstance, blockName,
-                            blockInfo.UnitOfWork.CurrentItem, currentIndex, _dmeEditor)).ConfigureAwait(false);
+                            blockInfo.UnitOfWork.CurrentItem, currentIndex, _dmeEditor), ct).ConfigureAwait(false);
+                    check?.Invoke();
 
                     // Trigger current changed event
                     var currentChangedArgs = new NavigationTriggerEventArgs(blockName, _currentFormName, NavigationType.CurrentChanged);
                     OnCurrentChanged?.Invoke(this, currentChangedArgs);
+                    check?.Invoke();
 
                     Status = $"Navigated to record {recordIndex} in block '{blockName}'";
                     LogOperation($"Navigated to record {recordIndex}", blockName);
@@ -211,7 +231,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 
                 return success;
             }
-            catch (Exception ex)
+            catch (Exception ex) when (check == null)
             {
                 Status = $"Error navigating to record {recordIndex} in block '{blockName}': {ex.Message}";
                 LogError($"Error navigating to record {recordIndex} in block '{blockName}'", ex, blockName);

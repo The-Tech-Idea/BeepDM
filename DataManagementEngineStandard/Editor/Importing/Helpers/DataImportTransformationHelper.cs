@@ -1,23 +1,27 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.DataBase;
 using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.Editor.Defaults;
+using TheTechIdea.Beep.Editor.Defaults.Helpers;
+using TheTechIdea.Beep.Editor.Defaults.Resolvers;
 using TheTechIdea.Beep.Editor.Importing.Interfaces;
 using TheTechIdea.Beep.Editor.Mapping;
 using TheTechIdea.Beep.Utilities;
 using TheTechIdea.Beep.Workflow.Mapping;
 using TheTechIdea.Beep.Editor.ETL;
 using TheTechIdea.Beep.Addin;
+using TheTechIdea.Beep.Helpers;
 
 namespace TheTechIdea.Beep.Editor.Importing.Helpers
 {
     /// <summary>
     /// Helper class for data import transformation operations
     /// </summary>
-    public class DataImportTransformationHelper : IDataImportTransformationHelper
+    public class DataImportTransformationHelper : IDataImportTransformationHelper, IDataImportTransformationOutcome
     {
         private readonly IDMEEditor _editor;
 
@@ -67,8 +71,7 @@ namespace TheTechIdea.Beep.Editor.Importing.Helpers
             }
             catch (Exception ex)
             {
-                _editor.Logger?.WriteLog($"Error applying field filtering: {ex.Message}");
-                return record; // Return original record on error
+                throw new ImportTransformationException(ImportTransformationStage.Projection, ex.GetType().Name);
             }
         }
 
@@ -77,27 +80,26 @@ namespace TheTechIdea.Beep.Editor.Importing.Helpers
         /// </summary>
         public object ApplyEntityMapping(object record, EntityDataMap mapping, string targetEntityName)
         {
-            if (record == null || mapping == null || string.IsNullOrEmpty(targetEntityName))
+            if (record == null || mapping == null)
                 return record;
 
             try
             {
                 var mappedEntity = mapping.MappedEntities?.FirstOrDefault(
-                    p => p.EntityName.Equals(targetEntityName, StringComparison.InvariantCultureIgnoreCase));
+                    p => p != null && string.Equals(p.EntityName, targetEntityName, StringComparison.InvariantCultureIgnoreCase));
 
                 if (mappedEntity == null)
                 {
-                    _editor.Logger?.WriteLog($"No mapping found for entity '{targetEntityName}'");
-                    return record;
+                    throw new ImportTransformationException(ImportTransformationStage.Mapping);
                 }
 
                 // Use MappingManager for the actual transformation
-                return MappingManager.MapObjectToAnother(_editor, targetEntityName, mappedEntity, record);
+                return MappingManager.MapObjectToAnotherStrict(_editor, targetEntityName, mappedEntity, record);
             }
+            catch (ImportTransformationException) { throw; }
             catch (Exception ex)
             {
-                _editor.Logger?.WriteLog($"Error applying entity mapping: {ex.Message}");
-                return record; // Return original record on error
+                throw new ImportTransformationException(ImportTransformationStage.Mapping, ex.GetType().Name);
             }
         }
 
@@ -106,51 +108,67 @@ namespace TheTechIdea.Beep.Editor.Importing.Helpers
         /// </summary>
         public object ApplyDefaultValues(object record, List<DefaultValue> defaultValues, 
             EntityStructure entityStructure, string dataSourceName)
+            => ApplyDefaultValuesCore(record, defaultValues, entityStructure, dataSourceName, CancellationToken.None);
+
+        private object ApplyDefaultValuesCore(object record, List<DefaultValue> defaultValues,
+            EntityStructure entityStructure, string dataSourceName, CancellationToken token)
         {
-            if (record == null || defaultValues == null || !defaultValues.Any() || entityStructure == null)
+            if (record == null || defaultValues == null || !defaultValues.Any(d => d == null || d.IsEnabled))
                 return record;
 
             try
             {
-                foreach (var defaultValue in defaultValues)
+                var definitions = DefaultValueHelper.CaptureRequired(defaultValues);
+                using var resolverScope = definitions.Any(value => !string.IsNullOrWhiteSpace(value.Rule))
+                    ? new RequiredResolverContext(
+                        DefaultsManager.GetRequiredResolverRegistry(_editor), dataSourceName, definitions) : null;
+                if (entityStructure?.Fields == null)
+                    throw new ImportTransformationException(ImportTransformationStage.Defaults);
+                foreach (var defaultValue in definitions)
                 {
+                    token.ThrowIfCancellationRequested();
+                    if (defaultValue == null)
+                        throw new ImportTransformationException(ImportTransformationStage.Defaults);
+                    if (!defaultValue.IsEnabled) continue;
+                    var propertyName = defaultValue.PropertyName;
+                    var rule = defaultValue.Rule;
                     // Check if the field exists in the entity structure
                     var field = entityStructure.Fields?.FirstOrDefault(
-                        f => f.FieldName.Equals(defaultValue.PropertyName, StringComparison.InvariantCultureIgnoreCase));
+                        f => f.FieldName.Equals(propertyName, StringComparison.InvariantCultureIgnoreCase));
 
                     if (field == null)
-                        continue;
+                        throw new ImportTransformationException(ImportTransformationStage.Defaults);
 
                     // Skip if field already has a value and we're not forcing defaults
-                    var currentValue = _editor.Utilfunction.GetFieldValueFromObject(defaultValue.PropertyName, record);
+                    var currentValue = RecordFieldAccess.Read(record, propertyName);
                     if (currentValue != null && !ShouldOverrideExistingValue(defaultValue, currentValue))
                         continue;
 
                     // Resolve the default value using DefaultsManager
-                    var resolvedValue = DefaultsManager.ResolveDefaultValue(
-                        _editor, 
-                        dataSourceName, 
-                        defaultValue.PropertyName, 
-                        new PassedArgs 
-                        { 
-                            SentData = defaultValue, 
+                    var resolvedValue = string.IsNullOrWhiteSpace(rule)
+                        ? DefaultValueHelper.CopyLiteralRequired(defaultValue.PropertyValue)
+                        : DefaultsManager.ResolveRequired(_editor, rule, new PassedArgs
+                        {
+                            SentData = defaultValue,
                             ObjectName = "DefaultValue",
                             ReturnData = record
-                        });
+                        }, token);
+                    if (resolvedValue == null && !string.IsNullOrWhiteSpace(rule))
+                        throw new ImportTransformationException(ImportTransformationStage.Defaults);
 
                     // Set the resolved value
                     if (resolvedValue != null)
                     {
-                        _editor.Utilfunction.SetFieldValueFromObject(defaultValue.PropertyName, record, resolvedValue);
+                        RecordFieldAccess.Write(record, propertyName, resolvedValue);
                     }
                 }
 
                 return record;
             }
+            catch (OperationCanceledException) when (token.IsCancellationRequested) { throw; }
             catch (Exception ex)
             {
-                _editor.Logger?.WriteLog($"Error applying default values: {ex.Message}");
-                return record; // Return original record on error
+                throw new ImportTransformationException(ImportTransformationStage.Defaults, ex.GetType().Name);
             }
         }
 
@@ -164,12 +182,11 @@ namespace TheTechIdea.Beep.Editor.Importing.Helpers
 
             try
             {
-                return transformationFunction(record);
+                return transformationFunction(record) ?? throw new ImportTransformationException(ImportTransformationStage.Custom);
             }
             catch (Exception ex)
             {
-                _editor.Logger?.WriteLog($"Error applying custom transformation: {ex.Message}");
-                return record; // Return original record on error
+                throw new ImportTransformationException(ImportTransformationStage.Custom, ex.GetType().Name);
             }
         }
 
@@ -178,9 +195,19 @@ namespace TheTechIdea.Beep.Editor.Importing.Helpers
         /// </summary>
         public object ApplyTransformationPipeline(object record, DataImportConfiguration config)
         {
-            if (record == null || config == null)
-                return record;
+            var result = TransformRecord(record, config, CancellationToken.None);
+            if (!result.Succeeded)
+                throw new ImportTransformationException(result.Stage, result.ExceptionType);
+            return result.Record;
+        }
 
+        public ImportTransformationResult TransformRecord(object record, DataImportConfiguration config, CancellationToken token)
+        {
+            token.ThrowIfCancellationRequested();
+            if (record == null || config == null)
+                return ImportTransformationResult.Failure(ImportTransformationStage.Input);
+
+            var stage = ImportTransformationStage.Input;
             try
             {
                 var transformedRecord = record;
@@ -188,38 +215,49 @@ namespace TheTechIdea.Beep.Editor.Importing.Helpers
                 // Step 1: Apply field filtering if configured
                 if (config.SelectedFields != null && config.SelectedFields.Any())
                 {
+                    stage = ImportTransformationStage.Projection;
                     transformedRecord = ApplyFieldFiltering(transformedRecord, config.SelectedFields);
                 }
+                token.ThrowIfCancellationRequested();
 
                 // Step 2: Apply entity mapping if configured
-                if (config.Mapping != null && !string.IsNullOrEmpty(config.DestEntityName))
+                if (config.Mapping != null)
                 {
+                    stage = ImportTransformationStage.Mapping;
                     transformedRecord = ApplyEntityMapping(transformedRecord, config.Mapping, config.DestEntityName);
                 }
+                token.ThrowIfCancellationRequested();
 
                 // Step 3: Apply default values if configured
-                if (config.ApplyDefaults && config.DefaultValues != null && config.DefaultValues.Any() && 
-                    config.DestEntityStructure != null)
+                if (config.ApplyDefaults && config.DefaultValues != null && config.DefaultValues.Any())
                 {
-                    transformedRecord = ApplyDefaultValues(
+                    stage = ImportTransformationStage.Defaults;
+                    transformedRecord = ApplyDefaultValuesCore(
                         transformedRecord, 
                         config.DefaultValues, 
                         config.DestEntityStructure, 
-                        config.DestDataSourceName);
+                        config.DestDataSourceName, token);
                 }
+                token.ThrowIfCancellationRequested();
 
                 // Step 4: Apply custom transformation if provided
                 if (config.CustomTransformation != null)
                 {
+                    stage = ImportTransformationStage.Custom;
                     transformedRecord = ApplyCustomTransformation(transformedRecord, config.CustomTransformation);
                 }
 
-                return transformedRecord;
+                token.ThrowIfCancellationRequested();
+                return transformedRecord == null
+                    ? ImportTransformationResult.Failure(stage)
+                    : ImportTransformationResult.Success(transformedRecord);
             }
+            catch (OperationCanceledException) when (token.IsCancellationRequested) { throw; }
             catch (Exception ex)
             {
-                _editor.Logger?.WriteLog($"Error in transformation pipeline: {ex.Message}");
-                return record; // Return original record on error
+                token.ThrowIfCancellationRequested();
+                return ImportTransformationResult.Failure(ex is ImportTransformationException stageFailure ? stageFailure.Stage : stage,
+                    ex is ImportTransformationException failure ? failure.ExceptionType : ex.GetType().Name);
             }
         }
 

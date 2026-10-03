@@ -16,6 +16,7 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Helpers
     public class SyncProgressHelper : ISyncProgressHelper
     {
         private readonly IDMEEditor _editor;
+        private readonly Action<string, Exception> _diagnosticFailure;
         private const string LoggerName = "BeepSync";
 
         /// <summary>
@@ -25,6 +26,18 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Helpers
         public SyncProgressHelper(IDMEEditor editor)
         {
             _editor = editor ?? throw new ArgumentNullException(nameof(editor));
+        }
+
+        internal SyncProgressHelper(IDMEEditor editor, Action<string, Exception> diagnosticFailure) : this(editor)
+        {
+            _diagnosticFailure = diagnosticFailure;
+        }
+
+        private void ReportDiagnosticFailure(string operation, Exception error)
+        {
+            if (_diagnosticFailure != null) { _diagnosticFailure(operation, error); return; }
+            // Standalone helpers have no manager diagnostic channel; do not expose raw exceptions.
+            System.Diagnostics.Debug.WriteLine($"Sync {operation} diagnostic failed ({error.GetType().Name}).");
         }
 
         /// <summary>
@@ -77,15 +90,7 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Helpers
             }
             catch (Exception ex)
             {
-                // Fallback logging if main logging fails
-                try
-                {
-                    _editor.AddLogMessage("System", $"Logging error in {LoggerName}: {ex.Message}", DateTime.Now, -1, "", Errors.Failed);
-                }
-                catch
-                {
-                    // Silent fail if even fallback logging fails
-                }
+                ReportDiagnosticFailure("Logging", ex);
             }
         }
 
@@ -371,9 +376,7 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Helpers
                 }
                 catch (Exception ex)
                 {
-                    _editor.AddLogMessage("BeepSync",
-                        $"SLO classify-run rule threw: {ex.Message}",
-                        DateTime.Now, -1, "", Errors.Failed);
+                    ReportDiagnosticFailure("SloRule", ex);
                 }
             }
 
@@ -429,9 +432,7 @@ namespace TheTechIdea.Beep.Editor.BeepSync.Helpers
                 }
                 catch (Exception ex)
                 {
-                    _editor.AddLogMessage("BeepSync",
-                        $"Alert rule '{ruleKey}' threw: {ex.Message}",
-                        DateTime.Now, -1, "", Errors.Failed);
+                    ReportDiagnosticFailure("AlertRule", ex);
                 }
             }
 

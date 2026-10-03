@@ -1,4 +1,6 @@
 using System;
+using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Collections.Generic;
 using System.Linq;
 using TheTechIdea.Beep.Addin;
@@ -39,6 +41,33 @@ namespace TheTechIdea.Beep.Editor.Defaults
 
         protected static bool _initialized = false;
         protected static readonly object _lockObject = new object();
+        private static readonly ConditionalWeakTable<IDMEEditor, DefaultValueResolverManager> EditorResolvers = new();
+
+        private static DefaultValueResolverManager GetEditorResolver(IDMEEditor editor) =>
+            EditorResolvers.GetValue(editor ?? throw new ArgumentNullException(nameof(editor)), value => new DefaultValueResolverManager(value, requiredInitialization: true));
+
+        internal static object ResolveRequired(IDMEEditor editor, string rule, IPassedArgs context, CancellationToken token) =>
+            GetRequiredResolverRegistry(editor).Resolve(rule, context, token);
+
+        internal static RequiredResolverRegistry CaptureRequiredResolverRegistry(IDMEEditor editor, CancellationToken token)
+        {
+            token.ThrowIfCancellationRequested();
+            var registry = GetEditorResolver(editor).CaptureRequiredRegistry();
+            token.ThrowIfCancellationRequested();
+            return registry;
+        }
+
+        internal static RequiredResolverRegistry GetRequiredResolverRegistry(IDMEEditor editor)
+        {
+            var registry = RequiredDefaultResolution.Current?.Registry ?? RequiredResolverContext.Current;
+            if (registry == null) return GetEditorResolver(editor).CaptureRequiredRegistry();
+            if (!registry.IsOwnedBy(editor))
+            {
+                RequiredDefaultResolution.Report(failure: true);
+                throw new Importing.ImportTransformationException(Importing.ImportTransformationStage.Defaults);
+            }
+            return registry;
+        }
 
         // Profile registry: "datasource::entity" -> EntityDefaultsProfile
         private static readonly Dictionary<string, EntityDefaultsProfile> _profiles =
@@ -61,7 +90,7 @@ namespace TheTechIdea.Beep.Editor.Defaults
                 _logger       = _editor.Logger;
 
                 _defaultValueHelper = new DefaultValueHelper(_editor);
-                _resolverManager    = new DefaultValueResolverManager(_editor);
+                _resolverManager    = GetEditorResolver(_editor);
                 _validationHelper   = new DefaultValueValidationHelper(_editor);
 
                 _initialized = true;
@@ -149,15 +178,12 @@ namespace TheTechIdea.Beep.Editor.Defaults
         /// </summary>
         public static object Resolve(IDMEEditor editor, string ruleString, IPassedArgs context = null)
         {
+            if (RequiredDefaultResolution.Current is { } required)
+                return ResolveRequired(editor, ruleString, context, required.Token);
             EnsureInitialized(editor);
             if (string.IsNullOrWhiteSpace(ruleString))
                 return null;
-
-            var parsed = RuleNormalizer.Normalize(ruleString);
-            if (parsed.IsLiteral)
-                return parsed.NormalizedRule;
-
-            return _resolverManager.ResolveValue(parsed.NormalizedRule, context);
+            return GetEditorResolver(editor).ResolveValue(ruleString, context);
         }
 
         #endregion
@@ -191,6 +217,23 @@ namespace TheTechIdea.Beep.Editor.Defaults
 
         public static object ResolveDefaultValue(IDMEEditor editor, DefaultValue defaultValue, IPassedArgs parameters)
         {
+            if (RequiredDefaultResolution.Current is { } required)
+            {
+                try
+                {
+                    _ = GetRequiredResolverRegistry(editor);
+                    if (defaultValue == null || !defaultValue.IsEnabled) return null;
+                    var definition = Helpers.DefaultValueHelper.CaptureRequired(new List<DefaultValue> { defaultValue })[0];
+                    return string.IsNullOrWhiteSpace(definition.Rule) ? definition.PropertyValue
+                        : ResolveRequired(editor, definition.Rule, parameters, required.Token);
+                }
+                catch (OperationCanceledException) when (required.Token.IsCancellationRequested) { throw; }
+                catch (Exception ex)
+                {
+                    RequiredDefaultResolution.Report(failure: true);
+                    throw new Importing.ImportTransformationException(Importing.ImportTransformationStage.Defaults, ex.GetType().Name);
+                }
+            }
             EnsureInitialized(editor);
             if (defaultValue == null) return null;
 
@@ -219,6 +262,8 @@ namespace TheTechIdea.Beep.Editor.Defaults
 
         public static object ResolveDefaultValue(IDMEEditor editor, string dataSourceName, string fieldName, IPassedArgs parameters)
         {
+            if (RequiredDefaultResolution.Current != null)
+                return ResolveDefaultValue(editor, RequiredResolverContext.GetDefinitionRequired(editor, dataSourceName, fieldName), parameters);
             EnsureInitialized(editor);
             var dv = _defaultValueHelper.GetDefaultForField(dataSourceName, fieldName);
             return dv == null ? null : ResolveDefaultValue(editor, dv, parameters);
@@ -300,7 +345,7 @@ namespace TheTechIdea.Beep.Editor.Defaults
         public static object GetColumnDefault(IDMEEditor editor, string dataSourceName, string entityName,
             string columnName, IPassedArgs parameters = null)
         {
-            EnsureInitialized(editor);
+            if (RequiredDefaultResolution.Current == null) EnsureInitialized(editor);
             return ResolveDefaultValue(editor, dataSourceName, $"{entityName}.{columnName}", parameters);
         }
 
@@ -381,20 +426,20 @@ namespace TheTechIdea.Beep.Editor.Defaults
         public static void RegisterCustomResolver(IDMEEditor editor, IDefaultValueResolver resolver)
         {
             EnsureInitialized(editor);
-            _resolverManager.RegisterResolver(resolver);
+            GetEditorResolver(editor).RegisterResolver(resolver);
         }
 
         public static Dictionary<string, IEnumerable<string>> GetAvailableResolvers(IDMEEditor editor)
         {
             EnsureInitialized(editor);
-            return _resolverManager.GetResolvers()
+            return GetEditorResolver(editor).GetResolvers()
                 .ToDictionary(kvp => kvp.Key, kvp => kvp.Value.SupportedRuleTypes);
         }
 
         public static Dictionary<string, IEnumerable<string>> GetResolverExamples(IDMEEditor editor)
         {
             EnsureInitialized(editor);
-            return _resolverManager.GetResolvers()
+            return GetEditorResolver(editor).GetResolvers()
                 .ToDictionary(kvp => kvp.Key, kvp => kvp.Value.GetExamples());
         }
 

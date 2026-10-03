@@ -79,6 +79,7 @@ namespace TheTechIdea.Beep.Editor.UOW
         /// <returns>An observable binding list of entities</returns>
         public virtual async Task<ObservableBindingList<T>> Get()
         {
+            RejectMutationDuringRead();
             // A tenant-scoped unit of work has no unfiltered read: the whole point of the scope is
             // that "everything" means "everything of this tenant". Routed through the filtered
             // overload so the predicate reaches the query rather than being applied afterwards.
@@ -130,6 +131,7 @@ namespace TheTechIdea.Beep.Editor.UOW
         /// <returns>A task that represents the asynchronous operation containing the filtered list</returns>
         public virtual async Task<ObservableBindingList<T>> Get(List<AppFilter> filters)
         {
+            RejectMutationDuringRead();
             // Applied here rather than at the call site — see UnitofWork.Tenancy.cs for why.
             // A null filter list stays null for an unscoped unit of work, preserving the
             // "no filtering requested" branch below.
@@ -205,6 +207,7 @@ namespace TheTechIdea.Beep.Editor.UOW
         /// <returns>A task containing the query results</returns>
         public virtual async Task<ObservableBindingList<T>> GetQuery(string query)
         {
+            RejectMutationDuringRead();
             UnitofWorkParams ps = new UnitofWorkParams() { Cancel = false, EventAction = EventAction.PreQuery };
             PreQuery?.Invoke(this, ps);
             if (ps.Cancel)

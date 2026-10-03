@@ -65,20 +65,21 @@ public class AppUpdateServiceComposeTests : IDisposable
         var hash = Convert.ToHexString(SHA256.HashData(bytes));
 
         var transport = new MapTransport();
-        transport.Texts["feed"] = """
+        const string feedUrl = "https://updates.example.test/app/feed.json";
+        transport.Texts[feedUrl] = """
         { "product":"MyApp", "channel":"stable",
           "latest": { "version":"2.0.0",
             "delta": { "manifestUrl":"manifest", "blobBaseUrl":"blobs/" } } }
         """;
-        transport.Texts["manifest"] = $$"""
+        transport.Texts["https://updates.example.test/app/manifest"] = $$"""
         { "solid": true, "entries": [ { "path":"app.exe", "blob":"{{hash}}", "size":{{bytes.Length}} } ] }
         """;
-        transport.Bytes["blobs/" + hash] = bytes;
+        transport.Bytes["https://updates.example.test/app/blobs/" + hash] = bytes;
 
         var link = new FakeLink();
         string? recorded = null;
         var svc = new AppUpdateService(
-            new UpdateSettings { FeedUrl = "feed", CurrentVersion = "1.0.0", InstallRoot = _root },
+            new UpdateSettings { FeedUrl = feedUrl, CurrentVersion = "1.0.0", InstallRoot = _root },
             new UpdateFeedClient(transport), modulePackages: null, link: link, recordVersion: v => recorded = v);
 
         var check = await svc.CheckAsync();
@@ -86,7 +87,7 @@ public class AppUpdateServiceComposeTests : IDisposable
 
         var apply = await svc.ApplyAppUpdateAsync(check);
 
-        Assert.Equal(Errors.Ok, apply.Flag);
+        Assert.True(apply.Flag == Errors.Ok, apply.Message);
         Assert.Equal("app-v2-binary", File.ReadAllText(Path.Combine(_root, "app-2.0.0", "app.exe")));
         Assert.Equal(Path.Combine(_root, "app-2.0.0"), link.Targets[Path.Combine(_root, "current")]);
         Assert.Equal("2.0.0", recorded);

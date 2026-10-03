@@ -44,6 +44,9 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
 
             try
             {
+                if (RequiredDefaultResolution.Current != null && GetType() == typeof(DataSourceResolver))
+                    return RequiredDataSourceRule.Resolve(rule, Editor, parameters);
+
                 return upperRule switch
                 {
                     _ when upperRule.StartsWith("GETENTITY(")    => HandleGetEntity(rule, parameters),
@@ -69,6 +72,9 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
         {
             if (string.IsNullOrWhiteSpace(rule))
                 return false;
+
+            if (RequiredDefaultResolution.Current != null)
+                return RequiredBuiltInRule.MatchesOperator(rule, SupportedRuleTypes);
 
             var u = rule.ToUpperInvariant().Trim();
             return u.StartsWith("GETENTITY(")   ||

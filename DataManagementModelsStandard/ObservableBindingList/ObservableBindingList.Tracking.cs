@@ -516,6 +516,16 @@ namespace TheTechIdea.Beep.Editor
 
         #region "Batch Commit — Phase 5A"
 
+        private sealed class DeferredCommitItem
+        {
+            public T Item;
+            public EntityState State;
+            public Guid TrackingId;
+            public Dictionary<string, object> WrittenValues;
+        }
+
+        private readonly Dictionary<CommitResult, List<DeferredCommitItem>> _deferredCommits = new();
+
         /// <summary>
         /// Commits all pending changes in the default order (Deletes → Updates → Inserts).
         /// Fires BeforeSave/AfterSave per item, calls AcceptChanges for succeeded items,
@@ -538,8 +548,22 @@ namespace TheTechIdea.Beep.Editor
             Func<T, Task<IErrorsInfo>> updateAsync,
             Func<T, Task<IErrorsInfo>> deleteAsync,
             CommitOrder order)
+            => await CommitAllAsync(insertAsync, updateAsync, deleteAsync, order, true);
+
+        /// <summary>
+        /// When acceptChanges is false, keep dirty state and AfterSave pending until
+        /// AcceptCommit is called after the enclosing database transaction commits.
+        /// Always call AcceptCommit or DiscardCommit to release the pending result.
+        /// </summary>
+        public async Task<CommitResult> CommitAllAsync(
+            Func<T, Task<IErrorsInfo>> insertAsync,
+            Func<T, Task<IErrorsInfo>> updateAsync,
+            Func<T, Task<IErrorsInfo>> deleteAsync,
+            CommitOrder order, bool acceptChanges)
         {
             var commitResult = new CommitResult();
+            var deferred = new List<DeferredCommitItem>();
+            if (!acceptChanges) _deferredCommits.Add(commitResult, deferred);
             var pending = GetPendingChanges();
 
             // Build the ordered work list
@@ -625,6 +649,7 @@ namespace TheTechIdea.Beep.Editor
 
                     try
                     {
+                        var writtenValues = acceptChanges ? null : SnapshotValues(item);
                         IErrorsInfo opResult;
                         switch (state)
                         {
@@ -641,9 +666,20 @@ namespace TheTechIdea.Beep.Editor
                                 continue;
                         }
 
-                        if (opResult.Flag == Errors.Ok)
+                        if (opResult?.Flag == Errors.Ok)
                         {
                             itemResult.Success = true;
+
+                            if (!acceptChanges)
+                            {
+                                deferred.Add(new DeferredCommitItem
+                                {
+                                    Item = item, State = state, TrackingId = tracking.UniqueId,
+                                    WrittenValues = writtenValues
+                                });
+                                commitResult.Results.Add(itemResult);
+                                continue;
+                            }
 
                             if (state == EntityState.Deleted)
                             {
@@ -660,7 +696,7 @@ namespace TheTechIdea.Beep.Editor
                             {
                                 tracking.EntityState = EntityState.Unchanged;
                                 tracking.IsSaved = true;
-                                tracking.OriginalValues = null;
+                                tracking.OriginalValues = SnapshotValues(item);
                                 tracking.ModifiedProperties.Clear();
                                 tracking.ModifiedAt = null;
                                 tracking.ModifiedBy = null;
@@ -691,6 +727,11 @@ namespace TheTechIdea.Beep.Editor
                     commitResult.Results.Add(itemResult);
                 }
             }
+            catch
+            {
+                if (!acceptChanges) _deferredCommits.Remove(commitResult);
+                throw;
+            }
             finally
             {
                 SuppressNotification = savedSuppress;
@@ -718,10 +759,99 @@ namespace TheTechIdea.Beep.Editor
                 _currentIndex = Items.Count - 1;
 
             // Single reset notification
+            if (!acceptChanges) return commitResult;
             OnListChanged(new System.ComponentModel.ListChangedEventArgs(System.ComponentModel.ListChangedType.Reset, -1));
             OnCollectionChanged(new System.Collections.Specialized.NotifyCollectionChangedEventArgs(System.Collections.Specialized.NotifyCollectionChangedAction.Reset));
 
             return commitResult;
+        }
+
+        /// <summary>Accept acknowledged writes only after their enclosing transaction committed.</summary>
+        public void AcceptCommit(CommitResult result)
+        {
+            if (!_deferredCommits.Remove(result, out var deferred))
+                throw new InvalidOperationException("No deferred commit belongs to this collection/result.");
+            foreach (var entry in deferred)
+            {
+                var tracking = GetTrackingItem(entry.Item);
+                if (tracking == null || tracking.UniqueId != entry.TrackingId) continue;
+                if (entry.State == EntityState.Deleted)
+                {
+                    if (tracking.EntityState != EntityState.Deleted) continue;
+                    DeletedList.Remove(entry.Item);
+                    ForgetDeletedTracking(entry.Item);
+                    originalList.Remove(entry.Item);
+                    _insertionOrderList.Remove(entry.Item);
+                    Items.Remove(entry.Item);
+                    _trackingsByGuid.Remove(tracking.UniqueId);
+                    _trackingsByOriginalIndex.Remove(tracking.OriginalIndex);
+                }
+                else
+                {
+                    // Edits made during/after the provider call must remain pending. An added
+                    // row now exists in the database, so further changes are updates, not inserts.
+                    if (tracking.EntityState == EntityState.Deleted) continue;
+                    var currentValues = SnapshotValues(entry.Item);
+                    var changed = currentValues.Where(value => !entry.WrittenValues.TryGetValue(value.Key, out var written) ||
+                        !Equals(value.Value, written)).Select(value => value.Key).ToList();
+                    tracking.EntityState = changed.Count == 0 ? EntityState.Unchanged : EntityState.Modified;
+                    tracking.IsSaved = changed.Count == 0;
+                    tracking.IsNew = false;
+                    tracking.OriginalValues = entry.WrittenValues;
+                    tracking.ModifiedProperties.Clear();
+                    foreach (var property in changed) tracking.ModifiedProperties.Add(property);
+                    if (changed.Count == 0)
+                    {
+                        tracking.ModifiedAt = null;
+                        tracking.ModifiedBy = null;
+                        tracking.Version = 0;
+                    }
+                }
+                if (entry.State == EntityState.Deleted || tracking.IsSaved)
+                {
+                    var log = UpdateLog?.Values.FirstOrDefault(x => x.TrackingRecord?.UniqueId == tracking.UniqueId);
+                    if (log != null) UpdateLog.Remove(log.LogId);
+                    ChangedValues?.Remove(entry.Item);
+                }
+                try { AfterSave?.Invoke(this, new CommitEventArgs<T>(entry.Item, entry.State)); }
+                catch (Exception ex)
+                {
+                    result.NotificationErrors.Add(new ErrorsInfo { Flag = Errors.Warning, Message = $"Write committed but AfterSave failed: {ex.Message}", Ex = ex });
+                }
+            }
+            try { OnListChanged(new ListChangedEventArgs(ListChangedType.Reset, -1)); }
+            catch (Exception ex) { result.NotificationErrors.Add(new ErrorsInfo { Flag = Errors.Warning, Message = ex.Message, Ex = ex }); }
+            try
+            {
+                OnCollectionChanged(new System.Collections.Specialized.NotifyCollectionChangedEventArgs(
+                    System.Collections.Specialized.NotifyCollectionChangedAction.Reset));
+            }
+            catch (Exception ex) { result.NotificationErrors.Add(new ErrorsInfo { Flag = Errors.Warning, Message = ex.Message, Ex = ex }); }
+        }
+
+        /// <summary>Release deferred acknowledgements after rollback without accepting dirty state.</summary>
+        public void DiscardCommit(CommitResult result) => _deferredCommits.Remove(result);
+
+        /// <summary>Record provider-generated identity values before the enclosing commit.</summary>
+        public void ConfirmGeneratedValues(CommitResult result, IEnumerable<string> propertyNames)
+        {
+            if (!_deferredCommits.TryGetValue(result, out var deferred))
+                throw new InvalidOperationException("No deferred commit belongs to this collection/result.");
+            foreach (var entry in deferred.Where(e => e.State == EntityState.Added))
+            {
+                var values = SnapshotValues(entry.Item);
+                foreach (var name in propertyNames)
+                    if (values.TryGetValue(name, out var value)) entry.WrittenValues[name] = value;
+            }
+        }
+
+        /// <summary>Record an identity value captured immediately after the provider wrote the item.</summary>
+        public void ConfirmGeneratedValue(CommitResult result, T item, string propertyName, object value)
+        {
+            if (!_deferredCommits.TryGetValue(result, out var deferred))
+                throw new InvalidOperationException("No deferred commit belongs to this collection/result.");
+            var entry = deferred.FirstOrDefault(e => e.State == EntityState.Added && ReferenceEquals(e.Item, item));
+            if (entry != null) entry.WrittenValues[propertyName] = value;
         }
 
         #endregion "Batch Commit — Phase 5A"
@@ -787,7 +917,7 @@ namespace TheTechIdea.Beep.Editor
         /// </summary>
         private Dictionary<string, object> SnapshotValues(T item)
         {
-            var snapshot = new Dictionary<string, object>();
+            var snapshot = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
             foreach (var prop in GetCachedProperties())
             {
                 if (prop.CanRead)
@@ -896,6 +1026,12 @@ namespace TheTechIdea.Beep.Editor
                 DeletedList.Clear();
                 ForgetAllDeletedTrackings();
 
+                var acceptedItems = new Dictionary<Guid, T>();
+                foreach (var item in Items)
+                {
+                    var itemTracking = GetTrackingItem(item);
+                    if (itemTracking != null) acceptedItems[itemTracking.UniqueId] = item;
+                }
                 // Reset all tracking records to Unchanged
                 foreach (var tr in _trackingsByGuid.Values.ToList())
                 {
@@ -906,7 +1042,7 @@ namespace TheTechIdea.Beep.Editor
                         continue;
                     }
                     tr.EntityState = EntityState.Unchanged;
-                    tr.OriginalValues = null;
+                    tr.OriginalValues = acceptedItems.TryGetValue(tr.UniqueId, out var acceptedItem) ? SnapshotValues(acceptedItem) : null;
                     tr.ModifiedProperties.Clear();
                     tr.ModifiedAt = null;
                     tr.ModifiedBy = null;
@@ -937,7 +1073,7 @@ namespace TheTechIdea.Beep.Editor
         }
 
         /// <summary>
-        /// Marks a single item as Unchanged and clears its original-value snapshot.
+        /// Marks a single item as Unchanged and retains its accepted-value baseline.
         /// </summary>
         public void AcceptChanges(T item)
         {
@@ -960,7 +1096,7 @@ namespace TheTechIdea.Beep.Editor
             else
             {
                 tracking.EntityState = EntityState.Unchanged;
-                tracking.OriginalValues = null;
+                tracking.OriginalValues = SnapshotValues(item);
                 tracking.ModifiedProperties.Clear();
                 tracking.ModifiedAt = null;
                 tracking.ModifiedBy = null;
@@ -1024,7 +1160,7 @@ namespace TheTechIdea.Beep.Editor
                                 }
                             }
                             tr.EntityState = EntityState.Unchanged;
-                            tr.OriginalValues = null;
+                            // The restored snapshot is still the baseline for the next edit.
                             tr.ModifiedProperties.Clear();
                             tr.ModifiedAt = null;
                             tr.ModifiedBy = null;
@@ -1062,7 +1198,7 @@ namespace TheTechIdea.Beep.Editor
 
                                 tr.EntityState = EntityState.Unchanged;
                                 tr.CurrentIndex = insertAt;
-                                tr.OriginalValues = null;
+                                tr.OriginalValues = SnapshotValues(deletedItem);
                                 tr.ModifiedProperties.Clear();
                                 tr.ModifiedAt = null;
                                 tr.ModifiedBy = null;
@@ -1125,7 +1261,6 @@ namespace TheTechIdea.Beep.Editor
                                 originalList[tracking.OriginalIndex] = item;
                         }
                         tracking.EntityState = EntityState.Unchanged;
-                        tracking.OriginalValues = null;
                         tracking.ModifiedProperties.Clear();
                         tracking.ModifiedAt = null;
                         tracking.ModifiedBy = null;
@@ -1151,7 +1286,7 @@ namespace TheTechIdea.Beep.Editor
                         item.PropertyChanged += Item_PropertyChanged;
                         tracking.EntityState = EntityState.Unchanged;
                         tracking.CurrentIndex = insertAt;
-                        tracking.OriginalValues = null;
+                        tracking.OriginalValues = SnapshotValues(item);
                         tracking.ModifiedProperties.Clear();
                         tracking.ModifiedAt = null;
                         tracking.ModifiedBy = null;

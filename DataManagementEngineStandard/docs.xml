@@ -3786,15 +3786,11 @@
             </summary>
             <remarks>
             <para>
-            <b>Every datasource's <c>GetEntityType</c> should call this.</b> They were
-            each solving it differently and none of them correctly:
-            <c>JsonMultiFileDataSource</c> used <c>DMTypeBuilder</c>, which emits
-            types deriving from <c>object</c>; <c>InMemoryCacheDataSource</c> returned
-            <c>Dictionary&lt;string, object&gt;</c> with a "could implement dynamic
-            type creation later" note.
+            Generates Entity-derived types for datasource GetEntityType consumers.
+            Captures metadata and keys by generated source identity, not entity name alone.
             </para>
             <para>
-            That matters because <c>UnitofWork&lt;T&gt;</c> is constrained to
+            <c>UnitofWork&lt;T&gt;</c> is constrained to
             <c>T : Entity, new()</c> and <c>UnitOfWorkFactory</c> reaches it through
             <c>MakeGenericType</c>. A type that does not derive from <c>Entity</c>
             cannot back a unit of work, so a block over such a datasource registers
@@ -6483,16 +6479,10 @@
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.ConfigUtil.Managers.DataConnectionManager.SaveDataConnectionsValues">
-            <summary>
-            Saves data connections. When a catalog repository is set, this is a no-op
-            (the repository auto-persists). Otherwise saves to DataConnections.json.
-            </summary>
+            <summary>Legacy signature retained; failed saves now propagate instead of masquerading as success.</summary>
         </member>
         <member name="M:TheTechIdea.Beep.ConfigUtil.Managers.DataConnectionManager.LoadDataConnectionsValues">
-            <summary>
-            Loads data connections. When a catalog repository is set, loads from the
-            catalog. Otherwise loads from DataConnections.json.
-            </summary>
+            <summary>Refreshes only after successful validation/decryption; corruption never resets live state.</summary>
         </member>
         <member name="M:TheTechIdea.Beep.ConfigUtil.Managers.DataConnectionManager.SyncFromRepository">
             <summary>
@@ -6585,9 +6575,13 @@
             </summary>
         </member>
         <member name="T:TheTechIdea.Beep.ConfigUtil.Managers.MigrationHistoryManager">
-            <summary>
-            Manages migration history stored in the central configuration/metadata store.
-            </summary>
+            <summary>Coordinated, acknowledged migration history snapshots for local cooperating writers.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.ConfigUtil.Managers.MigrationHistoryManager.Save(TheTechIdea.Beep.ConfigUtil.MigrationHistory)">
+            <summary>Legacy signature retained; failures now propagate instead of being logged as success.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.ConfigUtil.Managers.MigrationHistoryManager.SaveAcknowledged(TheTechIdea.Beep.ConfigUtil.MigrationHistory,System.Threading.CancellationToken)">
+            <summary>Explicit whole-history replacement, not optimistic merging of a stale caller snapshot.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.ConfigUtil.Managers.QueryManager">
             <summary>
@@ -6833,7 +6827,7 @@
             <summary>Gets or sets the DMEEditor instance.</summary>
         </member>
         <member name="F:TheTechIdea.Beep.Utilities.DMTypeBuilder.typeCache">
-            <summary>Caches generated types to improve performance.</summary>
+            <summary>Advisory type mirror. Generated entries use full name plus source-v2 hash, never bare-name admission.</summary>
             <remarks>
             Concurrent because this is public, static and shared by every data
             source driver. It was a plain Dictionary, so two threads resolving
@@ -17920,6 +17914,12 @@
             <see cref="T:TheTechIdea.Beep.Editor.BeepSync.ConflictPolicy"/> and the Rule Engine.
             </summary>
         </member>
+        <member name="E:TheTechIdea.Beep.Editor.BeepSyncManager.DiagnosticFailed">
+            <summary>Failures in advisory diagnostics, separate from provider and checkpoint outcomes.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.BeepSyncManager.LastRunDiagnosticFailures">
+            <summary>A copy of diagnostic failures for the latest run; no lifetime history is retained.</summary>
+        </member>
         <member name="P:TheTechIdea.Beep.Editor.BeepSyncManager.IntegrationContext">
             <summary>Optional integration context: Rule Engine, Defaults Manager, mapping-plan state.</summary>
         </member>
@@ -17932,6 +17932,12 @@
         <member name="P:TheTechIdea.Beep.Editor.BeepSyncManager.LastRunReconciliationReport">
             <summary>Reconciliation report from the most recent <see cref="M:TheTechIdea.Beep.Editor.BeepSyncManager.SyncDataAsync(TheTechIdea.Beep.Editor.DataSyncSchema,System.Threading.CancellationToken,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},TheTechIdea.Beep.Editor.Importing.IImportErrorStore,TheTechIdea.Beep.Editor.Importing.IImportRunHistoryStore)"/> call.</summary>
         </member>
+        <member name="P:TheTechIdea.Beep.Editor.BeepSyncManager.LastRunBatchThresholdResult">
+            <summary>Attempt threshold evidence; null when explicitly disabled or not evaluated.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.BeepSyncManager.LastRunFailureCheckpointStatus">
+            <summary>Failed-run checkpoint acknowledgement, separate from the original import/threshold outcome.</summary>
+        </member>
         <member name="P:TheTechIdea.Beep.Editor.BeepSyncManager.RetryPipeline">
             <summary>
             Retry pipeline used by <see cref="!:BeepSyncManager.Sync.cs"/> to run the
@@ -17941,6 +17947,12 @@
         </member>
         <member name="M:TheTechIdea.Beep.Editor.BeepSyncManager.#ctor(TheTechIdea.Beep.Editor.IDMEEditor,TheTechIdea.Beep.Editor.BeepSync.SyncIntegrationContext)">
             <summary>Advanced constructor with pre-built integration context.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSyncManager.#ctor(TheTechIdea.Beep.Editor.IDMEEditor,TheTechIdea.Beep.Editor.BeepSync.SyncIntegrationContext,System.String)">
+            <summary>Explicitly selects host/test storage without changing the process-wide legacy store.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSyncManager.CreateWithPersistence(TheTechIdea.Beep.Editor.IDMEEditor,TheTechIdea.Beep.Editor.BeepSync.Interfaces.ISchemaPersistenceHelper,TheTechIdea.Beep.Editor.BeepSync.SyncIntegrationContext)">
+            <summary>Host-owned storage adapter; checkpoint execution requires its acknowledgement capability.</summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.BeepSyncManager.ValidatePlanForCiAsync(TheTechIdea.Beep.Editor.DataSyncSchema,System.String,System.Threading.CancellationToken)">
             <summary>
@@ -17964,6 +17976,9 @@
             <summary>
             Runs all preflight checks against <paramref name="schema"/> without executing any data movement.
             </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSyncManager.ReplayRejectedRecordAsync(TheTechIdea.Beep.Editor.DataSyncSchema,TheTechIdea.Beep.Editor.Importing.IImportErrorStore,System.String,System.String,System.Int32,System.String,System.Threading.CancellationToken)">
+            <summary>Replays one prepared reject with current direction-specific record policy; does not complete a sync run or advance cursors.</summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.BeepSyncManager.TryClassifyError(TheTechIdea.Beep.Editor.DataSyncSchema,System.String,System.Int32)">
             <summary>
@@ -18117,81 +18132,7 @@
             <inheritdoc cref="M:TheTechIdea.Beep.Editor.BeepSync.Interfaces.IFieldMappingHelper.PromoteMappingState(TheTechIdea.Beep.Editor.DataSyncSchema,System.String)"/>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.BeepSync.Helpers.SchemaPersistenceHelper">
-            <summary>
-            Helper class for sync schema persistence operations
-            Based on persistence patterns from DataSyncManager.SaveSchemas and LoadSchemas
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.SchemaPersistenceHelper.#ctor(TheTechIdea.Beep.Editor.IDMEEditor)">
-            <summary>
-            Initialize the schema persistence helper with editor and file paths
-            </summary>
-            <param name="editor">DME Editor instance</param>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.SchemaPersistenceHelper.SaveSchemasAsync(System.Collections.Generic.IEnumerable{TheTechIdea.Beep.Editor.DataSyncSchema})">
-            <summary>
-            Save sync schemas to storage asynchronously
-            Based on DataSyncManager.SaveSchemas method
-            </summary>
-            <param name="schemas">Collection of schemas to save</param>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.SchemaPersistenceHelper.LoadSchemasAsync">
-            <summary>
-            Load sync schemas from storage asynchronously
-            Based on DataSyncManager.LoadSchemas method
-            </summary>
-            <returns>Observable collection of loaded schemas</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.SchemaPersistenceHelper.SaveSchemaAsync(TheTechIdea.Beep.Editor.DataSyncSchema)">
-            <summary>
-            Save a single schema to storage
-            </summary>
-            <param name="schema">Schema to save</param>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.SchemaPersistenceHelper.DeleteSchemaAsync(System.String)">
-            <summary>
-            Delete schema from storage
-            </summary>
-            <param name="schemaId">Id of schema to delete</param>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.SchemaPersistenceHelper.CreateBackupAsync">
-            <summary>
-            Create backup of current schemas
-            </summary>
-            <returns>True if backup was successful</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.SchemaPersistenceHelper.GetSchemasFilePath">
-            <summary>
-            Get file path where schemas are stored
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.SchemaPersistenceHelper.SchemasFileExists">
-            <summary>
-            Check if schemas file exists
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.SchemaPersistenceHelper.SaveVersionedSchemaAsync(TheTechIdea.Beep.Editor.DataSyncSchema,TheTechIdea.Beep.Editor.BeepSync.SyncSchemaVersion)">
-            <inheritdoc cref="M:TheTechIdea.Beep.Editor.BeepSync.Interfaces.ISchemaPersistenceHelper.SaveVersionedSchemaAsync(TheTechIdea.Beep.Editor.DataSyncSchema,TheTechIdea.Beep.Editor.BeepSync.SyncSchemaVersion)"/>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.SchemaPersistenceHelper.LoadSchemaVersionsAsync(System.String)">
-            <inheritdoc cref="M:TheTechIdea.Beep.Editor.BeepSync.Interfaces.ISchemaPersistenceHelper.LoadSchemaVersionsAsync(System.String)"/>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.SchemaPersistenceHelper.DiffSchemaToPersistedAsync(TheTechIdea.Beep.Editor.DataSyncSchema)">
-            <inheritdoc cref="M:TheTechIdea.Beep.Editor.BeepSync.Interfaces.ISchemaPersistenceHelper.DiffSchemaToPersistedAsync(TheTechIdea.Beep.Editor.DataSyncSchema)"/>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.SchemaPersistenceHelper.EnsureDirectoryExists">
-            <summary>
-            Ensure the directory exists for storing schemas
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.SchemaPersistenceHelper.SaveCheckpointAsync(TheTechIdea.Beep.Editor.BeepSync.SyncCheckpoint)">
-            <inheritdoc cref="M:TheTechIdea.Beep.Editor.BeepSync.Interfaces.ISchemaPersistenceHelper.SaveCheckpointAsync(TheTechIdea.Beep.Editor.BeepSync.SyncCheckpoint)"/>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.SchemaPersistenceHelper.LoadCheckpointAsync(System.String)">
-            <inheritdoc cref="M:TheTechIdea.Beep.Editor.BeepSync.Interfaces.ISchemaPersistenceHelper.LoadCheckpointAsync(System.String)"/>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.SchemaPersistenceHelper.ClearCheckpointAsync(System.String)">
-            <inheritdoc cref="M:TheTechIdea.Beep.Editor.BeepSync.Interfaces.ISchemaPersistenceHelper.ClearCheckpointAsync(System.String)"/>
+            <summary>Versioned local snapshots for cooperating sync writers. Corruption is never fresh state.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.BeepSync.Helpers.SyncProgressHelper">
             <summary>
@@ -18281,6 +18222,12 @@
         <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.SyncSchemaTranslator.ToReverseImportConfiguration(TheTechIdea.Beep.Editor.DataSyncSchema,TheTechIdea.Beep.Editor.Importing.IImportErrorStore,TheTechIdea.Beep.Editor.Importing.IImportRunHistoryStore)">
             <summary>
             Creates a reverse DataImportConfiguration for bidirectional sync (destination → source).
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.SyncSchemaTranslator.BindEntityMetadata(TheTechIdea.Beep.Editor.Importing.DataImportConfiguration,TheTechIdea.Beep.DataBase.EntityStructure,TheTechIdea.Beep.DataBase.EntityStructure)">
+            <summary>
+            Binds a translated mapped configuration to independent provider metadata.
+            Call for both directions before admitting either import. Missing mapped targets reject.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.BeepSync.Helpers.SyncSchemaTranslator.GetBatchSize(TheTechIdea.Beep.Editor.DataSyncSchema)">
@@ -18550,7 +18497,8 @@
         </member>
         <member name="T:TheTechIdea.Beep.Editor.BeepSync.Interfaces.ISchemaPersistenceHelper">
             <summary>
-            Interface for sync schema persistence
+            Sync schema persistence. Failed built-in writes throw; corruption is not missing state.
+            Checkpointed execution also requires Models-owned ISyncPersistenceAcknowledgement.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.BeepSync.Interfaces.ISchemaPersistenceHelper.SaveSchemasAsync(System.Collections.Generic.IEnumerable{TheTechIdea.Beep.Editor.DataSyncSchema})">
@@ -18593,9 +18541,9 @@
         </member>
         <member name="M:TheTechIdea.Beep.Editor.BeepSync.Interfaces.ISchemaPersistenceHelper.SaveCheckpointAsync(TheTechIdea.Beep.Editor.BeepSync.SyncCheckpoint)">
             <summary>
-            Persist a <see cref="T:TheTechIdea.Beep.Editor.BeepSync.SyncCheckpoint"/> for the given schema so a retry
-            can resume from the last known good offset.
-            Stored at <c>{directoryPath}/checkpoints/{checkpoint.SchemaId}.json</c>.
+            Persist run evidence, not a guarantee of key/offset replay.
+            The built-in store uses a versioned artifact with a hashed exact schema ID path.
+            Mandatory execution uses ISyncPersistenceAcknowledgement, not this legacy Task alone.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.BeepSync.Interfaces.ISchemaPersistenceHelper.LoadCheckpointAsync(System.String)">
@@ -18606,8 +18554,9 @@
         </member>
         <member name="M:TheTechIdea.Beep.Editor.BeepSync.Interfaces.ISchemaPersistenceHelper.ClearCheckpointAsync(System.String)">
             <summary>
-            Delete the checkpoint file for <paramref name="schemaId"/> once a run
-            has completed successfully.
+            Explicitly remove validated checkpoint evidence for <paramref name="schemaId"/>.
+            Successful execution retains Completed; clear only after operator reconciliation.
+            Prefer the built-in run-owned clear when acting on a previously observed checkpoint.
             </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.BeepSync.CdcFilterContext">
@@ -18783,6 +18732,9 @@
             Returns <see cref="F:TheTechIdea.Beep.Editor.BeepSync.SyncRuleExecutionPolicies.FastPath"/> when <paramref name="mode"/> is
             <c>"FastPath"</c> (case-insensitive); otherwise returns <see cref="F:TheTechIdea.Beep.Editor.BeepSync.SyncRuleExecutionPolicies.DefaultSafe"/>.
             </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Defaults.DefaultCatalogReadException">
+            <summary>A required defaults catalog could not be read or validated; no raw catalog details are exposed.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.Defaults.DefaultsManager">
              <summary>
@@ -18972,6 +18924,9 @@
             <summary>
             Helper class for managing default value operations
             </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Defaults.Helpers.DefaultValueHelper.GetDefaultsRequired(System.String)">
+            <summary>Required editor-owned lookup: an existing connection with no defaults is empty; failed/ambiguous lookup is not.</summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Defaults.Helpers.DefaultValueHelper.DetermineRuleType(System.String)">
             <summary>
@@ -19983,7 +19938,7 @@
             whether normalisation succeeded.  Diagnostics are available on the returned object.
             </returns>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Defaults.RuleParsing.RuleNormalizer.NormalizeExpression(System.String,System.String)">
+        <member name="M:TheTechIdea.Beep.Editor.Defaults.RuleParsing.RuleNormalizer.NormalizeExpression(System.String,System.String,System.Boolean)">
             <summary>
             Internal helper: normalizes an expression string (already stripped of the `:` prefix)
             using the dot-style parser or legacy function-style path.
@@ -20479,16 +20434,6 @@
             (see OnTimerManagerFired in FormsManager.cs core).
             </summary>
             <summary>
-            Real transaction coordination for <c>CommitFormAsync</c>. Groups every
-            dirty block in commit scope by its owning <see cref="T:TheTechIdea.Beep.IDataSource"/> —
-            not by form, since one form's blocks can span several datasources and
-            several forms can share one — and, for whichever datasources actually
-            implement the <see cref="T:TheTechIdea.Beep.IDataSource"/> transaction triple
-            (<c>BeginTransaction</c>/<c>Commit</c>/<c>EndTransaction</c>), wraps
-            every block commit on that datasource in one real transaction so they
-            all become durable together or not at all.
-            </summary>
-            <summary>
             Phase 4.3 — Trigger chaining, dependency ordering, and execution logging.
             Subscribes to <see cref="E:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerManager.TriggerExecuted"/> to populate an in-memory
             <see cref="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ITriggerExecutionLog"/>, and exposes dependency-ordered fire helpers
@@ -20613,28 +20558,10 @@
             mode assignment here.
             </remarks>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.BuildSecurityRowFilters(System.String)">
-            <summary>
-            Builds the row-level security filter for a block
-            (<see cref="P:TheTechIdea.Beep.Editor.Forms.Models.BlockSecurity.RowFilterClause"/>/<c>.RowFilterValues</c>),
-            parsed and ready to AND into a query's filter list the same way
-            <c>DefaultWhereClause</c> already is.
-            </summary>
-            <remarks>
-            <c>ISecurityManager.GetBlockRowFilter</c>/<c>GetBlockSecurity</c> existed
-            with no caller anywhere in the engine — a block configured with a row
-            filter (e.g. "TenantId = :TenantId", to restrict a user to their own
-            tenant's rows) had that restriction stored and never enforced:
-            <see cref="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.ExecuteQueryAsync(System.String,System.Collections.Generic.List{TheTechIdea.Beep.Report.AppFilter})"/> only ever checked the coarse
-            query/insert/update/delete allow-flags via
-            <see cref="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.EnforceBlockSecurity(System.String,TheTechIdea.Beep.Editor.Forms.Models.SecurityPermission)"/>, never the row filter, so a
-            permitted user saw every row rather than only their own. (2026-08-22)
-            </remarks>
-        </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.ExecuteQueryAsync(System.String,System.Collections.Generic.List{TheTechIdea.Beep.Report.AppFilter})">
             <summary>
             Executes query for a block - equivalent to Oracle Forms EXECUTE_QUERY.
-            Merges block-level default WHERE clause with caller-supplied filters via QueryBuilder.
+            Enhanced execution combines caller, default and mandatory security restrictions.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.CountQueryAsync(System.String,System.Collections.Generic.List{TheTechIdea.Beep.Report.AppFilter},System.Threading.CancellationToken)">
@@ -20783,6 +20710,15 @@
             <summary>
             Checks if a block exists
             </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.FormsManager.PendingCallbackCount">
+            <summary>Manager-owned callbacks, registration, managed reads/LOV and synchronous validation, including awaited work.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.WaitForPendingCallbacksAsync(System.Threading.CancellationToken)">
+            <summary>Waits for the current callback set. After Dispose, callback admission remains closed.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.DisposeAsync">
+            <summary>Closes synchronously, then awaits teardown and admitted manager work.</summary>
         </member>
         <member name="F:TheTechIdea.Beep.Editor.UOWManager.FormsManager._pendingDeferredSync">
             <summary>
@@ -21563,6 +21499,9 @@
             Releases helper subscriptions, cached block state, and timer resources held by the FormsManager instance.
             </summary>
         </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOWManager.FormsManager.CleanupFailures">
+            <summary>Recent cleanup failures (at most 128); cleanup never stops at the first failure.</summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.InitializeManager">
             <summary>
             Loads configuration and wires manager-level event handlers required after construction.
@@ -22156,13 +22095,12 @@
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.SynchronizeDetailBlocksAsync(System.String,System.Threading.CancellationToken)">
             <summary>
             Synchronizes detail blocks when master record changes.
-            Fires ON-POPULATE-DETAILS trigger before delegating to the relationship manager.
+            Uses captured, serialized detail requests and propagates incomplete synchronization as a failure.
             </summary>
             <param name="masterBlockName">Master block whose detail blocks should be synchronized.</param>
             <param name="ct">
-            Cancellation token. Propagated through the detail
-            hierarchy walk; observed at the start of each
-            relationship iteration.
+            Cancellation token. Passed to the trigger and observed at admission,
+            queueing and safe traversal boundaries. Legacy UoW Get cannot be forcibly cancelled.
             </param>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.SynchronizeDeferredDetailAsync(System.String,System.String,System.Threading.CancellationToken)">
@@ -22352,70 +22290,6 @@
             <summary>
             Whether a timer with the given name currently exists and is running (or paused).
             </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.TryCrossFormTransactionCommitAsync(System.Collections.Generic.List{TheTechIdea.Beep.Editor.UOWManager.FormsManager},System.Collections.Generic.List{System.String})">
-            <summary>
-            Attempts a commit across every form/block in scope, opening a real
-            transaction on each transaction-capable datasource first.
-            </summary>
-            <remarks>
-            <para>
-            Before this pass, this method's own doc comment claimed it
-            "optionally wraps [the commit] in a single source-level
-            transaction if every participating form's data source supports
-            transactions" and "rolls back all committed forms" on failure —
-            neither was true. No transaction was ever opened on any
-            datasource; <c>UnitOfWork.Commit()</c> persisted each block's
-            writes immediately and independently, so a failure partway
-            through a multi-block commit left the already-saved blocks
-            permanently committed. The "rollback" call on those already-saved
-            blocks discarded in-memory dirty state that no longer existed —
-            it never touched the database rows that had already been written.
-            The single-form case (the more common one) had no coordination at
-            all: several dirty blocks in one form, on one or more
-            datasources, committed one at a time with nothing tying them
-            together, so this fix removes that special case entirely and runs
-            every commit — single- or cross-form — through the same real
-            coordination. (2026-08-22)
-            </para>
-            <para>
-            <b>Prepare / commit, not full ACID 2PC.</b> Phase 1 (prepare) opens
-            a transaction per datasource and runs every form's normal
-            ON-INSERT + <c>SaveDirtyBlocksAsync</c> path inside it — nothing is
-            durable yet on a transactional datasource, so a prepare failure is
-            a true, clean abort (<c>EndTransaction</c> on every opened
-            transaction). Phase 2 (commit) calls <c>Commit</c> on every opened
-            transaction. A failure <em>during</em> phase 2 — after at least one
-            datasource has already durably committed — is the one outcome no
-            software-only coordinator across independent database engines can
-            fully prevent without a real distributed transaction coordinator
-            (MS DTC or equivalent); this method does not pretend otherwise. It
-            logs exactly which datasources committed and which did not rather
-            than reporting success or attempting to "roll back" a write that
-            is already durable.
-            </para>
-            <para>
-            A datasource whose provider does not implement the transaction
-            triple (<c>JsonDataSource</c>, <c>CSVDataSource</c>, and other
-            file-backed sources throw <see cref="T:System.NotImplementedException"/>)
-            has no ACID mechanism to open — its blocks keep today's
-            best-effort, immediately-durable commit behaviour, same as before
-            this fix. True atomicity across a transactional and a
-            non-transactional datasource together is not achievable without
-            one of them changing engines.
-            </para>
-            <para>
-            This is deliberately narrower than
-            <c>IDistributedTransactionCoordinator</c> (see
-            <c>DistributedDatasource/Distributed</c>), which already
-            implements full 2PC/saga coordination for datasources that are
-            shards under one <see cref="T:TheTechIdea.Beep.Distributed.DistributedDataSource"/>.
-            This method does not duplicate that — it closes the much more
-            common gap of several independent, ordinary transaction-capable
-            datasources (e.g. two SQL Server connections) being committed
-            together from one form or call-stack of forms.
-            </para>
-            </remarks>
         </member>
         <member name="P:TheTechIdea.Beep.Editor.UOWManager.FormsManager.TriggerLog">
             <summary>Execution log for all triggers fired by this form manager.</summary>
@@ -22673,10 +22547,10 @@
         <member name="T:TheTechIdea.Beep.Editor.UOWManager.Helpers.EventManager">
             <summary>
             Event management helper for UnitofWorksManager.
-            Subscribes to all 17 IUnitofWork DML/lifecycle events and translates
+            Subscribes to available IUnitofWork DML/lifecycle events and translates
             them into FormsManager's event pipeline (DMLTriggerEventArgs,
             RecordTriggerEventArgs, ValidationTriggerEventArgs).
-            Handler delegates are stored so Unsubscribe can remove every one.
+            Handler delegates and captured sources are owned by disposable leases.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.EventManager.SubscribeToUnitOfWorkEvents(TheTechIdea.Beep.Editor.IUnitofWork,System.String)">
@@ -22685,11 +22559,11 @@
             unit of work and stores every delegate so Unsubscribe can remove them.
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.EventManager.SubscribeOwned(TheTechIdea.Beep.Editor.IUnitofWork,System.String)">
+            <summary>Creates an independent lease, without changing legacy block-name subscriptions.</summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.EventManager.UnsubscribeFromUnitOfWorkEvents(TheTechIdea.Beep.Editor.IUnitofWork,System.String)">
-            <summary>
-            Removes every event handler previously subscribed for the block.
-            Safe to call on already-unsubscribed blocks (no-op).
-            </summary>
+            <summary>Retires the legacy name-keyed subscription using its captured source.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.UOWManager.Helpers.EventManager.StoredHandlers">
             <summary>
@@ -22698,10 +22572,9 @@
             Also stores optional cleanup actions for events not on the base interface.
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.EventManager.TrySubscribe(TheTechIdea.Beep.Editor.IUnitofWork,System.String,System.Action,System.Action)">
+        <member name="M:TheTechIdea.Beep.Editor.UOWManager.Helpers.EventManager.Attach(TheTechIdea.Beep.Editor.UOWManager.Helpers.EventManager.StoredHandlers,System.Action,System.Action)">
             <summary>
-            Subscribes to an optional event that may not exist on the non-generic
-            IUnitofWork interface. Stores the cleanup action for unsubscribe.
+            Captures cleanup even if the add accessor mutates its source and then throws.
             </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.UOWManager.Helpers.FormMenuManager">
@@ -24446,6 +24319,9 @@
         <member name="M:TheTechIdea.Beep.Editor.Forms.Helpers.FormMessageBus.Subscribe(System.String,System.String,System.Action{TheTechIdea.Beep.Editor.Forms.Models.FormMessage})">
             <inheritdoc/>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.Forms.Helpers.FormMessageBus.SubscribeOwned(System.String,System.String,System.Action{TheTechIdea.Beep.Editor.Forms.Models.FormMessage})">
+            <summary>Returns an idempotent, instance-owned subscription rather than a form-name unsubscribe.</summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Editor.Forms.Helpers.FormMessageBus.Unsubscribe(System.String,System.String)">
             <inheritdoc/>
         </member>
@@ -24491,6 +24367,12 @@
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Forms.Helpers.FormRegistry.GlobalExists(System.String)">
             <inheritdoc/>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.Forms.Helpers.FormsViewBinding">
+            <summary>
+            Opt-in adapter binding over existing host/view/presenter contracts. Owns only its
+            subscriptions and view binding, never the host, manager, registration or dispatcher.
+            </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.Forms.Helpers.InMemoryAuditStore">
             <summary>
@@ -24747,6 +24629,9 @@
         <member name="M:TheTechIdea.Beep.Editor.Forms.Helpers.ItemPropertyManager.Dispose">
             <inheritdoc />
         </member>
+        <member name="T:TheTechIdea.Beep.Editor.Forms.Helpers.ManagedFilterCompiler">
+            <summary>Closed, bounded AND-filter compilation for mandatory managed read restrictions.</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.Forms.Helpers.MasterDetailKeyResolver">
             <summary>
             Resolves master-detail key mappings from explicit settings and metadata fallbacks.
@@ -24901,7 +24786,7 @@
             <summary>Registers field-level security rules for a block field.</summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Forms.Helpers.SecurityManager.GetFieldSecurity(System.String,System.String)">
-            <summary>Returns field-level security rules for a block field.</summary>
+            <summary>Returns an owned field-policy copy; use SetFieldSecurity to publish changes.</summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Forms.Helpers.SecurityManager.ApplyFieldSecurityFlags(System.Action{System.String,System.String,System.Boolean},System.Action{System.String,System.String,System.Boolean})">
             <summary>Applies evaluated field security flags through the supplied callbacks.</summary>
@@ -24975,14 +24860,16 @@
             </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.Forms.Helpers.TimerManager">
-            <summary>
-            Manages named form-level timers that fire WHEN-TIMER-EXPIRED triggers.
-            Corresponds to Oracle Forms CREATE_TIMER / DELETE_TIMER / GET_TIMER built-ins.
-            Thread-safe — uses System.Threading.Timer internally.
-            </summary>
+            <summary>Owns named timer entries; callbacks are admitted by entry identity, not name alone.</summary>
         </member>
         <member name="E:TheTechIdea.Beep.Editor.Forms.Helpers.TimerManager.TimerFired">
-            <summary>Raised when a named timer fires.</summary>
+            <inheritdoc/>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Helpers.TimerManager.CallbackFailures">
+            <summary>Recent isolated scheduler, cleanup and observer failures (at most 64).</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Forms.Helpers.TimerManager.#ctor">
+            <summary>Uses the system clock/scheduler unless a host or test supplies a TimeProvider.</summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Forms.Helpers.TimerManager.CreateTimer(System.String,System.TimeSpan,System.Boolean)">
             <inheritdoc/>
@@ -25000,7 +24887,7 @@
             <inheritdoc/>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Forms.Helpers.TimerManager.Dispose">
-            <summary>Disposes all timers managed by the instance.</summary>
+            <summary>Closes admission and retires each timer; already-admitted observers may finish.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.Forms.Helpers.TriggerDependencyManager">
             <summary>
@@ -25681,26 +25568,10 @@
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Importing.DataImportManager.ReplayFailedRecordsAsync(System.String,System.IProgress{TheTechIdea.Beep.Addin.IPassedArgs},System.Threading.CancellationToken)">
-            <summary>
-            Replays all pending (non-replayed) error records for <paramref name="contextKey"/>.
-            Each pending record is re-submitted through the configured quality checks and
-            transformation pipeline and, if it now passes, is written to the destination.
-            Successfully replayed records are marked with <see cref="P:TheTechIdea.Beep.Editor.Importing.ImportErrorRecord.Replayed"/> = <c>true</c>
-            in the error store.
-            </summary>
+            <summary>Replays only explicitly prepared durable rejects. Legacy records are never guessed or marked.</summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Importing.DataImportManager.ReplayOneRecordAsync(TheTechIdea.Beep.Editor.Importing.ImportErrorRecord,TheTechIdea.Beep.Editor.Importing.DataImportConfiguration,System.Threading.CancellationToken)">
-            <summary>
-            Attempts to re-apply quality rules and write a single error record to the destination.
-            Returns <c>true</c> on success.
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.Importing.DataImportManager.ResolveConfigByContextKey(System.String)">
-            <summary>
-            Resolves the <see cref="T:TheTechIdea.Beep.Editor.Importing.DataImportConfiguration"/> associated with <paramref name="contextKey"/>.
-            Each <see cref="T:TheTechIdea.Beep.Editor.Importing.DataImportManager"/> instance manages a single pipeline (<see cref="F:TheTechIdea.Beep.Editor.Importing.DataImportManager._config"/>),
-            so we return it when its composite key matches.
-            </summary>
+        <member name="M:TheTechIdea.Beep.Editor.Importing.DataImportManager.ReplayRejectedRecordAsync(TheTechIdea.Beep.Editor.Importing.DataImportConfiguration,System.String,System.String,System.Int32,System.String,System.Threading.CancellationToken)">
+            <summary>Claims one prepared destination snapshot, evaluates current quality, then attempts one acknowledged write.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.Importing.ErrorStore.DataSourceImportErrorStore">
              <summary>
@@ -26164,7 +26035,8 @@
             </summary>
             <param name="record">Source record</param>
             <param name="config">Import configuration</param>
-            <returns>Fully transformed record</returns>
+            <returns>Fully transformed record. Built-in required-stage failures throw a safe ImportTransformationException.</returns>
+            <remarks>Use optional IDataImportTransformationOutcome for typed pre-write failure evidence. Never hide a required failure by returning the input.</remarks>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.Importing.Interfaces.IDataImportBatchHelper">
             <summary>
@@ -27459,6 +27331,9 @@
             <summary>
             Maps source object to a new destination object using mapping, then applies defaults from DefaultsManager.
             </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Mapping.MappingManager.MapObjectToAnotherStrict(TheTechIdea.Beep.Editor.IDMEEditor,System.String,TheTechIdea.Beep.Workflow.Mapping.EntityDataMap_DTL,System.Object)">
+            <summary>Strict field mapping without implicit defaults. The caller owns its explicit default stage.</summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Mapping.MappingManager.SaveEntityMap(TheTechIdea.Beep.Editor.IDMEEditor,System.String,System.String,TheTechIdea.Beep.Workflow.Mapping.EntityDataMap)">
             <summary>
@@ -28871,11 +28746,14 @@
         <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.TryLoadPersistedCheckpoint(System.String)">
             <summary>
             Loads the most recent persisted execution checkpoint for <paramref name="executionToken"/>
-            from migration history (the JSON snapshot <see cref="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.PersistExecutionCheckpoint(TheTechIdea.Beep.Editor.Migration.MigrationExecutionCheckpoint)"/> writes to
+            from migration history (the JSON snapshot <see cref="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.PersistExecutionCheckpoint(TheTechIdea.Beep.Editor.Migration.MigrationExecutionCheckpoint,System.Threading.CancellationToken)"/> writes to
             <c>MigrationRecord.Notes</c>). This is what makes resume survive a process restart: when the
             in-memory <see cref="F:TheTechIdea.Beep.Editor.Migration.MigrationManager.ExecutionCheckpoints"/> is empty, the checkpoint is re-hydrated from disk.
             Returns null when no persisted snapshot exists.
             </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Migration.MigrationManager.ExecutionTargetIdentity">
+            <summary>Host-owned canonical physical target identity, shared across aliases and credentials.</summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.IsMigrationApplied(System.String)">
             <summary>
@@ -29006,6 +28884,12 @@
             requiring callers to walk audit events.
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.LoadMigrationPlan(System.String)">
+            <summary>Loads a captured plan from this datasource's history. Legacy summary-only records cannot be applied.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.CreateMigrationPlanRevision(TheTechIdea.Beep.Editor.Migration.MigrationPlanArtifact,TheTechIdea.Beep.Editor.Migration.MigrationExecutionPolicy,TheTechIdea.Beep.Editor.Migration.MigrationPolicyOptions)">
+            <summary>Creates a new plan identity for an explicit retry/failure policy revision. Re-approval is required.</summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.BuildMigrationPlan(System.String,System.Reflection.Assembly,System.Boolean,System.Boolean,System.Boolean,System.Boolean)">
             <summary>
             Builds a migration plan using discovery-based entity resolution. Additive by default;
@@ -29111,21 +28995,20 @@
                <item><description><c>MigrationManager.Planning.TryTrackMigrationPlan</c> — plan-only record (no execution result), with deterministic <c>MigrationId = plan.PlanId</c> and plan-metadata <c>Notes</c>.</description></item>
              </list>
              <para>
-             All four now go through this writer. Failures are logged via
-             <see cref="M:TheTechIdea.Beep.Editor.IDMEEditor.AddLogMessage(System.String,System.String,System.DateTime,System.Int32,System.String,TheTechIdea.Beep.ConfigUtil.Errors)"/> and swallowed (the same behaviour
-             the inlined code had) — persistence is a side-effect of execution, not a
-             pre-condition for it.
+             Plan/checkpoint writes return acknowledgements via IMigrationHistoryPersistence.
+             Recovery checkpoints are mandatory for governed execution. Operation/summary
+             records retain best-effort legacy behavior and are not durability evidence.
              </para>
             
              <para><b>MigrationId conventions</b></para>
              <list type="bullet">
-               <item><description><b>Deterministic anchor (lookup key):</b> <c>WriteExecutionSnapshot</c> uses <c>checkpoint.ExecutionToken</c> (the key into <c>ExecutionPlans[token]</c>); <c>WritePlanArtifact</c> uses <c>plan.PlanId</c> (the key for "rerun this plan overwrites the previous snapshot").</description></item>
+               <item><description><b>Deterministic anchor (lookup key):</b> <c>WriteExecutionSnapshot</c> uses <c>checkpoint.ExecutionToken</c> (the key into <c>ExecutionPlans[token]</c>); <c>WritePlanArtifact</c> uses <c>plan.PlanId</c> (readers select the latest snapshot for that identity).</description></item>
                <item><description><b>Plan-prefixed summary (traceable):</b> <c>WritePlanExecution</c> and <c>WriteOperation</c> (when called with a <c>planId</c>) use the format <c>{plan.PlanId}-{rand8}</c>. The prefix makes the record discoverable in the history file by its source plan.</description></item>
                <item><description><b>Unprefixed summary (one-shot):</b> <c>WriteOperation</c> without a <c>planId</c> uses a full random Guid. This is the noise floor — 38 per-operation call sites in <c>TrackMigration</c> don't have a plan available at the call site.</description></item>
              </list>
              </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationRecordWriter.WriteExecutionSnapshot(TheTechIdea.Beep.Editor.IDMEEditor,TheTechIdea.Beep.Editor.Migration.MigrationExecutionCheckpoint,System.String,TheTechIdea.Beep.Utilities.DataSourceType)">
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationRecordWriter.WriteExecutionSnapshot(TheTechIdea.Beep.Editor.IDMEEditor,TheTechIdea.Beep.Editor.Migration.MigrationExecutionCheckpoint,System.String,TheTechIdea.Beep.Utilities.DataSourceType,System.Threading.CancellationToken)">
             <summary>
             Build and append a record that captures a complete execution checkpoint,
             with per-step status. Used at every <c>PersistExecutionCheckpoint</c>
@@ -29168,7 +29051,7 @@
             plan snapshot when a plan is generated but execution has not (yet)
             happened. <c>MigrationId</c> is deterministic (the plan's
             <c>PlanId</c>) so re-running the same plan produces a record that
-            overwrites the previous one in the history.
+            becomes the latest snapshot for that identity without deleting earlier records.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationRecordWriter.BuildPlanPrefixedId(System.String)">
@@ -29393,6 +29276,9 @@
         </member>
         <member name="T:TheTechIdea.Beep.Editor.Schema.SchemaPreflightResult">
             <summary>Output of a preflight run.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Schema.SchemaPreflightResult.SourceEntityStructure">
+            <summary>Caller-owned captures; not provider-owned live structures.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.Schema.SchemaDraftResult">
             <summary>Output of <see cref="M:TheTechIdea.Beep.Editor.Schema.SyncSchemaPreflight.BuildSyncDraftAsync(TheTechIdea.Beep.Editor.IDMEEditor,TheTechIdea.Beep.Editor.Schema.SchemaRequest,System.Threading.CancellationToken)"/>.</summary>
@@ -30277,7 +30163,7 @@
         <member name="P:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.DMEEditor">
             <summary>Gets the DME Editor instance</summary>
         </member>
-        <member name="P:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.DataSource">
+        <member name="F:TheTechIdea.Beep.Editor.UOW.UnitofWork`1._dataSource">
             <summary>Gets or sets the data source</summary>
         </member>
         <member name="P:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.EntityName">
@@ -30619,7 +30505,7 @@
             </summary>
             <returns>Result of the rollback operation</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.CommitChangesToDataSource(System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Threading.CancellationToken)">
+        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.CommitChangesToDataSource(System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Threading.CancellationToken,System.Boolean,System.Action{`0})">
             <summary>
             Commits individual changes to the data source using OBL's CommitAllAsync.
             OBL handles ordering, BeforeSave/AfterSave events, validation blocking, and per-item tracking cleanup.
@@ -33885,6 +33771,9 @@
             Adapter to wrap DMLogger for category-specific logging
             </summary>
         </member>
+        <member name="P:TheTechIdea.Beep.Container.Services.BeepService.ConnectionSecretProtector">
+            <summary>Set before Configure; the configured graph captures this host-owned policy.</summary>
+        </member>
         <member name="P:TheTechIdea.Beep.Container.Services.BeepService.AssemblyHandlerType">
             <summary>
             Gets or sets the type of assembly handler to use.
@@ -34014,140 +33903,28 @@
             Implements .NET 8/9 best practices with comprehensive error handling and validation.
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Container.BeepServiceRegistration.AddBeepServices(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+        <member name="M:TheTechIdea.Beep.Container.BeepServiceRegistration.AddBeepRuntime(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{TheTechIdea.Beep.Container.BeepServiceOptions})">
             <summary>
-            Registers Beep services with fluent builder API for discoverable configuration.
-            Returns a builder interface that supports method chaining with IntelliSense.
+            Registers provider-owned runtimes without creating an eager startup instance.
+            Each provider/scope owns the graph according to the captured lifetime.
             </summary>
-            <param name="services">The service collection to extend.</param>
-            <returns>A fluent builder interface for configuring BeepService.</returns>
-            <exception cref="T:System.ArgumentNullException">Thrown when services is null.</exception>
-            <example>
-            <code>
-            services.AddBeepServices()
-                .WithDirectory(AppContext.BaseDirectory)
-                .WithAppRepo("MyApp")
-                .WithMapping()
-                .AsSingleton()
-                .Build();
-            </code>
-            </example>
         </member>
         <member name="M:TheTechIdea.Beep.Container.BeepServiceRegistration.AddBeepServices(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{TheTechIdea.Beep.Container.BeepServiceOptions})">
             <summary>
-            Registers Beep services with comprehensive configuration and error handling.
-            This overload supports the traditional Action&lt;BeepServiceOptions&gt; pattern.
+            Legacy eager entry point. The returned standalone runtime is caller-owned,
+            independent of runtimes later resolved from DI. Prefer AddBeepRuntime for hosting.
             </summary>
-            <param name="services">The service collection to extend.</param>
-            <param name="configure">Configuration action for Beep service options.</param>
-            <returns>The configured IBeepService instance.</returns>
-            <exception cref="T:System.ArgumentNullException">Thrown when services or configure is null.</exception>
-            <exception cref="T:System.InvalidOperationException">Thrown when services are already registered or configuration fails.</exception>
-        </member>
-        <member name="M:TheTechIdea.Beep.Container.BeepServiceRegistration.Register(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.String,System.String,TheTechIdea.Beep.Utilities.BeepConfigType,System.Boolean)">
-            <summary>
-            Registers Beep services with simple parameters (backward compatibility).
-            </summary>
-            <param name="services">The service collection to extend.</param>
-            <param name="directoryPath">Directory path for Beep data storage.</param>
-            <param name="containerName">Name of the container.</param>
-            <param name="configType">Type of configuration.</param>
-            <param name="addAsSingleton">Whether to register as singleton (default: true).</param>
-            <returns>The configured IBeepService instance.</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Container.BeepServiceRegistration.RegisterScoped(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
-            <summary>
-            Registers Beep services as scoped services (for web applications).
-            </summary>
-            <param name="services">The service collection to extend.</param>
-            <returns>The service collection for method chaining.</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Container.BeepServiceRegistration.CreateMapping(TheTechIdea.Beep.Services.IBeepService)">
-            <summary>
-            Creates mappings for the Beep service with error handling and logging.
-            </summary>
-            <param name="beepService">The Beep service instance.</param>
-            <returns>The service collection for method chaining.</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Container.BeepServiceRegistration.CreateMappingAsync(TheTechIdea.Beep.Services.IBeepService,System.IProgress{TheTechIdea.Beep.Addin.PassedArgs},System.Threading.CancellationToken)">
-            <summary>
-            Creates mappings asynchronously with progress reporting and cancellation support.
-            </summary>
-            <param name="beepService">The Beep service instance.</param>
-            <param name="progress">Optional progress reporter.</param>
-            <param name="cancellationToken">Cancellation token.</param>
-            <returns>Task representing the async operation.</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Container.BeepServiceRegistration.GetMainFolder">
-            <summary>
-            Gets or creates the main Beep data folder.
-            </summary>
-            <returns>Path to the main Beep data folder.</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Container.BeepServiceRegistration.GetBeepService(TheTechIdea.Beep.Editor.IDMEEditor)">
-            <summary>
-            Gets the configured Beep service instance from IDMEEditor.
-            This method provides backward compatibility with existing code.
-            </summary>
-            <param name="dmeEditor">The DME Editor instance.</param>
-            <returns>The configured IBeepService instance.</returns>
-            <exception cref="T:System.InvalidOperationException">Thrown when Beep services are not properly registered.</exception>
-        </member>
-        <member name="M:TheTechIdea.Beep.Container.BeepServiceRegistration.GetBeepService(System.IServiceProvider)">
-            <summary>
-            Gets the Beep service instance from the service provider.
-            </summary>
-            <param name="serviceProvider">The service provider.</param>
-            <returns>The configured IBeepService instance.</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Container.BeepServiceRegistration.ValidateConfiguration">
-            <summary>
-            Validates the current Beep service configuration.
-            </summary>
-            <returns>True if configuration is valid; otherwise, false.</returns>
-        </member>
-        <member name="M:TheTechIdea.Beep.Container.BeepServiceRegistration.GetConfigurationSummary">
-            <summary>
-            Gets configuration summary for debugging purposes.
-            </summary>
-            <returns>Configuration summary string.</returns>
         </member>
         <member name="M:TheTechIdea.Beep.Container.BeepServiceRegistration.ResetRegistrationState(System.Boolean)">
-            <summary>
-            Resets the registration state (primarily for testing purposes).
-            </summary>
-            <param name="force">Whether to force reset even if services are running.</param>
-        </member>
-        <member name="M:TheTechIdea.Beep.Container.BeepServiceRegistration.RegisterBeepServicesInternal(Microsoft.Extensions.DependencyInjection.IServiceCollection,TheTechIdea.Beep.Container.BeepServiceOptions)">
-            <summary>
-            Internal method for registering Beep services with comprehensive error handling.
-            Made internal to support the fluent builder API.
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Container.BeepServiceRegistration.CreateBeepServiceInstance(Microsoft.Extensions.DependencyInjection.IServiceCollection,TheTechIdea.Beep.Container.BeepServiceOptions)">
-            <summary>
-            Creates a BeepService instance with proper dependency injection.
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Container.BeepServiceRegistration.RegisterServiceWithLifetime(Microsoft.Extensions.DependencyInjection.IServiceCollection,TheTechIdea.Beep.Services.IBeepService,Microsoft.Extensions.DependencyInjection.ServiceLifetime)">
-            <summary>
-            Registers the service with the specified lifetime.
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Container.BeepServiceRegistration.GetCurrentServices">
-            <summary>
-            Gets the current service collection.
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Container.BeepServiceRegistration.HasService``1(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
-            <summary>
-            Extension method to check if a service is already registered.
-            </summary>
+            <summary>Compatibility no-op: registration state is now owned by each service collection.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Container.BeepServiceOptions">
             <summary>
             Configuration options for Beep services with comprehensive validation.
             </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Container.BeepServiceOptions.ConnectionSecretProtector">
+            <summary>Optional host-owned credential policy captured by this runtime, not a process-global setting.</summary>
         </member>
         <member name="P:TheTechIdea.Beep.Container.BeepServiceOptions.DirectoryPath">
             <summary>
@@ -36043,13 +35820,16 @@
             <returns>Created and validated IDataSource instance</returns>
         </member>
         <member name="M:TheTechIdea.Beep.Helpers.DataSourceLifecycleHelper.GetOrCreateDataSourceAsync(System.String,System.Func{TheTechIdea.Beep.ConfigUtil.ConnectionProperties},TheTechIdea.Beep.Editor.IDMEEditor)">
-            <summary>
-            Gets an existing data source from cache or creates a new one using the provided factory.
-            </summary>
-            <param name="name">Data source name</param>
-            <param name="connectionFactory">Factory function to create connection properties</param>
-            <param name="editor">DME Editor instance</param>
-            <returns>Cached or newly created IDataSource instance</returns>
+            <summary>Resolves a datasource only within the supplied editor's ownership.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.DataSourceLifecycleHelper.GetCachedDataSource(TheTechIdea.Beep.Editor.IDMEEditor,System.String)">
+            <summary>Gets a cached datasource from the supplied editor, never another host.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.DataSourceLifecycleHelper.GetAllCachedDataSources(TheTechIdea.Beep.Editor.IDMEEditor)">
+            <summary>Returns a snapshot of editor-owned datasource references.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.DataSourceLifecycleHelper.DisposeAllAsync(TheTechIdea.Beep.Editor.IDMEEditor)">
+            <summary>Stops this editor's registry and releases its current sources.</summary>
         </member>
         <member name="M:TheTechIdea.Beep.Helpers.DataSourceLifecycleHelper.ValidateDataSourceAsync(TheTechIdea.Beep.IDataSource)">
             <summary>
@@ -43919,11 +43699,17 @@
         <member name="M:TheTechIdea.Beep.Json.JsonMultiFileDataSource.LikeMatches(System.String,System.String)">
             <summary>SQL LIKE with % and _ wildcards.</summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Winform.Controls.ConnectionSecretProtector">
+            <summary>Legacy stateless entrypoints. Runtime hosts can inject IConnectionSecretProtector instead.</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Winform.Controls.BeepConnectionRepository">
             <summary>
             Centralized connection persistence helper backed by IBeepService.Config_editor.
             Keeps connection CRUD and save/reload behavior consistent across forms.
             </summary>
+        </member>
+        <member name="E:TheTechIdea.Beep.Winform.Controls.BeepConnectionRepository.NotificationFailed">
+            <summary>Observer errors after a committed change; diagnostic observer errors are isolated too.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.NuGetManagement.NuGetManagerConfiguration">
             <summary>
@@ -46525,6 +46311,17 @@
             stored in ConfigEditor (DriverName = "BeepProxyNode").
             </summary>
         </member>
+        <member name="P:TheTechIdea.Beep.Roslyn.RoslynCompiler.CompiledTypeCacheCount">
+            <summary>Compiled cache entries, including in-flight entries. Completed retention is bounded at 256.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Roslyn.RoslynCompiler.CompileClassTypeandAssembly(System.String,System.String)">
+            <summary>Compiles by exact requested type and source identity, with single-flight cache admission.</summary>
+            <remarks>
+            A simple name must be unique. Full names select exactly; substring matching is not supported.
+            For legacy assembly-only callers, an absent requested type yields a null Item1 and usable assembly.
+            Cache eviction does not unload assemblies or invalidate Types already returned to callers.
+            </remarks>
+        </member>
         <member name="T:TheTechIdea.Beep.Rules.BuiltinParsers.CsvColumnParser">
             <summary>
             Parses CSV-style column-reference expressions of the form:
@@ -46563,19 +46360,10 @@
             </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Rules.BuiltinParsers.NfelParser">
-             <summary>
-             NFEL — Natural Formula Expression Language parser.
-             A lightweight, human-readable expression language inspired by MVEL/SpEL:
-               - Arithmetic: <c>price * qty</c>, <c>(a + b) / 2</c>
-               - Comparison: <c>age &gt;= 18</c>, <c>name == 'Alice'</c>
-               - Logical:    <c>isActive &amp;&amp; age &gt; 0</c>, <c>!flag</c>
-               - Ternary:    <c>score &gt; 50 ? 'pass' : 'fail'</c>
-               - Field refs: <c>order.total</c>
-               - Null check: <c>value != null</c>
-            
-             Tokens are built with correct <see cref="T:TheTechIdea.Beep.Rules.TokenType"/> values for downstream
-             use by <see cref="!:RulesEngine"/> expression evaluation.
-             </summary>
+            <summary>
+            Bounded NFEL arithmetic, comparison, Boolean and lazy ternary parser.
+            Dotted identifiers are parameter keys. See Rules/NFEL.md for the profile.
+            </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Rules.BuiltinParsers.SqlWhereParser">
             <summary>
@@ -47211,6 +46999,12 @@
         </member>
         <member name="T:TheTechIdea.Beep.Rules.TokenizeResult">
             <summary>Result of a tokenize pass — always recovered; no exceptions thrown.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Security.AesGcmConnectionCredentialCipher">
+            <summary>Portable AES-256-GCM envelopes; key persistence, distribution and rotation are host responsibilities.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Security.ConnectionCredentialProtection">
+            <summary>Conservative whole-container protection; metadata labels are not a credential vault.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Services.AppMap.AppMapService">
             <summary>
@@ -50058,6 +49852,33 @@
             Attempts to parse <paramref name="line"/>. Returns <c>null</c>
             when the line is not a log envelope.
             </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Services.Persistence.AtomicFileStore">
+            <summary>
+            Whole-file snapshot persistence for cooperating writers on a local filesystem.
+            Updates are coordinated across instances/processes with a persistent sidecar lease.
+            Replacement is atomic on filesystems supporting same-directory rename; this is
+            not a distributed lock or a guarantee against filesystem/power-loss failures.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.Persistence.AtomicFileStore.ReadTextAsync(System.String,System.Threading.CancellationToken)">
+            <summary>Returns null for a missing file, never for a read failure.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.Persistence.AtomicFileStore.UpdateTextAsync(System.String,System.Func{System.String,System.String},System.Threading.CancellationToken)">
+            <summary>
+            Mutates a complete snapshot under the lease. The callback must not reenter
+            this store for the same path. Callback/serialization failure preserves the old file.
+            Returning the unchanged snapshot performs no write, including null for a missing file.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Services.Persistence.AtomicFileStore.DeleteValidatedAsync(System.String,System.Action{System.String},System.Threading.CancellationToken)">
+            <summary>Validates the exact leased snapshot before deletion; validation failure preserves evidence.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Services.Persistence.FileMigrationExecutionOwnership">
+            <summary>Durable admission for cooperating local-filesystem migration executors.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Services.Persistence.FileMigrationExecutionStorage">
+            <summary>One captured configuration root/loader for history and execution claims.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Services.ServiceCollectionExtensions">
             <summary>

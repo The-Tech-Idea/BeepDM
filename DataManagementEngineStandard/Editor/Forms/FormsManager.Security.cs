@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
+using System.Linq;
 using TheTechIdea.Beep.Editor.Forms.Models;
 using TheTechIdea.Beep.Editor.UOWManager.Interfaces;
 using TheTechIdea.Beep.Editor.UOWManager.Models;
@@ -11,18 +13,74 @@ namespace TheTechIdea.Beep.Editor.UOWManager
     /// Exposes security context management, block/field security registration,
     /// field masking and violation logging.
     /// </summary>
-    public partial class FormsManager
+    public partial class FormsManager : IFormsPolicyNotifications
     {
+        private IObservableSecurityPolicy _observedSecurityPolicy;
+        private readonly ConcurrentQueue<Exception> _policyNotificationFailures = new();
+        public event EventHandler<SecurityPolicyChangedEventArgs> SecurityPolicyChanged;
+        public IReadOnlyList<Exception> PolicyNotificationFailures => _policyNotificationFailures.ToArray();
+        public long SecurityPolicyRevision => (_securityManager as IQuerySecuritySnapshotProvider)?.SecurityRevision ?? -1;
+
+        private void RecordPolicyNotificationFailure(Exception error)
+        {
+            _policyNotificationFailures.Enqueue(error);
+            while (_policyNotificationFailures.Count > 128) _policyNotificationFailures.TryDequeue(out _);
+        }
+
+        private void OnSecurityPolicyChanged(object sender, SecurityPolicyChangedEventArgs change)
+        {
+            using var admission = TryEnterCallback();
+            if (admission == null || change == null || !ReferenceEquals(sender, _observedSecurityPolicy)) return;
+            try { ApplyAllSecurityFlags(); }
+            catch (Exception ex) { RecordPolicyNotificationFailure(ex); }
+            PublishSecurityPolicyChange(change);
+        }
+
+        private void PublishSecurityPolicyChange(SecurityPolicyChangedEventArgs change)
+        {
+            if (_disposed || change.Revision != SecurityPolicyRevision) return;
+            foreach (EventHandler<SecurityPolicyChangedEventArgs> observer in
+                SecurityPolicyChanged?.GetInvocationList() ?? Array.Empty<Delegate>())
+            {
+                if (_disposed || change.Revision != SecurityPolicyRevision) break;
+                try { observer(this, change); }
+                catch (Exception ex) { RecordPolicyNotificationFailure(ex); }
+            }
+        }
+
+        private void ApplyLegacySecurityChange()
+        {
+            if (_disposed || _observedSecurityPolicy != null) return;
+            try { ApplyAllSecurityFlags(); }
+            finally
+            {
+                var snapshot = CaptureQuerySecurity(string.Empty);
+                PublishSecurityPolicyChange(new SecurityPolicyChangedEventArgs(snapshot.Revision, snapshot.ReadAuthorizationRevision));
+            }
+        }
         #region Initialization
 
         private void InitializeSecurity()
         {
             if (_securityManager == null) return;
-            _securityManager.OnSecurityViolation += OnSecurityViolationHandler;
+            _observedSecurityPolicy = _securityManager as IObservableSecurityPolicy;
+            try
+            {
+                _securityManager.OnSecurityViolation += OnSecurityViolationHandler;
+                if (_observedSecurityPolicy != null) _observedSecurityPolicy.SecurityPolicyChanged += OnSecurityPolicyChanged;
+            }
+            catch
+            {
+                if (_observedSecurityPolicy != null)
+                    CleanupAction("Failed policy notification attachment", () => _observedSecurityPolicy.SecurityPolicyChanged -= OnSecurityPolicyChanged);
+                CleanupAction("Failed security notification attachment", () => _securityManager.OnSecurityViolation -= OnSecurityViolationHandler);
+                throw;
+            }
         }
 
         private void OnSecurityViolationHandler(object sender, SecurityViolationEventArgs e)
         {
+            if (_disposed) return;
             _errorLog?.LogError(e.BlockName, null, e.Message);
         }
 
@@ -36,8 +94,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         /// </summary>
         public void SetSecurityContext(SecurityContext context)
         {
+            using var admission = TryEnterCallback() ?? throw new ObjectDisposedException(nameof(FormsManager));
             _securityManager?.SetSecurityContext(context);
-            ApplyAllSecurityFlags();
+            ApplyLegacySecurityChange();
         }
 
         /// <summary>Returns the current security context.</summary>
@@ -50,8 +109,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         /// <summary>Registers or replaces block-level security rules.</summary>
         public void SetBlockSecurity(string blockName, BlockSecurity security)
         {
+            using var admission = TryEnterCallback() ?? throw new ObjectDisposedException(nameof(FormsManager));
             _securityManager?.SetBlockSecurity(blockName, security);
-            ApplyAllSecurityFlags();
+            ApplyLegacySecurityChange();
         }
 
         /// <summary>Returns current block security rules, or null if none registered.</summary>
@@ -69,8 +129,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         /// <summary>Registers or replaces field-level security (visibility, editability, masking).</summary>
         public void SetFieldSecurity(string blockName, string fieldName, FieldSecurity security)
         {
+            using var admission = TryEnterCallback() ?? throw new ObjectDisposedException(nameof(FormsManager));
             _securityManager?.SetFieldSecurity(blockName, fieldName, security);
-            ApplyAllSecurityFlags();
+            ApplyLegacySecurityChange();
         }
 
         /// <summary>Returns current field security settings, or null if none registered.</summary>
@@ -82,7 +143,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         /// Returns <paramref name="rawValue"/> unchanged when no masking is configured.
         /// </summary>
         public object GetMaskedFieldValue(string blockName, string fieldName, object rawValue)
-            => _securityManager?.GetMaskedValue(blockName, fieldName, rawValue) ?? rawValue;
+            => _securityManager == null ? rawValue : _securityManager.GetMaskedValue(blockName, fieldName, rawValue);
 
         #endregion
 
@@ -106,25 +167,65 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         internal void ApplyAllSecurityFlags()
         {
             if (_securityManager == null) return;
+            RegistrationLease[] registrations;
+            lock (_registrationGate) registrations = _registrations.Values.Where(r => r.Published && !r.Retired).ToArray();
+            foreach (var registration in registrations)
+                try { ApplyRegistrationSecurityFlags(registration); }
+                catch (Exception ex) { RecordPolicyNotificationFailure(ex); }
+        }
 
-            // Block flags: update DataBlockInfo.InsertAllowed etc.
-            _securityManager.ApplyBlockSecurityFlags((blockName, q, ins, upd, del) =>
+        private void ApplyRegistrationSecurityFlags(RegistrationLease registration)
+        {
+            if (!CanDispatchRegistration(registration)) return;
+            var revision = SecurityPolicyRevision;
+            var name = registration.Name;
+            var query = _securityManager?.IsBlockAllowed(name, SecurityPermission.Query) ?? true;
+            var insert = _securityManager?.IsBlockAllowed(name, SecurityPermission.Insert) ?? true;
+            var update = _securityManager?.IsBlockAllowed(name, SecurityPermission.Update) ?? true;
+            var delete = _securityManager?.IsBlockAllowed(name, SecurityPermission.Delete) ?? true;
+            var admin = _securityManager?.CurrentContext?.IsAdmin == true;
+            var flags = (_itemPropertyManager?.GetAllItems(name) ?? Array.Empty<ItemInfo>()).Select(item =>
             {
-                if (_blocks.TryGetValue(blockName, out var info))
+                var policy = _securityManager?.GetFieldSecurity(name, item.ItemName);
+                return new ItemSecurityProjection(item.ItemName, item, policy == null || admin || policy.Editable,
+                    policy == null || admin || policy.Visible);
+            }).ToArray();
+            void Authorize(Action publishItems)
+            {
+                void Publish()
                 {
-                    info.QueryAllowed  = q;
-                    info.InsertAllowed = ins;
-                    info.UpdateAllowed = upd;
-                    info.DeleteAllowed = del;
+                    lock (_registrationGate)
+                    {
+                        if (!CanDispatchRegistration(registration)) throw new InvalidOperationException("Security projection registration was retired.");
+                        registration.Block.PublishSecurityPermissions(registration.Identity, revision, query, insert, update, delete);
+                        publishItems();
+                    }
                 }
-            });
-
-            // Field flags: update ItemPropertyManager Enabled/Visible
-            _securityManager.ApplyFieldSecurityFlags(
-                setEnabled: (blockName, fieldName, enabled) =>
-                    _itemPropertyManager?.SetItemEnabled(blockName, fieldName, enabled),
-                setVisible: (blockName, fieldName, visible) =>
-                    _itemPropertyManager?.SetItemVisible(blockName, fieldName, visible));
+                if (_securityManager is IQuerySecurityPublication gate)
+                {
+                    if (!gate.TryPublishQuery(revision, Publish)) throw new InvalidOperationException("Security projection policy changed before publication.");
+                }
+                else
+                {
+                    if (revision != SecurityPolicyRevision) throw new InvalidOperationException("Security projection policy changed.");
+                    Publish();
+                }
+            }
+            if (_itemPropertyManager is IItemSecurityProjection projection)
+            {
+                foreach (var failure in projection.PublishSecurityFlags(name, registration.Identity, revision, flags, Authorize,
+                    () => CanDispatchRegistration(registration) && revision == SecurityPolicyRevision))
+                    RecordPolicyNotificationFailure(failure);
+            }
+            else
+            {
+                // Legacy helpers lack registry gating. Do not overwrite their authored
+                // permissions or call setters inside an ownership monitor.
+                Authorize(() =>
+                {
+                    foreach (var flag in flags) flag.Item.PublishSecurityPermissions(registration.Identity, revision, flag.Enabled, flag.Visible);
+                });
+            }
         }
 
         /// <summary>
@@ -146,13 +247,14 @@ namespace TheTechIdea.Beep.Editor.UOWManager
 
         /// <summary>
         /// Removes all security rules (block- and field-level) for the named block.
-        /// After calling this, the block reverts to default open-access permissions.
+        /// Removes policy restrictions, preserving authored flags. Cached rows still require read authorization.
         /// </summary>
         public void ClearBlockSecurity(string blockName)
         {
+            using var admission = TryEnterCallback() ?? throw new ObjectDisposedException(nameof(FormsManager));
             if (string.IsNullOrWhiteSpace(blockName)) return;
             _securityManager?.ClearBlockSecurity(blockName);
-            ApplyAllSecurityFlags();
+            ApplyLegacySecurityChange();
         }
     }
 }

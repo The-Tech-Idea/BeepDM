@@ -18,7 +18,7 @@ namespace TheTechIdea.Beep.Editor.UOWManager
     /// unrelated control-selection string for the platform field-presenter
     /// registry. Added 2026-08-25.
     /// </summary>
-    public partial class FormsManager : IEditorRegistry
+    public partial class FormsManager : IEditorRegistry, IFormsEditorOutcomes
     {
         #region Named Editor Registry
 
@@ -67,34 +67,109 @@ namespace TheTechIdea.Beep.Editor.UOWManager
         /// </summary>
         public async Task<EditorResult> ShowEditorAsync(string blockName, string itemName, CancellationToken ct = default)
         {
-            var blockInfo = GetBlock(blockName);
-            if (blockInfo?.UnitOfWork == null)
+            var result = await ShowEditorWithOutcomeAsync(blockName, itemName, ct).ConfigureAwait(false);
+            return result.Committed ? EditorResult.Ok(result.Value) : EditorResult.Cancel();
+        }
+
+        private readonly AsyncLocal<int> _editorOperationDepth = new();
+
+        public async Task<FormEditorResult> ShowEditorWithOutcomeAsync(string blockName, string itemName,
+            CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            using var lifetime = TryEnterCallback() ?? throw new ObjectDisposedException(nameof(FormsManager));
+            using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _operationLifetime.Token);
+            var ct = cancellation.Token;
+            var result = new FormEditorResult { FormInstanceId = _commitFormInstanceId, BlockName = blockName, FieldName = itemName };
+            if (_editorOperationDepth.Value > 0)
             {
-                LogError($"ShowEditorAsync: block '{blockName}' not found or has no unit of work", null, blockName);
-                return EditorResult.Cancel();
+                result.State = FormEditorState.Failed;
+                result.ErrorMessage = "Awaited nested editor operations from their own providers are not supported.";
+                return result;
             }
-
-            var currentRecord = blockInfo.UnitOfWork.CurrentItem;
-            if (currentRecord == null)
+            _editorOperationDepth.Value++;
+            try
             {
-                LogError($"ShowEditorAsync: block '{blockName}' has no current record", null, blockName);
-                return EditorResult.Cancel();
+                if (string.IsNullOrWhiteSpace(itemName)) throw new ArgumentException("Editor field name is required.", nameof(itemName));
+                var target = CaptureRecordTarget(blockName, itemName, "Editor");
+                blockName = target.Registration.Name;
+                result.BlockName = blockName;
+                result.RegistrationId = target.Registration.Identity;
+                result.RequestRevision = target.Request;
+                if (target.Record == null) throw new InvalidOperationException("Editor has no captured current record.");
+                var item = _itemPropertyManager.GetItem(blockName, itemName);
+                var editorName = item?.EditorName;
+                var definition = GetEditor(editorName);
+                var snapshot = definition == null ? EditorDefinition.SystemDefault() : new EditorDefinition(
+                    definition.Name, definition.Title, definition.Width, definition.Height, definition.WrapText, definition.ShowScrollBar)
+                    { CreatedAt = definition.CreatedAt };
+                // Keep a separate comparison copy: the borrowed provider may mutate its input.
+                var expected = new EditorDefinition(snapshot.Name, snapshot.Title, snapshot.Width, snapshot.Height,
+                    snapshot.WrapText, snapshot.ShowScrollBar) { CreatedAt = snapshot.CreatedAt };
+                void Verify()
+                {
+                    VerifyRecordTarget(target, ct);
+                    if (item?.EditorName != editorName || !ReferenceEquals(GetEditor(editorName), definition) ||
+                        definition != null && (definition.Name != expected.Name || definition.Title != expected.Title ||
+                            definition.Width != expected.Width || definition.Height != expected.Height ||
+                            definition.WrapText != expected.WrapText || definition.ShowScrollBar != expected.ShowScrollBar ||
+                            definition.CreatedAt != expected.CreatedAt)) throw new SupersededRecordOperationException();
+                    VerifyEditorEditable(target);
+                    VerifyRecordTarget(target, ct);
+                }
+                Verify();
+                var currentValue = target.Values[itemName]?.ToString();
+                Verify();
+                result.ProviderInvoked = true;
+                var providerResult = await _editorProvider.ShowEditorAsync(snapshot, currentValue, ct).ConfigureAwait(false);
+                result.ProviderAcknowledged = providerResult != null;
+                result.ProviderCommitted = providerResult?.Committed == true;
+                var value = providerResult?.Value;
+                Verify();
+                if (providerResult == null) throw new InvalidOperationException("Editor provider returned no result.");
+                if (!result.ProviderCommitted) { result.State = FormEditorState.Cancelled; return result; }
+                result.WriteEffectsPossible = true;
+                if (!WriteCapturedRecordField(target, itemName, value, ct, () => result.WriteAcknowledged = true))
+                    throw new InvalidOperationException("Editor setter did not acknowledge the write.");
+                Verify();
+                result.Value = target.Values[itemName]?.ToString();
+                Verify();
+                result.State = FormEditorState.Completed;
+                return result;
             }
-
-            var item = _itemPropertyManager.GetItem(blockName, itemName);
-            var editor = !string.IsNullOrWhiteSpace(item?.EditorName)
-                ? GetEditor(item.EditorName) ?? EditorDefinition.SystemDefault()
-                : EditorDefinition.SystemDefault();
-
-            var currentValue = GetFieldValue(currentRecord, itemName)?.ToString();
-
-            var result = await _editorProvider.ShowEditorAsync(editor, currentValue, ct).ConfigureAwait(false);
-            if (result.Committed)
+            catch (Exception ex)
             {
-                SetFieldValue(currentRecord, itemName, result.Value);
+                result.Value = null;
+                result.State = ct.IsCancellationRequested ? FormEditorState.Cancelled :
+                    ex is SupersededRecordOperationException ? FormEditorState.Superseded :
+                    ex is EditorDeniedException ? FormEditorState.Denied : FormEditorState.Failed;
+                result.ErrorMessage = ex.Message;
+                result.Exception = ex;
+                return result;
             }
+            finally { _editorOperationDepth.Value--; }
+        }
 
-            return result;
+        private sealed class EditorDeniedException : InvalidOperationException
+        {
+            internal EditorDeniedException() : base("Editor target is not editable or cannot disclose raw text.") { }
+        }
+
+        private void VerifyEditorEditable(RecordTarget target)
+        {
+            var block = target.Registration.Block;
+            var item = _itemPropertyManager.GetItem(target.Registration.Name, target.Field);
+            var tracking = target.Registration.Source.GetTrackingItem(target.Record);
+            var inserting = block.Mode == Models.DataBlockMode.Insert || tracking?.IsNew == true || tracking?.EntityState == EntityState.Added;
+            var permission = inserting ? SecurityPermission.Insert : SecurityPermission.Update;
+            var fieldSecurity = _securityManager?.GetFieldSecurity(target.Registration.Name, target.Field);
+            var admin = _securityManager?.CurrentContext?.IsAdmin == true;
+            if (block.Mode == Models.DataBlockMode.EnterQuery || block.Mode == Models.DataBlockMode.ReadOnly ||
+                !(inserting ? block.InsertAllowed : block.UpdateAllowed) ||
+                item != null && (!item.Enabled || !item.Visible || !(inserting ? item.InsertAllowed : item.UpdateAllowed)) ||
+                !IsBlockAllowed(target.Registration.Name, permission) ||
+                fieldSecurity != null && (fieldSecurity.Masked || !admin && (!fieldSecurity.Editable || !fieldSecurity.Visible)))
+                throw new EditorDeniedException();
         }
 
         #endregion

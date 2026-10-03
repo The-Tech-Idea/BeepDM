@@ -141,7 +141,17 @@ namespace TheTechIdea.Beep.Editor.UOW
         public IDMEEditor DMEEditor { get; }
 
         /// <summary>Gets or sets the data source</summary>
-        public IDataSource DataSource { get; set; }
+        private IDataSource _dataSource;
+        public IDataSource DataSource
+        {
+            get => _dataSource;
+            set
+            {
+                if (Volatile.Read(ref _commitAdmission) != 0 && !ReferenceEquals(_dataSource, value))
+                    throw new InvalidOperationException("Cannot change the datasource during an active commit.");
+                _dataSource = value;
+            }
+        }
 
         /// <summary>Gets or sets the entity name</summary>
         public string EntityName { get; set; }
@@ -181,9 +191,19 @@ namespace TheTechIdea.Beep.Editor.UOW
         /// <summary>Fires when a field changes on a tracked item.</summary>
         public event EventHandler<ItemChangedEventArgs<T>> ItemChanged;
 
-        private void OnUnitsCurrentChanged(object sender, EventArgs e) => CurrentChanged?.Invoke(this, e);
+        private void OnUnitsCurrentChanged(object sender, EventArgs e)
+        {
+            Interlocked.Increment(ref _recordTargetRevision);
+            Interlocked.Increment(ref _readTargetRevision);
+            CurrentChanged?.Invoke(this, e);
+        }
 
-        private void OnUnitsItemChanged(object sender, ItemChangedEventArgs<T> e) => ItemChanged?.Invoke(this, e);
+        private void OnUnitsItemChanged(object sender, ItemChangedEventArgs<T> e)
+        {
+            Interlocked.Increment(ref _recordTargetRevision);
+            Interlocked.Increment(ref _readTargetRevision);
+            ItemChanged?.Invoke(this, e);
+        }
 
         // Soft delete support
         /// <summary>
@@ -232,8 +252,10 @@ namespace TheTechIdea.Beep.Editor.UOW
             get { return _filteredunits; }
             set
             {
+                RejectMutationDuringRead();
                 if (_filteredunits != value) // Check if it's a new collection
                 {
+                    InvalidateReadBufferIdentity();
                     if (_filteredunits != null)
                     {
                         foreach (var item in _filteredunits)
@@ -273,6 +295,8 @@ namespace TheTechIdea.Beep.Editor.UOW
             }
             set
             {
+                if (Volatile.Read(ref _commitAdmission) != 0 && !ReferenceEquals(Units, value))
+                    throw new InvalidOperationException("Cannot replace the collection during an active commit.");
                 SetUnits(value);
             }
         }
@@ -598,8 +622,12 @@ namespace TheTechIdea.Beep.Editor.UOW
         /// <param name="value">The new units collection</param>
         private void SetUnits(ObservableBindingList<T> value)
         {
+            if (Volatile.Read(ref _commitAdmission) != 0 && !ReferenceEquals(_units, value))
+                throw new InvalidOperationException("Cannot replace the collection during an active commit.");
             if (_units != value)
             {
+                InvalidateReadBufferIdentity();
+                Interlocked.Increment(ref _recordTargetRevision);
                 DetachHandlers(_units);
                 _units = value;
                 AttachHandlers(_units);
@@ -774,23 +802,22 @@ namespace TheTechIdea.Beep.Editor.UOW
         /// <param name="disposing">True if disposing managed resources</param>
         protected virtual void Dispose(bool disposing)
         {
-            if (!disposedValue)
+            lock (_readPublicationGate)
             {
-                if (disposing)
-                {
-                    // Dispose managed resources
-                    DetachHandlers(_units);
-                    DetachHandlers(_filteredunits);
-                    
-                    _defaultsHelper = null;
-                    _validationHelper = null;
-                    _dataHelper = null;
-                    _stateHelper = null;
-                    _eventHelper = null;
-                    _collectionHelper = null;
-                }
-
+                if (disposedValue) return;
                 disposedValue = true;
+            }
+            if (disposing)
+            {
+                DetachHandlers(_units);
+                DetachHandlers(_filteredunits);
+
+                _defaultsHelper = null;
+                _validationHelper = null;
+                _dataHelper = null;
+                _stateHelper = null;
+                _eventHelper = null;
+                _collectionHelper = null;
             }
         }
 

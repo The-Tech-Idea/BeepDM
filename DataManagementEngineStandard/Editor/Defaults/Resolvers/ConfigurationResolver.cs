@@ -4,6 +4,7 @@ using System.Linq;
 using TheTechIdea.Beep.Addin;
 using TheTechIdea.Beep.Editor;
 using TheTechIdea.Beep.Editor.Defaults.Attributes;
+using TheTechIdea.Beep.Editor.Importing;
 
 namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
 {
@@ -30,6 +31,21 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
 
         public override object ResolveValue(string rule, IPassedArgs parameters)
         {
+            if (RequiredDefaultResolution.Current != null && GetType() == typeof(ConfigurationResolver))
+            {
+                try
+                {
+                    if (string.IsNullOrWhiteSpace(rule) || rule.Length > 16384)
+                        throw new ImportTransformationException(ImportTransformationStage.Defaults);
+                    RequiredBuiltInRule.Validate(this, rule);
+                    return RequiredConfigurationRule.Resolve(rule, parameters);
+                }
+                catch (Exception)
+                {
+                    LogError("Required configuration resolution failed.");
+                    return null;
+                }
+            }
             var upperRule = rule.ToUpperInvariant().Trim();
             
             try
@@ -54,6 +70,9 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
         {
             if (string.IsNullOrWhiteSpace(rule))
                 return false;
+
+            if (RequiredDefaultResolution.Current != null && GetType() == typeof(ConfigurationResolver))
+                return RequiredBuiltInRule.MatchesOperator(rule, SupportedRuleTypes);
 
             var upperRule = rule.ToUpperInvariant().Trim();
             return upperRule.StartsWith("CONFIGURATIONVALUE(") ||

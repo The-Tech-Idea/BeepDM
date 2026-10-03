@@ -17,6 +17,9 @@ using TheTechIdea.Beep.Utilities;
   {  
         public class ConnectionProperties : Entity, IConnectionProperties
         {
+            /// <summary>Opaque, versioned protected credential-container snapshot. Runtime connections use decrypted fields instead.</summary>
+            public string ProtectedCredentialPayload { get; set; }
+
             #region Identifiers & Naming
 
             private int _id;

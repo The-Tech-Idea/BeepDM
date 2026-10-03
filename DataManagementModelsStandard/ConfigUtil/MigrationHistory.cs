@@ -7,6 +7,8 @@ namespace TheTechIdea.Beep.ConfigUtil
 {
     public class MigrationHistory
     {
+        /// <summary>Zero identifies a legacy history; coordinated snapshots use version one.</summary>
+        public int StorageFormatVersion { get; set; }
         public string DataSourceName { get; set; }
         public DataSourceType DataSourceType { get; set; } = DataSourceType.Unknown;
         public List<MigrationRecord> Migrations { get; set; } = new List<MigrationRecord>();
@@ -14,6 +16,8 @@ namespace TheTechIdea.Beep.ConfigUtil
 
     public class MigrationRecord
     {
+        /// <summary>Versioned governed plan payload, when this record captures a plan artifact.</summary>
+        public string PlanArtifactJson { get; set; }
         public string MigrationId { get; set; }
         public string Name { get; set; }
         public DateTime AppliedOnUtc { get; set; } = DateTime.UtcNow;

@@ -98,21 +98,9 @@ namespace TheTechIdea.Beep.Editor.Migration
                 }
                 finally
                 {
-                    // The cache is deliberately NOT cleared here.
-                    //
-                    // During execution the executor calls TryGetEntityStructure for
-                    // each entity, and for FK/Index operations it reads Relations
-                    // and Indexes from the returned structure.  If the cache were
-                    // cleared, the executor would get the classCreator (annotation-
-                    // only) view, which is missing the FKs and indexes the ORM
-                    // model contributed — causing a silent no-op for every
-                    // AddForeignKey / CreateIndex step.
-                    //
-                    // The cache keys are CLR type full names, and the ORM-shaped
-                    // structure is a superset of the classCreator view (it carries
-                    // the same fields and table name, plus Relations / Indexes).
-                    // A subsequent explicit-type or discovery plan for the same type
-                    // therefore sees a richer structure, not a corrupted one.
+                    // Retain model-aware metadata for subsequent planning/imperative calls.
+                    // Governed previews, execution and resume now use captured schemas;
+                    // correctness no longer depends on this cache surviving execution.
                 }
             }
 
@@ -942,12 +930,14 @@ namespace TheTechIdea.Beep.Editor.Migration
                     RiskLevel = MigrationPlanRiskLevel.Medium,
                     Note = "Plan generated from MigrationModel (no live CLR Type resolved)."
                 };
+                op.SchemaSnapshot = new MigrationEntitySnapshot { DesiredSchema = CopySnapshot(entity) };
 
                 try
                 {
                     if (MigrateDataSource != null)
                     {
                         var exists = MigrateDataSource.CheckEntityExist(entity.EntityName);
+                        op.SchemaSnapshot.ExpectedEntityExists = exists;
                         if (!exists)
                         {
                             op.Kind = MigrationPlanOperationKind.CreateEntity;
@@ -957,6 +947,7 @@ namespace TheTechIdea.Beep.Editor.Migration
                         else
                         {
                             var current = MigrateDataSource.GetEntityStructure(entity.EntityName, true);
+                            op.SchemaSnapshot.ExpectedSchema = CopySnapshot(current);
                             var missing = GetMissingColumns(current, entity);
                             if (missing.Count > 0)
                             {
@@ -993,13 +984,17 @@ namespace TheTechIdea.Beep.Editor.Migration
                 // execution orchestrator can apply them when applyForeignKeys /
                 // applyIndexes is true. They are informational — the apply path
                 // also re-derives the same artifacts from the structures.
-                EmitRelationalArtifactsForEntity(entity, plan.Operations, effectiveApplyForeignKeys, effectiveApplyIndexes);
+                var firstRelational = plan.Operations.Count;
+                EmitRelationalArtifactsForEntity(op.SchemaSnapshot.DesiredSchema, plan.Operations, effectiveApplyForeignKeys, effectiveApplyIndexes);
+                foreach (var operation in plan.Operations.Skip(firstRelational))
+                    operation.SchemaSnapshot = CopySnapshot(op.SchemaSnapshot);
             }
 
             if (effectiveApplyForeignKeys)
                 EnsureCreateEntityBeforeForeignKey(plan.Operations);
 
             plan.PolicyEvaluation = EvaluateMigrationPlanPolicy(plan, CreateDefaultPolicyOptions());
+            plan.PerformancePlan = BuildPerformancePlan(plan);
             plan.PlanHash = ComputePlanHash(plan);
             plan.ImpactReport = BuildImpactReport(plan);
             plan.DryRunReport = GenerateDryRunReport(plan);
@@ -1019,7 +1014,7 @@ namespace TheTechIdea.Beep.Editor.Migration
             plan.PerformancePlan = BuildPerformancePlan(plan);
             plan.CiValidationReport = ValidatePlanForCi(plan);
             plan.RolloutGovernanceReport = EvaluateRolloutGovernance(plan);
-            plan.ExecutionCheckpoint = CreateExecutionCheckpoint(plan);
+            plan.ExecutionCheckpoint = CreatePlanningCheckpoint(plan);
 
             RecordPlanCreated(plan);
             TryTrackMigrationPlan(plan, nameof(BuildMigrationPlanForModel));

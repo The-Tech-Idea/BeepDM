@@ -40,6 +40,8 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
             
             try
             {
+                if (RequiredDefaultResolution.Current != null && GetType() == typeof(FormulaResolver))
+                    return RequiredExpressionEvaluator.Resolve(rule, Editor, parameters);
                 return upperRule switch
                 {
                     _ when upperRule.StartsWith("SEQUENCE(") => ParseSequence(rule, parameters),
@@ -50,9 +52,9 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
                     _ when upperRule.StartsWith("ADD(") => ParseBinaryOperation(rule, (a, b) => a + b),
                     _ when upperRule.StartsWith("SUBTRACT(") || upperRule.StartsWith("SUB(") => ParseBinaryOperation(rule, (a, b) => a - b),
                     _ when upperRule.StartsWith("MULTIPLY(") || upperRule.StartsWith("MUL(") => ParseBinaryOperation(rule, (a, b) => a * b),
-                    _ when upperRule.StartsWith("DIVIDE(") || upperRule.StartsWith("DIV(") => ParseBinaryOperation(rule, (a, b) => b != 0 ? a / b : 0),
+                    _ when upperRule.StartsWith("DIVIDE(") || upperRule.StartsWith("DIV(") => ParseBinaryOperation(rule, Divide),
                     _ when upperRule.StartsWith("ROUND(") => ParseRound(rule),
-                    _ => 0
+                    _ => InvalidFormulaFallback()
                 };
             }
             catch (Exception ex)
@@ -162,6 +164,7 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
                     }
                 }
 
+                LogError("Sequence arguments could not be resolved.");
                 return 1;
             }
             catch (Exception ex)
@@ -201,6 +204,7 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
                     }
                 }
 
+                LogError("Increment arguments could not be resolved.");
                 return 1;
             }
             catch (Exception ex)
@@ -239,6 +243,7 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
                     }
                 }
 
+                LogError("Random range arguments could not be resolved.");
                 return _random.Next(1, 100);
             }
             catch (Exception ex)
@@ -297,7 +302,7 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
                     "SIN" when parts.Length > 1 && TryConvert<double>(parts[1], out double sinVal) => Math.Sin(sinVal),
                     "COS" when parts.Length > 1 && TryConvert<double>(parts[1], out double cosVal) => Math.Cos(cosVal),
                     "TAN" when parts.Length > 1 && TryConvert<double>(parts[1], out double tanVal) => Math.Tan(tanVal),
-                    _ => 0
+                    _ => InvalidFormulaFallback()
                 };
             }
             catch (Exception ex)
@@ -326,7 +331,7 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
                     return operation(a, b);
                 }
 
-                return 0;
+                return InvalidFormulaFallback();
             }
             catch (Exception ex)
             {
@@ -405,9 +410,10 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
                 var parts = SplitParameters(ExtractParenthesesContent(rule));
                 if (parts.Length < 1) { LogError("ROUND requires at least a value parameter"); return 0; }
 
-                if (!TryConvert<double>(parts[0].Trim(), out double value)) return 0;
+                if (!TryConvert<double>(parts[0].Trim(), out double value)) return InvalidFormulaFallback();
                 var decimals = 0;
-                if (parts.Length > 1) TryConvert<int>(parts[1].Trim(), out decimals);
+                if (parts.Length > 2 || parts.Length > 1 && !TryConvert<int>(parts[1].Trim(), out decimals))
+                    return InvalidFormulaFallback();
                 return Math.Round(value, decimals, MidpointRounding.AwayFromZero);
             }
             catch (Exception ex)
@@ -415,6 +421,18 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
                 LogError($"Error parsing ROUND rule '{rule}'", ex);
                 return 0;
             }
+        }
+
+        private double InvalidFormulaFallback()
+        {
+            LogError("Formula arguments could not be resolved.");
+            return 0;
+        }
+
+        private double Divide(double left, double right)
+        {
+            if (right == 0) return InvalidFormulaFallback();
+            return left / right;
         }
 
         #endregion

@@ -15,14 +15,8 @@ namespace TheTechIdea.Beep.Services
 {
     public static class EnvironmentService
     {
-        private static IDMEEditor _editor;
-        private static IServiceCollection Services;
-
         public static string BeepDataPath { get; private set; }
         public static string AppRepoDataPath { get; private set; }
-        private static bool mappingcreated = false;
-        private static bool connectioncreated = false;
-        private static bool datasourcecreated = false;
 
         
 
@@ -30,12 +24,11 @@ namespace TheTechIdea.Beep.Services
         {
             if (editor != null)
             {
-                _editor = editor;
-                AddAllConnectionConfigurations(_editor);
-                AddAllDataSourceMappings(_editor);
-                AddAllDataSourceQueryConfigurations(_editor);
+                AddAllConnectionConfigurations(editor);
+                AddAllDataSourceMappings(editor);
+                AddAllDataSourceQueryConfigurations(editor);
             }
-            return Services;
+            return new ServiceCollection();
         }
 
         /// <summary>
@@ -287,37 +280,35 @@ namespace TheTechIdea.Beep.Services
 
         public static void AddAllDataSourceQueryConfigurations(this IDMEEditor editor)
         {
-            if (datasourcecreated) return;
-            editor.ConfigEditor.QueryList.AddRange(RDBMSHelper.CreateQuerySqlRepos());
-            datasourcecreated = true;
+            ArgumentNullException.ThrowIfNull(editor);
+            lock (editor.ConfigEditor)
+            {
+                editor.ConfigEditor.QueryList ??= new List<QuerySqlRepo>();
+                if (editor.ConfigEditor.QueryList.Count == 0)
+                    editor.ConfigEditor.QueryList.AddRange(RDBMSHelper.CreateQuerySqlRepos());
+            }
         }
 
         public static void AddAllConnectionConfigurations(this IDMEEditor editor)
         {
-            if (connectioncreated) return;
-            if (editor.ConfigEditor.DataDriversClasses == null)
+            ArgumentNullException.ThrowIfNull(editor);
+            lock (editor.ConfigEditor)
             {
-                editor.ConfigEditor.DataDriversClasses = new List<ConnectionDriversConfig>();
+                editor.ConfigEditor.DataDriversClasses ??= new List<ConnectionDriversConfig>();
+                if (editor.ConfigEditor.DataDriversClasses.Count == 0)
+                    editor.ConfigEditor.DataDriversClasses.AddRange(ConnectionHelper.GetAllConnectionConfigs());
             }
-            if(editor.ConfigEditor.DataDriversClasses.Count == 0)
-            {
-                editor.ConfigEditor.DataDriversClasses.AddRange(ConnectionHelper.GetAllConnectionConfigs());
-            }
-            connectioncreated = true;
         }
 
         public static void AddAllDataSourceMappings(this IDMEEditor editor)
         {
-            if (mappingcreated) return;
-            if (editor.ConfigEditor.DataTypesMap == null)
+            ArgumentNullException.ThrowIfNull(editor);
+            lock (editor.ConfigEditor)
             {
-                editor.ConfigEditor.DataTypesMap = new List<DatatypeMapping>();
+                editor.ConfigEditor.DataTypesMap ??= new List<DatatypeMapping>();
+                if (editor.ConfigEditor.DataTypesMap.Count == 0)
+                    editor.ConfigEditor.DataTypesMap.AddRange(DataTypeFieldMappingHelper.GetMappings());
             }
-            if (editor.ConfigEditor.DataTypesMap.Count == 0)
-            {
-                editor.ConfigEditor.DataTypesMap.AddRange(DataTypeFieldMappingHelper.GetMappings());
-            }
-            mappingcreated = true;
         }
     }
    

@@ -26,13 +26,82 @@ Two shippable projects, both multi-targeting `net8.0;net9.0;net10.0`, root names
 ```bash
 dotnet build BeepDM.sln                 # works; per-project is faster:
 dotnet build DataManagementEngineStandard/DataManagementEngine.csproj -f net9.0
-dotnet test BeepDM.sln                  # runs SetupWizardTests + FormsManager.Tests
+dotnet test BeepDM.sln -p:GeneratePackageOnBuild=false -p:GenerateDocumentationFile=false
 ```
 
-The engine emits ~9k CA1416 warnings — normal; look for `0 Error(s)`. `SetupWizardTests`
-has one known pre-existing failure (`Build_Throws_WhenStepsOutOfOrder`).
+The local Windows solution baseline has 5,178 passing executions, zero failures/skips:
+Forms 221, Setup 232, Studio 66, Migration 160 and FrameworkReliability 1,393 each on
+net8/9/10. Compiler/analyzer warnings remain; a local green run does not establish
+clean-checkout packaging, external-provider or Unix coverage. See CLAUDE.md and
+`.plans/framework/IMPLEMENTATION-LOG.md` for exact evidence and remaining gates.
+
+Read Editor/Importing/REJECT-RECOVERY.md for durable file triage/CAS claims and
+actual acknowledged import/sync row replay. Do not use index marking, transform
+destination snapshots again, expire uncertain claims or advance failed-run cursors.
+Native/provider-run recovery and complete intent/promotion agreement remain open.
+
+Governed migration intent is versioned and schema/target/policy-sensitive. Use
+`Editor/Migration/PLAN-INTENT.md` for explicit policy revisions, hash-bound approval
+options, persisted snapshot reload and conservative partial-DDL recovery limits.
+Do not mutate operations or manually recompute hashes to reuse an approval/token.
+Governed execution requires acknowledged history capability; failed checkpoints
+block admission or require reconciliation after DDL. Legacy history void saves
+now propagate errors. See Services/Persistence/README.md for custom-store/loader
+capabilities, legacy promotion and local-filesystem limits.
+Connection configuration adds acknowledged saves and per-runtime protection.
+Catalog writes/exports use version 2.0, unavailable-key evidence blocks mutation,
+and post-save observer failures stay separate from storage outcomes. See
+Security/README.md for protected containers, key policy, export and old-reader limits.
+BeepSync requires acknowledged start/completion when checkpointing is enabled;
+terminal failure retains counts and requires reconciliation. Diagnostics do not
+reclassify saved completion. Typed storage does not imply transactional cursor
+commit or key replay. Read Editor/BeepSync/STORAGE-AND-OUTCOMES.md for remaining
+promotion/DQ/platform boundaries and explicit schema persistence.
+Import required-stage failures use optional typed transformation outcomes and
+RecordsTransformationFailed; they never admit the original row or advance sync
+cursors, and stop blind whole-run retry. Existing helper signatures remain but
+built-in methods now surface safe exceptions rather than silent fallback. Read
+Editor/Importing/TRANSFORMATION-OUTCOMES.md for custom/default/quality limits.
+Required shipped expression/formula ASTs parse bounded syntax before field reads;
+Boolean-only conditions, precedence, exact typed comparisons, invariant numbers,
+Decimal rounding and lazy branches retain captured nested resolver selection.
+Unused branches are syntax-checked only. See Importing/DEFAULTS-ADMISSION.md for
+numeric/result bounds and remaining identity/NFEL/plugin/provider gates.
+Required shipped query plans validate every filter before callbacks, bind closed
+invariant context and retain typed aggregates without skipping malformed values.
+Null collections deny; actual empty COUNT/EXISTS are 0/false. Streaming bounds,
+root-status/cancellation/disposal do not qualify eager provider allocation, hidden
+failures, isolation or explicit query-context ownership. Legacy/custom paths remain.
+Required shipped identity/scope rules use explicit string email/application-role
+keys and actual supported OS identity/folders, never imported-row or inferred
+substitutes. ENV reads only its scope; SYSTEMPATH means Machine PATH. Host strings
+are not authorization proof or captured run identity. Read defaults admission for
+native ownership, platform limits and legacy/custom separation.
+Required shipped dates use Gregorian ISO literals, invariant bounded formatting
+and exact tick/calendar offsets. Nested bases resolve through the pinned roster
+with actual context and must be DateTime/DateTimeOffset, not reparsed strings.
+Kinds/offsets remain intact; dynamic clock leaves are not immutable run time or
+named-zone DST qualification. Legacy direct and subclass semantics stay separate.
+Required configuration uses explicit named flat string maps or declared Process
+prefixes, never inferred editor/row/bare-variable sources. Validate the complete
+bounded map before key selection; explicit-source failure and connection alias
+conflicts deny. Capture is per resolution, not an automatic host/credential bridge
+or immutable run configuration. See defaults admission for source names/limits.
+Models EntityMetadataSnapshot.Capture owns supported metadata graphs without
+source observers; legacy EntityStructure.Clone stays shallow. Field.Clone is fixed.
+Read DataBase/METADATA-SNAPSHOTS.md in Models for graph limits and coordination;
+actual sync metadata admission still needs integration. Engine generation now uses
+source-sensitive identity and exact type selection. Bare cache seeds no longer
+override metadata. Read ConfigUtil/GENERATED-TYPES.md in Engine for compatibility,
+single-flight/retention and remaining loaded-assembly/package-consumer limits.
 
 ## Rules that matter
+
+NFEL-1 has 99 new cases per TFM for complete bounded grammar and actual execution,
+source/token/policy admission, typed/lazy values, lifecycle/timeout and bounded
+defensive history. Select RuleEngine(new NfelParser()); other parser profiles stay
+separate. Read Engine Rules/NFEL.md before altering semantics or accepting stored
+tokens. This is not plugin sandboxing or complete host/provider/adapter qualification.
 
 - Runtime data operations return `IErrorsInfo` (set `Flag` + `Message`) rather than throwing;
   guard clauses and DI misuse still throw.

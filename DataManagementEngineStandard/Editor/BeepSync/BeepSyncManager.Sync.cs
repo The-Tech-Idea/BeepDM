@@ -12,6 +12,7 @@ using TheTechIdea.Beep.Editor.Schema;
 using TheTechIdea.Beep.Editor.Importing.ErrorStore;
 using TheTechIdea.Beep.Editor.Importing.History;
 using TheTechIdea.Beep.Editor.Importing.Interfaces;
+using TheTechIdea.Beep.Editor.Importing.Helpers;
 using TheTechIdea.Beep.Helpers;
 using TheTechIdea.Beep.Report;
 using TheTechIdea.Beep.Rules;
@@ -28,13 +29,30 @@ namespace TheTechIdea.Beep.Editor
             IImportErrorStore errorStore = null,
             IImportRunHistoryStore historyStore = null)
         {
-            var validation = _validationHelper.ValidateSyncOperation(schema);
-            if (validation.Flag == Errors.Failed)
+            _diagnosticFailures.Clear();
+            LastRunBatchThresholdResult = null;
+            LastRunFailureCheckpointStatus = null;
+            LastRunCheckpoint = null;
+            LastRunReconciliationReport = null;
+            if (schema == null)
+                return new ErrorsInfo { Flag = Errors.Failed, Message = "Schema cannot be null" };
+
+            var watermarkValidation = ValidateWatermarkPolicy(schema);
+            if (watermarkValidation.Flag != Errors.Ok)
             {
-                if (schema != null) { schema.SyncStatus = "Failed"; schema.SyncStatusMessage = validation.Message ?? "Schema validation failed."; }
-                return validation;
+                schema.SyncStatus = "Failed";
+                schema.SyncStatusMessage = watermarkValidation.Message;
+                return watermarkValidation;
             }
 
+            DataImportConfiguration forwardConfig = null;
+            DataImportConfiguration reverseConfig = null;
+            ImportDefaultsAdmission forwardDefaults = null, reverseDefaults = null;
+            SyncRecordQualityAdmission recordQuality = null;
+            SyncBatchQualityAdmission batchQuality = null;
+            RetryPolicy runRetryPolicy = null;
+            SyncCheckpoint runIntent = null;
+            IImportErrorStore runErrorStore = errorStore;
             // Strict destination-acceptance preflight via the schema manager.
             // Catches "destination doesn't have the column" before the import starts.
             // Runs after structural validation and before the schema-governance preflight.
@@ -56,31 +74,99 @@ namespace TheTechIdea.Beep.Editor
             // the honest behaviour.
             try
             {
+                token.ThrowIfCancellationRequested();
+                // ValidateSyncOperation opens providers. Admit catalogs for both directions first.
+                forwardConfig = SyncSchemaTranslator.ToImportConfiguration(schema, runErrorStore, historyStore);
+                if (string.Equals(schema.SyncDirection, "Bidirectional", StringComparison.OrdinalIgnoreCase))
+                    reverseConfig = SyncSchemaTranslator.ToReverseImportConfiguration(schema, runErrorStore, historyStore);
+                forwardDefaults = ImportDefaultsAdmission.Capture(_editor, forwardConfig, token);
+                if (reverseConfig != null)
+                    reverseDefaults = ImportDefaultsAdmission.Capture(_editor, reverseConfig, token, forwardDefaults.Registry);
+                var qualityEngine = IntegrationContext?.RuleEngine;
+                batchQuality = SyncBatchQualityAdmission.Capture(schema, qualityEngine, token);
+                recordQuality = SyncRecordQualityAdmission.Capture(schema, qualityEngine, token);
+                if (recordQuality != null)
+                    runErrorStore = SyncProviderRejectStore.Capture(_editor, schema, errorStore);
+                if (recordQuality?.RequiresRejectStore == true && runErrorStore == null)
+                    throw new ImportQualityAdmissionException();
+                forwardConfig.ErrorStore = runErrorStore;
+                if (reverseConfig != null) reverseConfig.ErrorStore = runErrorStore;
+                runRetryPolicy = CaptureRetryPolicy(schema.RetryPolicy);
+                runIntent = new SyncCheckpoint
+                {
+                    SchemaId = schema.Id, SchemaFingerprint = SchemaPersistenceHelper.ComputeExecutionFingerprint(schema),
+                    MappingVersion = schema.CurrentSchemaVersion?.Version.ToString(),
+                    CompiledMappingPlanId = IntegrationContext?.CorrelationId
+                };
+                var validation = _validationHelper.ValidateSyncOperation(schema);
+                if (validation.Flag == Errors.Failed)
+                {
+                    schema.SyncStatus = "Failed";
+                    schema.SyncStatusMessage = validation.Message ?? "Schema validation failed.";
+                    return validation;
+                }
                 var schemaPre = await SyncSchemaPreflight.RunPreflightAsync(_editor, new SchemaRequest
                 {
-                    SourceDataSourceName         = schema.SourceDataSourceName,
-                    SourceEntityName             = schema.SourceEntityName,
-                    DestinationDataSourceName    = schema.DestinationDataSourceName,
-                    DestinationEntityName        = schema.DestinationEntityName,
-                    AddMissingColumns            = false,
-                    CreateDestinationIfNotExists = schema.CreateDestinationIfNotExists
+                    SourceDataSourceName = forwardConfig.SourceDataSourceName,
+                    SourceEntityName = forwardConfig.SourceEntityName,
+                    DestinationDataSourceName = forwardConfig.DestDataSourceName,
+                    DestinationEntityName = forwardConfig.DestEntityName,
+                    AddMissingColumns = false,
+                    CreateDestinationIfNotExists = forwardConfig.CreateDestinationIfNotExists,
+                    Mapping = forwardConfig?.Mapping
                 }, msg =>
                 {
                     _editor.AddLogMessage("BeepSync", $"Schema preflight: {msg}", DateTime.Now, -1, "", Errors.Ok);
                 }, token);
 
-                if (schemaPre?.Status?.Flag == Errors.Failed)
+                if (schemaPre?.Status?.Flag != Errors.Ok)
                 {
                     schema.SyncStatus = "Failed";
-                    schema.SyncStatusMessage = "Schema preflight failed: " + schemaPre.Status.Message;
+                    schema.SyncStatusMessage = "Schema preflight failed: " + schemaPre?.Status?.Message;
                     return new ErrorsInfo { Flag = Errors.Failed, Message = schema.SyncStatusMessage };
                 }
+
+                if (forwardConfig.Mapping != null)
+                {
+                    if (schemaPre.SourceData == null || schemaPre.DestinationData == null ||
+                        !schemaPre.SourceData.CheckEntityExist(forwardConfig.SourceEntityName) ||
+                        !schemaPre.DestinationData.CheckEntityExist(forwardConfig.DestEntityName))
+                        throw new InvalidOperationException("Mapped sync requires existing source and destination entities.");
+                    SyncSchemaTranslator.BindEntityMetadata(forwardConfig, schemaPre.SourceEntityStructure, schemaPre.DestinationEntityStructure);
+                    forwardConfig.SourceData = schemaPre.SourceData;
+                    forwardConfig.DestData = schemaPre.DestinationData;
+                    if (reverseConfig != null)
+                    {
+                        SyncSchemaTranslator.BindEntityMetadata(reverseConfig, schemaPre.DestinationEntityStructure, schemaPre.SourceEntityStructure);
+                        reverseConfig.SourceData = schemaPre.DestinationData;
+                        reverseConfig.DestData = schemaPre.SourceData;
+                    }
+                    var importValidation = new DataImportValidationHelper(_editor);
+                    if (importValidation.ValidateImportConfiguration(forwardConfig).Flag != Errors.Ok ||
+                        (reverseConfig != null && importValidation.ValidateImportConfiguration(reverseConfig).Flag != Errors.Ok))
+                        throw new InvalidOperationException("Mapped import configuration or generated shape was not admitted.");
+                    token.ThrowIfCancellationRequested();
+                }
             }
-            catch (Exception preEx)
+            catch (OperationCanceledException) when (token.IsCancellationRequested)
             {
-                // Preflight failure is not a sync-killer; log and continue.
-                _editor.AddLogMessage("BeepSync",
-                    $"Schema preflight threw: {preEx.Message}", DateTime.Now, -1, "", Errors.Failed);
+                schema.SyncStatus = "Cancelled";
+                schema.SyncStatusMessage = "Sync cancelled before schema admission.";
+                return new ErrorsInfo { Flag = Errors.Failed, Message = schema.SyncStatusMessage };
+            }
+            catch (TheTechIdea.Beep.Editor.Defaults.DefaultCatalogReadException)
+            {
+                schema.SyncStatus = "Failed";
+                schema.SyncStatusMessage = "Required defaults catalog admission failed; neither sync direction was admitted.";
+                var failed = new ImportExecutionResult { TransformationAdmissionFailed = true };
+                failed.Complete(ImportOutcome.Failed, schema.SyncStatusMessage);
+                return failed;
+            }
+            catch (Exception)
+            {
+                schema.SyncStatus = "Failed";
+                schema.SyncStatusMessage = "Schema or mapping admission failed; no import was admitted.";
+                return new ErrorsInfo { Flag = Errors.Failed, Message = schema.SyncStatusMessage };
             }
 
             // Preflight gate
@@ -98,12 +184,12 @@ namespace TheTechIdea.Beep.Editor
             }
 
             // Reset run-state
-            LastRunConflicts            = new List<ConflictEvidence>();
-            LastRunCheckpoint           = null;
+            LastRunConflicts = new List<ConflictEvidence>();
+            LastRunCheckpoint = null;
             LastRunReconciliationReport = null;
 
             // Phase 6: Mapping quality gate
-            int runMappingScore   = -1;
+            int runMappingScore = -1;
             string runMappingBand = null;
             if (schema.DqPolicy?.Enabled == true && schema.MappingPolicy?.Enabled == true
                 && schema.MappingPolicy.MinQualityScore > 0)
@@ -118,182 +204,314 @@ namespace TheTechIdea.Beep.Editor
                 }
             }
 
-            int  dqRejectCount       = 0;
-            int  dqDefaultsFillCount = 0;
-            var  dqAllFailures       = new List<DqGateResult>();
-            bool dqRunAborted        = false;
+            int dqRejectCount = 0;
+            int dqDefaultsFillCount = 0;
+            var dqAllFailures = new List<DqGateResult>();
+            bool dqRunAborted = false;
 
             // Phase 7: Rule-audit telemetry
             int ruleAuditCount = 0;
             EventHandler<RuleAuditEventArgs> ruleAuditHandler = null;
-            if (IntegrationContext?.RuleEngine != null)
+            var auditEngine = IntegrationContext?.RuleEngine;
+            if (auditEngine != null)
             {
                 ruleAuditHandler = (_, _) => System.Threading.Interlocked.Increment(ref ruleAuditCount);
-                IntegrationContext.RuleEngine.RuleEvaluated += ruleAuditHandler;
+                auditEngine.RuleEvaluated += ruleAuditHandler;
             }
 
-            // Phase 8: Performance profile
-            var perf         = schema.PerfProfile;
-            var runRulePolicy = SyncRuleExecutionPolicies.Resolve(perf?.RulePolicyMode);
-            WarmUpDefaultsProfile(schema, perf);
-            InvalidateMappingCacheIfVersionChanged(schema);
-
-            // Phase 5: Retry / Checkpoint setup
-            var rp          = schema.RetryPolicy;
-            int maxAttempts = rp?.MaxAttempts > 0 ? rp.MaxAttempts : 1;
-            int baseDelay   = rp?.BaseDelayMs  > 0 ? rp.BaseDelayMs  : 1000;
-
-            var checkpoint = await TryLoadCheckpointAsync(schema, rp).ConfigureAwait(false);
-
-            IErrorsInfo lastResult = new ErrorsInfo { Flag = Errors.Failed, Message = "No attempts made." };
-
-            // Closure-captured state used by BeforeAttempt (in-progress checkpoint) and
-            // OnGiveUp (failure bookkeeping). The pipeline never sees these directly —
-            // they're internal to BeepSync's per-attempt bookkeeping.
-            string? lastCategory = null;
-            string? lastAction   = null;
-
-            var retryResult = await RetryPipeline.ExecuteAsync(new RetryPlan<IErrorsInfo>
+            var previousWatermark = schema.WatermarkPolicy?.LastWatermarkValue;
+            var previousSyncDate = schema.LastSyncDate;
+            var forwardSourceFilters = forwardConfig?.SourceFilters?.ToList();
+            ImportExecutionResult lastImportOutcome = null;
+            bool thresholdBlocked = false;
+            bool startAcknowledged = false;
+            bool completionAttempted = false;
+            int runAttempt = 0;
+            try
             {
-                MaxAttempts = maxAttempts,
-                LoggerTag   = "BeepSync",
+                // Phase 8: Performance profile
+                var perf = schema.PerfProfile;
+                var runRulePolicy = SyncRuleExecutionPolicies.Resolve(perf?.RulePolicyMode);
+                WarmUpDefaultsProfile(schema, perf);
+                InvalidateMappingCacheIfVersionChanged(schema);
 
-                Backoff = attempt => TimeSpan.FromMilliseconds(ComputeBackoffMs(rp, baseDelay, attempt)),
+                // Phase 5: Retry / Checkpoint setup
+                var rp = runRetryPolicy;
+                int maxAttempts = rp?.MaxAttempts > 0 ? rp.MaxAttempts : 1;
+                int baseDelay = rp?.BaseDelayMs > 0 ? rp.BaseDelayMs : 1000;
 
-                Classify = ctx =>
+                var checkpoint = await TryLoadCheckpointAsync(schema, rp).ConfigureAwait(false);
+                if (checkpoint != null) runIntent.RunId = checkpoint.RunId;
+
+                IErrorsInfo lastResult = new ErrorsInfo { Flag = Errors.Failed, Message = "No attempts made." };
+
+                // Closure-captured state used by BeforeAttempt (in-progress checkpoint) and
+                // OnGiveUp (failure bookkeeping). The pipeline never sees these directly —
+                // they're internal to BeepSync's per-attempt bookkeeping.
+                string? lastCategory = null;
+                string? lastAction = null;
+                bool acknowledgedWrites = false;
+                bool uncertainWrites = false;
+                int acknowledgedCount = 0;
+                Exception checkpointSaveFailure = null;
+
+                var retryResult = await RetryPipeline.ExecuteAsync(new RetryPlan<IErrorsInfo>
                 {
-                    // Map the previous attempt's result to a decision.
-                    if (ctx.LastResult?.Flag == Errors.Ok)
-                        return RetryDecision.Succeed;
+                    MaxAttempts = maxAttempts,
+                    LoggerTag = "BeepSync",
 
-                    var (category, action) = TryClassifyError(schema, ctx.FailureMessage, ctx.Attempt);
-                    bool isNonRetryable = rp?.NonRetryableCategories?.Contains(category, StringComparer.OrdinalIgnoreCase) == true
-                                          || string.Equals(action, "Abort", StringComparison.OrdinalIgnoreCase);
-                    if (isNonRetryable)
+                    Backoff = attempt => TimeSpan.FromMilliseconds(ComputeBackoffMs(rp, baseDelay, attempt)),
+
+                    Classify = ctx =>
                     {
+                        if (checkpointSaveFailure != null || thresholdBlocked) return RetryDecision.GiveUp;
+                        // Map the previous attempt's result to a decision.
+                        if (ctx.LastResult?.Flag == Errors.Ok)
+                            return RetryDecision.Succeed;
+                        if (acknowledgedWrites || uncertainWrites)
+                            return RetryDecision.GiveUp;
+                        if (ctx.LastResult is ImportExecutionResult import &&
+                            (import.RecordsSucceeded > 0 || import.HasUncertainWrites || import.Outcome == ImportOutcome.Cancelled ||
+                             import.RecordsTransformationFailed > 0 || import.TransformationAdmissionFailed || import.RecordsQualityRejected > 0 ||
+                             import.RecordsQualityEvaluationFailed > 0 || import.QualityAdmissionFailed || import.RejectStoreFailures > 0))
+                            return RetryDecision.GiveUp;
+
+                        var (category, action) = TryClassifyError(schema, ctx.FailureMessage, ctx.Attempt);
+                        bool isNonRetryable = rp?.NonRetryableCategories?.Contains(category, StringComparer.OrdinalIgnoreCase) == true
+                                              || string.Equals(action, "Abort", StringComparison.OrdinalIgnoreCase);
+                        if (isNonRetryable)
+                        {
+                            lastCategory = category;
+                            lastAction = action;
+                            return RetryDecision.GiveUp;
+                        }
                         lastCategory = category;
-                        lastAction   = action;
-                        return RetryDecision.GiveUp;
-                    }
-                    lastCategory = category;
-                    lastAction   = action;
-                    return RetryDecision.Retry;
-                },
+                        lastAction = action;
+                        return RetryDecision.Retry;
+                    },
 
-                BeforeAttempt = async (ctx, tok) =>
-                {
-                    // Skip on attempt 1: nothing to save yet.
-                    if (ctx.Attempt == 1) return;
-                    int delayMs = ComputeBackoffMs(rp, baseDelay, ctx.Attempt);
-                    _editor.AddLogMessage("BeepSync",
-                        $"Retry {ctx.Attempt}/{maxAttempts} for '{schema.Id}'. Cat='{lastCategory}' Action='{lastAction}'. Delay={delayMs}ms.",
-                        DateTime.Now, -1, "", Errors.Ok);
-                    await SaveInProgressCheckpointAsync(schema, rp, checkpoint, ctx.Attempt, lastCategory ?? "Transient");
-                },
-
-                Run = async (ctx, tok) =>
-                {
-                    var cdcCtx = BuildCdcFilterContext(schema, tok);
-                    var config = SyncSchemaTranslator.ToImportConfiguration(schema, errorStore, historyStore);
-
-                    if (cdcCtx?.ResolvedFilters?.Count > 0)
+                    BeforeAttempt = async (ctx, tok) =>
                     {
-                        config.SourceFilters ??= new List<AppFilter>();
-                        config.SourceFilters.AddRange(cdcCtx.ResolvedFilters);
-                    }
+                        runAttempt = ctx.Attempt;
+                        int delayMs = ComputeBackoffMs(rp, baseDelay, ctx.Attempt);
+                        if (ctx.Attempt > 1) _editor.AddLogMessage("BeepSync",
+                            $"Retry {ctx.Attempt}/{maxAttempts} for '{schema.Id}'. Cat='{lastCategory}' Action='{lastAction}'. Delay={delayMs}ms.",
+                            DateTime.Now, -1, "", Errors.Ok);
+                        try
+                        {
+                            await SaveInProgressCheckpointAsync(schema, rp, runIntent, ctx.Attempt, lastCategory, tok).ConfigureAwait(false);
+                            if (rp?.CheckpointEnabled == true) startAcknowledged = true;
+                        }
+                        catch (Exception ex)
+                        {
+                            // RetryPipeline isolates hook errors. Carry this mandatory failure into Run instead.
+                            checkpointSaveFailure = ex;
+                        }
+                    },
 
-                    var importProgress = CreateProgressAdapter(progress);
-                    using var importMgr = new DataImportManager(_editor);
-                    var result = await importMgr.RunImportAsync(config, importProgress, tok).ConfigureAwait(false);
-
-                    if (result.Flag == Errors.Failed)
+                    Run = async (ctx, tok) =>
                     {
-                        schema.SyncStatus = "Failed";
-                        schema.SyncStatusMessage = result.Message ?? "Import failed.";
+                        tok.ThrowIfCancellationRequested();
+                        if (checkpointSaveFailure != null)
+                            return new ErrorsInfo { Flag = Errors.Failed, Message = "Mandatory sync checkpoint was not acknowledged; no import was admitted." };
+                        var cdcCtx = BuildCdcFilterContext(schema, tok);
+                        var config = forwardConfig;
+                        config.ImportRunId = runIntent.RunId;
+                        config.RecordAdmission = recordQuality?.ForDirection(config.DestEntityName);
+                        if (recordQuality != null)
+                        {
+                            config.QualityRuleTimeoutMs = recordQuality.TimeoutMs;
+                            config.QualityFailureMode = recordQuality.FailureMode;
+                        }
+                        config.SourceFilters = forwardSourceFilters?.ToList() ?? new List<AppFilter>();
+
+                        if (cdcCtx?.ResolvedFilters?.Count > 0)
+                        {
+                            config.SourceFilters ??= new List<AppFilter>();
+                            config.SourceFilters.AddRange(cdcCtx.ResolvedFilters);
+                        }
+
+                        var importProgress = CreateProgressAdapter(progress);
+                        using var importMgr = new DataImportManager(_editor);
+                        var result = await importMgr.RunImportWithDefaultsAsync(config, importProgress, tok, forwardDefaults).ConfigureAwait(false);
+                        if (result is ImportExecutionResult forward)
+                        {
+                            lastImportOutcome = CombineRecordOutcomes(null, forward);
+                            acknowledgedWrites |= forward.RecordsSucceeded > 0;
+                            acknowledgedCount = checked(acknowledgedCount + forward.RecordsSucceeded);
+                            uncertainWrites |= forward.HasUncertainWrites;
+                            dqRejectCount = checked(dqRejectCount + forward.RecordsQualityRejected);
+                        }
+                        tok.ThrowIfCancellationRequested();
+
+                        if (result?.Flag != Errors.Ok)
+                        {
+                            schema.SyncStatus = "Failed";
+                            schema.SyncStatusMessage = result.Message ?? "Import failed.";
+                            return ApplyBatchQuality(batchQuality, lastImportOutcome, result, tok, ref thresholdBlocked);
+                        }
+
+                        // Phase 4: Bidirectional reverse-import
+                        if (reverseConfig != null)
+                        {
+                            var conflictGate = TryEvaluateConflictGate(schema);
+                            if (conflictGate.Quarantine)
+                            {
+                                schema.SyncStatus = "Failed";
+                                schema.SyncStatusMessage = $"Conflict gate blocked reverse sync: {conflictGate.Reason}";
+                                _editor.AddLogMessage("BeepSync", schema.SyncStatusMessage, DateTime.Now, -1, "", Errors.Failed);
+                                lastImportOutcome?.Complete(ImportOutcome.Partial, "Conflict gate denied reverse admission after forward import.");
+                                return ApplyBatchQuality(batchQuality, lastImportOutcome,
+                                    (IErrorsInfo)lastImportOutcome ?? new ErrorsInfo { Flag = Errors.Failed, Message = schema.SyncStatusMessage }, tok, ref thresholdBlocked);
+                            }
+
+                            reverseConfig.ImportRunId = runIntent.RunId;
+                            reverseConfig.RecordAdmission = recordQuality?.ForDirection(reverseConfig.DestEntityName);
+                            if (recordQuality != null)
+                            {
+                                reverseConfig.QualityRuleTimeoutMs = recordQuality.TimeoutMs;
+                                reverseConfig.QualityFailureMode = recordQuality.FailureMode;
+                            }
+                            var reverseResult = await importMgr.RunImportWithDefaultsAsync(reverseConfig, importProgress, tok, reverseDefaults).ConfigureAwait(false);
+                            if (reverseResult is ImportExecutionResult reverse)
+                            {
+                                lastImportOutcome = CombineRecordOutcomes(lastImportOutcome, reverse);
+                                reverseResult = result = lastImportOutcome;
+                                acknowledgedWrites |= reverse.RecordsSucceeded > 0;
+                                acknowledgedCount = checked(acknowledgedCount + reverse.RecordsSucceeded);
+                                uncertainWrites |= reverse.HasUncertainWrites;
+                                dqRejectCount = checked(dqRejectCount + reverse.RecordsQualityRejected);
+                            }
+                            tok.ThrowIfCancellationRequested();
+                            if (reverseResult?.Flag != Errors.Ok)
+                            {
+                                schema.SyncStatus = "Failed";
+                                schema.SyncStatusMessage = $"Reverse sync failed: {reverseResult.Message}";
+                                return ApplyBatchQuality(batchQuality, lastImportOutcome, reverseResult, tok, ref thresholdBlocked);
+                            }
+                        }
+
+                        result = ApplyBatchQuality(batchQuality, lastImportOutcome, result, tok, ref thresholdBlocked);
+                        dqRunAborted = thresholdBlocked;
+                        if (thresholdBlocked) return result;
+
+                        completionAttempted = true;
+                        var completion = await FinalizeCheckpointAsync(schema, rp, runIntent, ctx.Attempt, acknowledgedCount, tok).ConfigureAwait(false);
+                        if (completion != null && !completion.IsSaved)
+                        {
+                            checkpointSaveFailure = completion.Error ?? new InvalidOperationException("Completion checkpoint was not saved.");
+                            return new SyncCheckpointFailureResult(runIntent.RunId, acknowledgedCount, uncertainWrites, completion.Status);
+                        }
+
+                        // Publish success only after mandatory completion persistence. These cursors
+                        // still require an explicit schema save; checkpoint and schema are not one transaction.
+                        RunDiagnostic("SyncDateNotification", () => schema.LastSyncDate = DateTime.Now);
+                        if (cdcCtx?.NewWatermarkValue != null && schema.WatermarkPolicy != null)
+                            schema.WatermarkPolicy.LastWatermarkValue = cdcCtx.NewWatermarkValue;
+                        RunDiagnostic("SyncStatusNotification", () => schema.SyncStatus = "Success");
+                        RunDiagnostic("SyncMessageNotification", () => schema.SyncStatusMessage = $"Synchronization completed for {schema.DestinationEntityName}");
+
+                        RunDiagnostic("Reconciliation", () =>
+                        {
+                            var reconReport = BuildReconReport(schema, runIntent, lastImportOutcome, dqRejectCount,
+                                dqDefaultsFillCount, dqAllFailures, dqRunAborted, runMappingScore, runMappingBand);
+                            LastRunReconciliationReport = reconReport;
+                            schema.LastReconciliationReport = reconReport;
+                        });
+                        EmitSloAndAlerts(schema, checkpoint, LastRunReconciliationReport, dqRejectCount, ctx.Attempt,
+                            ruleAuditCount, runMappingScore);
+                        RunDiagnostic("RunHistory", () => LogSyncRun(schema));
                         return result;
-                    }
+                    },
 
-                    // Phase 4: Bidirectional reverse-import
-                    if (string.Equals(schema.SyncDirection, "Bidirectional", StringComparison.OrdinalIgnoreCase))
+                    OnSuccess = (ctx, result, tok) =>
                     {
-                        var conflictGate = TryEvaluateConflictGate(schema);
-                        if (conflictGate.Quarantine)
-                        {
-                            schema.SyncStatus = "Failed";
-                            schema.SyncStatusMessage = $"Conflict gate blocked reverse sync: {conflictGate.Reason}";
-                            _editor.AddLogMessage("BeepSync", schema.SyncStatusMessage, DateTime.Now, -1, "", Errors.Failed);
-                            return new ErrorsInfo { Flag = Errors.Failed, Message = schema.SyncStatusMessage };
-                        }
+                        lastResult = result;
+                        return Task.CompletedTask;
+                    },
 
-                        var reverseConfig = SyncSchemaTranslator.ToReverseImportConfiguration(schema, errorStore, historyStore);
-                        var reverseResult = await importMgr.RunImportAsync(reverseConfig, importProgress, tok).ConfigureAwait(false);
-                        if (reverseResult.Flag == Errors.Failed)
-                        {
-                            schema.SyncStatus = "Failed";
-                            schema.SyncStatusMessage = $"Reverse sync failed: {reverseResult.Message}";
-                            return reverseResult;
-                        }
-                    }
-
-                    // Phase 6: DQ batch-threshold gate
-                    var dqAbortResult = TryCheckDqBatchThreshold(schema, dqRejectCount, ref dqRunAborted,
-                        ref dqAllFailures, ref dqDefaultsFillCount, checkpoint, runMappingScore, runMappingBand);
-                    if (dqAbortResult != null) return dqAbortResult;
-
-                    schema.LastSyncDate       = DateTime.Now;
-                    schema.SyncStatus         = "Success";
-                    schema.SyncStatusMessage  = $"Synchronization completed for {schema.DestinationEntityName}";
-
-                    // Phase 3: Advance watermark
-                    if (cdcCtx?.NewWatermarkValue != null && schema.WatermarkPolicy != null)
+                    OnGiveUp = (ctx, result, decision, tok) =>
                     {
-                        schema.WatermarkPolicy.LastWatermarkValue = cdcCtx.NewWatermarkValue;
-                        _editor.AddLogMessage("BeepSync",
-                            $"Watermark advanced to '{cdcCtx.NewWatermarkValue}'.", DateTime.Now, -1, "", Errors.Ok);
+                        lastResult = result ?? new ErrorsInfo { Flag = Errors.Failed, Message = ctx.FailureMessage ?? "Sync failed." };
+                        schema.SyncStatus = "Failed";
+                        schema.SyncStatusMessage = lastResult.Message;
+                        schema.LastSyncDate = previousSyncDate;
+                        if (schema.WatermarkPolicy != null) schema.WatermarkPolicy.LastWatermarkValue = previousWatermark;
+                        return Task.CompletedTask;
                     }
+                }, token);
 
-                    await FinalizeCheckpointAsync(schema, rp, checkpoint, ctx.Attempt).ConfigureAwait(false);
-
-                    var reconReport = BuildReconReport(schema, checkpoint, dqRejectCount,
-                        dqDefaultsFillCount, dqAllFailures, dqRunAborted, runMappingScore, runMappingBand);
-                    LastRunReconciliationReport     = reconReport;
-                    schema.LastReconciliationReport = reconReport;
-
-                    EmitSloAndAlerts(schema, checkpoint, reconReport, dqRejectCount, ctx.Attempt,
-                        ruleAuditCount, runMappingScore);
-
-                    LogSyncRun(schema);
-                    return result;
-                },
-
-                OnSuccess = (ctx, result, tok) =>
+                if (retryResult.FinalDecision != RetryDecision.Succeed) token.ThrowIfCancellationRequested();
+                if (lastResult.Flag != Errors.Failed && retryResult.FinalDecision != RetryDecision.Succeed)
                 {
-                    lastResult = result;
-                    return Task.CompletedTask;
-                },
-
-                OnGiveUp = (ctx, result, decision, tok) =>
-                {
-                    lastResult = result ?? new ErrorsInfo { Flag = Errors.Failed, Message = ctx.FailureMessage ?? "Sync failed." };
-                    return Task.CompletedTask;
+                    // Pipeline gave up — preserve the most informative message we have.
+                    lastResult = new ErrorsInfo
+                    {
+                        Flag = Errors.Failed,
+                        Message = lastResult.Message ?? retryResult.FailureMessage ?? "Sync failed."
+                    };
                 }
-            }, token);
 
-            if (lastResult.Flag != Errors.Ok && retryResult.FinalDecision != RetryDecision.Succeed)
-            {
-                // Pipeline gave up — preserve the most informative message we have.
-                lastResult = new ErrorsInfo
+                if (lastResult.Flag != Errors.Ok)
                 {
-                    Flag    = Errors.Failed,
-                    Message = lastResult.Message ?? retryResult.FailureMessage ?? "Sync failed."
-                };
+                    RunDiagnostic("Reconciliation", () =>
+                    {
+                        var report = BuildReconReport(schema, runIntent, lastImportOutcome, dqRejectCount,
+                            dqDefaultsFillCount, dqAllFailures, thresholdBlocked, runMappingScore, runMappingBand);
+                        LastRunReconciliationReport = report;
+                        schema.LastReconciliationReport = report;
+                    });
+                    if (startAcknowledged && !completionAttempted)
+                        return await PublishFailureAsync(schema, rp, runIntent, runAttempt, lastImportOutcome, lastResult,
+                            thresholdBlocked ? SyncRunFailureKind.QualityThreshold : SyncRunFailureKind.ImportFailure).ConfigureAwait(false);
+                }
+                return lastResult;
             }
-
-            // Phase 7: Unsubscribe rule-audit
-            if (ruleAuditHandler != null && IntegrationContext?.RuleEngine != null)
-                IntegrationContext.RuleEngine.RuleEvaluated -= ruleAuditHandler;
-
-            return lastResult;
+            catch (OperationCanceledException) when (token.IsCancellationRequested)
+            {
+                schema.SyncStatus = "Cancelled";
+                schema.SyncStatusMessage = "Synchronization was cancelled; watermark was not advanced.";
+                schema.LastSyncDate = previousSyncDate;
+                if (schema.WatermarkPolicy != null) schema.WatermarkPolicy.LastWatermarkValue = previousWatermark;
+                try { _editor.AddLogMessage("BeepSync", schema.SyncStatusMessage, DateTime.Now, -1, "", Errors.Failed); }
+                catch (Exception loggerError) { System.Diagnostics.Debug.WriteLine($"Sync state failure logging failed ({loggerError.GetType().Name})."); }
+                if (lastImportOutcome != null)
+                {
+                    lastImportOutcome.Complete(ImportOutcome.Cancelled, schema.SyncStatusMessage);
+                    if (startAcknowledged && !completionAttempted)
+                        return await PublishFailureAsync(schema, runRetryPolicy, runIntent, runAttempt, lastImportOutcome,
+                            lastImportOutcome, SyncRunFailureKind.Cancelled).ConfigureAwait(false);
+                    return lastImportOutcome;
+                }
+                var cancelled = new ErrorsInfo { Flag = Errors.Failed, Message = schema.SyncStatusMessage };
+                return startAcknowledged && !completionAttempted
+                    ? await PublishFailureAsync(schema, runRetryPolicy, runIntent, runAttempt, null, cancelled, SyncRunFailureKind.Cancelled).ConfigureAwait(false)
+                    : cancelled;
+            }
+            catch (Exception ex)
+            {
+                schema.SyncStatus = "Failed";
+                schema.SyncStatusMessage = $"Sync state could not be validated ({ex.GetType().Name}); preserve persisted evidence and reconcile before replay.";
+                schema.LastSyncDate = previousSyncDate;
+                if (schema.WatermarkPolicy != null) schema.WatermarkPolicy.LastWatermarkValue = previousWatermark;
+                if (lastImportOutcome != null)
+                {
+                    lastImportOutcome.Complete(lastImportOutcome.RecordsSucceeded > 0 ? ImportOutcome.Partial : ImportOutcome.Failed, schema.SyncStatusMessage);
+                    if (startAcknowledged && !completionAttempted)
+                        return await PublishFailureAsync(schema, runRetryPolicy, runIntent, runAttempt, lastImportOutcome,
+                            lastImportOutcome, SyncRunFailureKind.ExecutionFailure).ConfigureAwait(false);
+                    return lastImportOutcome;
+                }
+                var failed = new ErrorsInfo { Flag = Errors.Failed, Message = schema.SyncStatusMessage };
+                return startAcknowledged && !completionAttempted
+                    ? await PublishFailureAsync(schema, runRetryPolicy, runIntent, runAttempt, null, failed, SyncRunFailureKind.ExecutionFailure).ConfigureAwait(false)
+                    : failed;
+            }
+            finally
+            {
+                if (ruleAuditHandler != null)
+                    RunDiagnostic("RuleAuditUnsubscribe", () => auditEngine.RuleEvaluated -= ruleAuditHandler);
+            }
         }
 
         /// <summary>
@@ -333,7 +551,7 @@ namespace TheTechIdea.Beep.Editor
         private void InvalidateMappingCacheIfVersionChanged(DataSyncSchema schema)
         {
             if (string.IsNullOrWhiteSpace(schema.DestinationDataSourceName)) return;
-            var current  = schema.CurrentSchemaVersion?.Version.ToString();
+            var current = schema.CurrentSchemaVersion?.Version.ToString();
             var previous = schema.ActiveCheckpoint?.MappingVersion;
             if (previous == null || previous == current) return;
 
@@ -349,6 +567,11 @@ namespace TheTechIdea.Beep.Editor
             var checkpoint = await _persistenceHelper.LoadCheckpointAsync(schema.Id).ConfigureAwait(false);
             if (checkpoint == null) return null;
 
+            if (checkpoint.SchemaFingerprint != SchemaPersistenceHelper.ComputeExecutionFingerprint(schema) ||
+                checkpoint.RequiresReconciliation || checkpoint.Status == "Running" || checkpoint.Status == "Failed" || checkpoint.ProcessedOffset > 0 && checkpoint.Status != "Completed")
+                throw new InvalidOperationException("Stored sync context or provider progress requires reconciliation; offset replay is not implemented by the translator.");
+            if (checkpoint.Status == "Completed") return null;
+
             if (IsCheckpointResumeSafe(schema, checkpoint))
             {
                 schema.ActiveCheckpoint = checkpoint;
@@ -358,9 +581,7 @@ namespace TheTechIdea.Beep.Editor
                 return checkpoint;
             }
 
-            await _persistenceHelper.ClearCheckpointAsync(schema.Id).ConfigureAwait(false);
-            _editor.AddLogMessage("BeepSync", $"Stale checkpoint discarded for '{schema.Id}'.", DateTime.Now, -1, "", Errors.Ok);
-            return null;
+            throw new InvalidOperationException("Stale sync checkpoint is preserved; reconcile before a fresh run.");
         }
 
         private static int ComputeBackoffMs(RetryPolicy? rp, int baseDelay, int attempt)
@@ -372,102 +593,53 @@ namespace TheTechIdea.Beep.Editor
             return rp?.BackoffMode switch
             {
                 "Linear" => baseDelay * attempt,
-                "Fixed"  => baseDelay,
-                _        => baseDelay * (1 << (attempt - 1))
+                "Fixed" => baseDelay,
+                _ => baseDelay * (1 << (attempt - 1))
             };
         }
 
-        private IErrorsInfo TryCheckDqBatchThreshold(
-            DataSyncSchema schema,
-            int dqRejectCount,
-            ref bool dqRunAborted,
-            ref List<DqGateResult> dqAllFailures,
-            ref int dqDefaultsFillCount,
-            SyncCheckpoint checkpoint,
-            int mappingScore,
-            string mappingBand)
+        private async Task<PersistenceWriteResult> FinalizeCheckpointAsync(DataSyncSchema schema, RetryPolicy rp, SyncCheckpoint checkpoint, int attempt, int acknowledgedCount, CancellationToken token)
         {
-            if (schema.DqPolicy?.Enabled != true || IntegrationContext?.RuleEngine == null) return null;
-            var thresholdKey = schema.DqPolicy.BatchThresholdRuleKey ?? "sync.dq.batch-threshold";
-            if (!IntegrationContext.RuleEngine.HasRule(thresholdKey)) return null;
-
+            if (rp?.CheckpointEnabled != true) return null;
+            var finalCp = CheckpointFromIntent(checkpoint, "Completed", attempt, acknowledgedCount);
+            PersistenceWriteResult result;
             try
             {
-                var (outputs, _) = IntegrationContext.RuleEngine.SolveRule(
-                    thresholdKey,
-                    new Dictionary<string, object>
-                    {
-                        ["rejectCount"]   = dqRejectCount,
-                        ["maxRejectRate"] = schema.DqPolicy.MaxRejectRatePercent / 100.0
-                    },
-                    SyncRuleExecutionPolicies.DefaultSafe);
-
-                var action = outputs?.TryGetValue("action", out var ta) == true ? ta?.ToString() : null;
-                if (!string.Equals(action, "AbortRun", StringComparison.OrdinalIgnoreCase)) return null;
-
-                dqRunAborted = true;
-                schema.SyncStatus = "Failed";
-                schema.SyncStatusMessage = $"DQ batch threshold exceeded: {dqRejectCount} record(s) rejected.";
-                _editor.AddLogMessage("BeepSync", schema.SyncStatusMessage, DateTime.Now, -1, "", Errors.Failed);
-
-                var abortReport = _progressHelper.BuildReconciliationReport(
-                    schema, checkpoint?.RunId ?? Guid.NewGuid().ToString(),
-                    0, 0, 0, 0, 0, dqRejectCount, LastRunConflicts.Count,
-                    dqDefaultsFillCount, LastRunConflicts.Count, true,
-                    dqAllFailures, mappingScore, mappingBand);
-                LastRunReconciliationReport = schema.LastReconciliationReport = abortReport;
-                return new ErrorsInfo { Flag = Errors.Failed, Message = schema.SyncStatusMessage };
+                result = _persistenceHelper is ISyncPersistenceAcknowledgement acknowledged
+                    ? await acknowledged.SaveCheckpointAcknowledgedAsync(finalCp, token).ConfigureAwait(false)
+                    : new PersistenceWriteResult(PersistenceWriteStatus.Unsupported);
+                result ??= new PersistenceWriteResult(PersistenceWriteStatus.Failed);
             }
-            catch (Exception ex)
-            {
-                _editor.AddLogMessage("BeepSync", $"DQ threshold rule threw: {ex.Message}", DateTime.Now, -1, "", Errors.Failed);
-                return null;
-            }
+            catch (OperationCanceledException ex) { result = new PersistenceWriteResult(PersistenceWriteStatus.Cancelled, ex); }
+            catch (NotSupportedException ex) { result = new PersistenceWriteResult(PersistenceWriteStatus.Unsupported, ex); }
+            catch (Exception ex) { result = new PersistenceWriteResult(PersistenceWriteStatus.Failed, ex); }
+            if (!result.IsSaved) return result;
+            LastRunCheckpoint = finalCp;
+            RunDiagnostic("CheckpointNotification", () => schema.ActiveCheckpoint = finalCp);
+            return result;
         }
 
-        private async Task FinalizeCheckpointAsync(DataSyncSchema schema, RetryPolicy rp, SyncCheckpoint checkpoint, int attempt)
+        private async Task SaveInProgressCheckpointAsync(DataSyncSchema schema, RetryPolicy rp, SyncCheckpoint checkpoint, int attempt, string errorCategory, CancellationToken token)
         {
             if (rp?.CheckpointEnabled != true) return;
-            var finalCp = new SyncCheckpoint
-            {
-                RunId                 = checkpoint?.RunId ?? Guid.NewGuid().ToString(),
-                SchemaId              = schema.Id,
-                Status                = "Completed",
-                AttemptCount          = attempt,
-                MappingVersion        = schema.CurrentSchemaVersion?.Version.ToString(),
-                CompiledMappingPlanId = IntegrationContext?.CorrelationId
-            };
-            LastRunCheckpoint       = finalCp;
-            schema.ActiveCheckpoint = finalCp;
-            await _persistenceHelper.ClearCheckpointAsync(schema.Id).ConfigureAwait(false);
-        }
-
-        private async Task SaveInProgressCheckpointAsync(DataSyncSchema schema, RetryPolicy rp, SyncCheckpoint checkpoint, int attempt, string errorCategory)
-        {
-            if (rp?.CheckpointEnabled != true) return;
-            var errCp = new SyncCheckpoint
-            {
-                RunId                 = checkpoint?.RunId ?? Guid.NewGuid().ToString(),
-                SchemaId              = schema.Id,
-                Status                = "InProgress",
-                AttemptCount          = attempt,
-                LastErrorCategory     = errorCategory,
-                MappingVersion        = schema.CurrentSchemaVersion?.Version.ToString(),
-                CompiledMappingPlanId = IntegrationContext?.CorrelationId
-            };
-            LastRunCheckpoint       = errCp;
-            schema.ActiveCheckpoint = errCp;
-            await _persistenceHelper.SaveCheckpointAsync(errCp).ConfigureAwait(false);
+            var errCp = CheckpointFromIntent(checkpoint, "Running", attempt, 0);
+            errCp.LastErrorCategory = errorCategory;
+            if (_persistenceHelper is not ISyncPersistenceAcknowledgement acknowledged)
+                throw new NotSupportedException("Sync execution requires acknowledged checkpoint storage.");
+            (await acknowledged.SaveCheckpointAcknowledgedAsync(errCp, token).ConfigureAwait(false)).ThrowIfNotSaved();
+            LastRunCheckpoint = errCp;
+            RunDiagnostic("CheckpointNotification", () => schema.ActiveCheckpoint = errCp);
         }
 
         private SyncReconciliationReport BuildReconReport(
-            DataSyncSchema schema, SyncCheckpoint checkpoint,
+            DataSyncSchema schema, SyncCheckpoint checkpoint, ImportExecutionResult records,
             int dqRejectCount, int dqDefaultsFillCount, List<DqGateResult> dqAllFailures,
             bool dqRunAborted, int mappingScore, string mappingBand) =>
             _progressHelper.BuildReconciliationReport(
                 schema, checkpoint?.RunId ?? Guid.NewGuid().ToString(),
-                0, 0, 0, 0, 0,
-                dqRejectCount, LastRunConflicts.Count, dqDefaultsFillCount,
+                records?.RecordsAttempted ?? 0, records?.RecordsSucceeded ?? 0,
+                records?.RecordsSucceeded ?? 0, 0, records?.RecordsSkipped ?? 0,
+                dqRejectCount, (records?.RecordsQuarantined ?? 0) + LastRunConflicts.Count, dqDefaultsFillCount,
                 LastRunConflicts.Count, dqRunAborted,
                 dqAllFailures, mappingScore, mappingBand);
 
@@ -485,14 +657,14 @@ namespace TheTechIdea.Beep.Editor
                 && schema.CurrentSchemaVersion?.Version.ToString() != null
                 && schema.ActiveCheckpoint.MappingVersion != schema.CurrentSchemaVersion.Version.ToString();
 
-            _progressHelper.EmitSloMetrics(
-                schema, runMetrics, reconReport.RunId,
+            RunDiagnostic("SloMetrics", () => _progressHelper.EmitSloMetrics(
+                schema, runMetrics, reconReport?.RunId ?? checkpoint?.RunId,
                 dqRejectCount, LastRunConflicts.Count, attempt - 1,
                 ruleAuditCount, IntegrationContext?.CorrelationId ?? "unknown",
-                driftDetected, IntegrationContext?.RuleEngine);
+                driftDetected, IntegrationContext?.RuleEngine));
 
-            schema.LastRunAlerts = _progressHelper.EvaluateAlertRules(
-                schema, runMetrics, IntegrationContext?.RuleEngine);
+            RunDiagnostic("AlertRules", () => schema.LastRunAlerts = _progressHelper.EvaluateAlertRules(
+                schema, runMetrics, IntegrationContext?.RuleEngine));
         }
     }
 }

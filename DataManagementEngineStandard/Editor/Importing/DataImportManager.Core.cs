@@ -61,21 +61,7 @@ namespace TheTechIdea.Beep.Editor.Importing
                     config.DestEntityStructure = config.DestData.GetEntityStructure(config.DestEntityName, false);
                 }
 
-                // Load default values if not set and defaults should be applied
-                if (config.ApplyDefaults && (config.DefaultValues == null || !config.DefaultValues.Any()) && 
-                    !string.IsNullOrEmpty(config.DestDataSourceName))
-                {
-                    try
-                    {
-                        config.DefaultValues = DefaultsManager.GetDefaults(_editor, config.DestDataSourceName);
-                        _progressHelper.LogImport($"Loaded {config.DefaultValues?.Count ?? 0} default values from DefaultsManager", 0);
-                    }
-                    catch (Exception ex)
-                    {
-                        _progressHelper.LogError("Error loading default values", ex);
-                        config.DefaultValues = new List<DefaultValue>();
-                    }
-                }
+                // Required defaults admission occurs before connection/schema operations in RunImportAsync.
             });
         }
 
@@ -89,6 +75,13 @@ namespace TheTechIdea.Beep.Editor.Importing
             if (config.DestData == null)
             {
                 throw new InvalidOperationException("Destination data source is not initialized");
+            }
+
+            if (config.RequireBoundMappingMetadata)
+            {
+                if (!config.DestData.CheckEntityExist(config.DestEntityName))
+                    throw new InvalidOperationException("Bound mapping requires an existing destination; no schema creation was admitted.");
+                return;
             }
 
             if (!config.CreateDestinationIfNotExists)

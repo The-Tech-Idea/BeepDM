@@ -35,6 +35,13 @@ namespace TheTechIdea.Beep.Editor
         private readonly ISchemaPersistenceHelper _persistenceHelper;
         private readonly ISyncProgressHelper _progressHelper;
         private IRetryPipeline? _retryPipeline;
+        private readonly List<SyncDiagnosticFailureEventArgs> _diagnosticFailures = new();
+
+        /// <summary>Failures in advisory diagnostics, separate from provider and checkpoint outcomes.</summary>
+        public event EventHandler<SyncDiagnosticFailureEventArgs> DiagnosticFailed;
+
+        /// <summary>A copy of diagnostic failures for the latest run; no lifetime history is retained.</summary>
+        public IReadOnlyList<SyncDiagnosticFailureEventArgs> LastRunDiagnosticFailures => _diagnosticFailures.ToArray();
 
         /// <summary>Optional integration context: Rule Engine, Defaults Manager, mapping-plan state.</summary>
         public SyncIntegrationContext IntegrationContext { get; set; }
@@ -48,6 +55,12 @@ namespace TheTechIdea.Beep.Editor
         /// <summary>Reconciliation report from the most recent <see cref="SyncDataAsync"/> call.</summary>
         public SyncReconciliationReport LastRunReconciliationReport { get; private set; }
 
+        /// <summary>Attempt threshold evidence; null when explicitly disabled or not evaluated.</summary>
+        public SyncBatchThresholdResult LastRunBatchThresholdResult { get; private set; }
+
+        /// <summary>Failed-run checkpoint acknowledgement, separate from the original import/threshold outcome.</summary>
+        public PersistenceWriteStatus? LastRunFailureCheckpointStatus { get; private set; }
+
         public string Filepath { get; set; }
         public IDMEEditor Editor => _editor;
         public ObservableBindingList<DataSyncSchema> SyncSchemas { get; set; }
@@ -60,16 +73,20 @@ namespace TheTechIdea.Beep.Editor
         protected IRetryPipeline RetryPipeline => _retryPipeline ??= new RetryPipeline();
 
         public BeepSyncManager(IDMEEditor editor)
+            : this(editor, new SchemaPersistenceHelper(editor))
+        { }
+
+        private BeepSyncManager(IDMEEditor editor, ISchemaPersistenceHelper persistenceHelper)
         {
             _editor = editor ?? throw new ArgumentNullException(nameof(editor));
             SyncSchemas = new ObservableBindingList<DataSyncSchema>();
-            Filepath = System.IO.Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "TheTechIdea", "Beep", "BeepSyncManager");
+            ArgumentNullException.ThrowIfNull(persistenceHelper);
+            Filepath = persistenceHelper is SchemaPersistenceHelper local
+                ? System.IO.Path.GetDirectoryName(local.GetSchemasFilePath()) : null;
 
             _validationHelper = new SyncValidationHelper(_editor);
-            _persistenceHelper = new SchemaPersistenceHelper(_editor);
-            _progressHelper    = new SyncProgressHelper(_editor);
+            _persistenceHelper = persistenceHelper;
+            _progressHelper    = new SyncProgressHelper(_editor, ReportDiagnosticFailure);
 
             LoadSchemas();
         }
@@ -80,6 +97,15 @@ namespace TheTechIdea.Beep.Editor
         {
             IntegrationContext = integrationContext;
         }
+
+        /// <summary>Explicitly selects host/test storage without changing the process-wide legacy store.</summary>
+        public BeepSyncManager(IDMEEditor editor, SyncIntegrationContext integrationContext, string storageDirectory)
+            : this(editor, new SchemaPersistenceHelper(editor, storageDirectory))
+        { IntegrationContext = integrationContext; }
+
+        /// <summary>Host-owned storage adapter; checkpoint execution requires its acknowledgement capability.</summary>
+        public static BeepSyncManager CreateWithPersistence(IDMEEditor editor, ISchemaPersistenceHelper persistenceHelper, SyncIntegrationContext integrationContext = null) =>
+            new BeepSyncManager(editor, persistenceHelper) { IntegrationContext = integrationContext };
 
         // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -102,6 +128,36 @@ namespace TheTechIdea.Beep.Editor
             };
             schema.SyncRuns.Add(run);
             schema.LastSyncRunData = run;
+        }
+
+        private void RunDiagnostic(string operation, Action action)
+        {
+            try { action(); }
+            catch (Exception ex) { ReportDiagnosticFailure(operation, ex); }
+        }
+
+        private void ReportDiagnosticFailure(string operation, Exception error)
+        {
+            var failure = new SyncDiagnosticFailureEventArgs(operation, error.GetType().Name);
+            _diagnosticFailures.Add(failure);
+            var subscribers = DiagnosticFailed?.GetInvocationList();
+            if (subscribers != null)
+            {
+                foreach (EventHandler<SyncDiagnosticFailureEventArgs> subscriber in subscribers)
+                {
+                    try { subscriber(this, failure); }
+                    catch (Exception observerError)
+                    {
+                        // Diagnostic observers cannot change execution or recursively report themselves.
+                        System.Diagnostics.Debug.WriteLine($"Sync diagnostic observer failed ({observerError.GetType().Name}).");
+                    }
+                }
+            }
+            try { _editor.AddLogMessage("BeepSync", $"{operation} diagnostic failed ({failure.ExceptionType}).", DateTime.Now, -1, "", Errors.Warning); }
+            catch (Exception loggerError)
+            {
+                System.Diagnostics.Debug.WriteLine($"Sync diagnostic logging failed ({loggerError.GetType().Name}).");
+            }
         }
 
         // ── Dispose ────────────────────────────────────────────────────────────────

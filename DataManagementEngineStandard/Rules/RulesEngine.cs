@@ -14,6 +14,7 @@ namespace TheTechIdea.Beep.Rules
     {
         private readonly IRuleParser _parser;
         private readonly Dictionary<string, IRule> _rules = new Dictionary<string, IRule>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, string> _nfelSources = new(StringComparer.OrdinalIgnoreCase);
 
         public RuleEngine(IRuleParser parser)
         {
@@ -36,12 +37,14 @@ namespace TheTechIdea.Beep.Rules
                     $"A rule with key '{key}' is already registered.");
 
             _rules[key] = rule;
+            if (_parser is BuiltinParsers.NfelParser) _nfelSources[key] = key;
             EmitAudit(key, true, TimeSpan.Zero, null, null);
         }
 
         public bool UnregisterRule(string ruleKey)
         {
             if (string.IsNullOrWhiteSpace(ruleKey)) return false;
+            _nfelSources.Remove(ruleKey);
             return _rules.Remove(ruleKey);
         }
 
@@ -58,6 +61,7 @@ namespace TheTechIdea.Beep.Rules
         public (Dictionary<string, object> outputs, object result) SolveRule(
             string ruleKey, Dictionary<string, object> parameters, RuleExecutionPolicy policy)
         {
+            if (_parser is BuiltinParsers.NfelParser) policy = CaptureNfelPolicy(policy);
             var sw = Stopwatch.StartNew();
             var diags = new List<ParseDiagnostic>();
             try
@@ -83,6 +87,8 @@ namespace TheTechIdea.Beep.Rules
         public object EvaluateExpression(IList<Token> tokens, Dictionary<string, object> parameters,
                                          RuleExecutionPolicy policy)
         {
+            if (_parser is BuiltinParsers.NfelParser)
+                return EvaluateNfel(tokens, parameters, policy);
             ValidatePolicyTokens(tokens, policy);
             var rpn = ConvertToRpn(tokens);
             return EvaluateRpn(rpn, parameters, policy,
@@ -105,6 +111,9 @@ namespace TheTechIdea.Beep.Rules
             if (!_rules.TryGetValue(ruleKey, out var rule))
                 throw new RuleEvaluationException(DiagnosticCode.RuleNotFound,
                     $"Rule '{ruleKey}' not found.");
+
+            if (_parser is BuiltinParsers.NfelParser)
+                return SolveNfel(_nfelSources[ruleKey], rule, parameters, policy);
 
             EnforceLifecyclePolicy(rule, policy);
 

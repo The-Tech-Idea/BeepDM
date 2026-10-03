@@ -34,6 +34,12 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
             
             try
             {
+                if (RequiredDefaultResolution.Current != null && GetType() == typeof(UserContextResolver))
+                {
+                    RequiredBuiltInRule.Validate(this, rule);
+                    return RequiredUserContextRule.Resolve(rule, parameters);
+                }
+
                 return upperRule switch
                 {
                     "USERNAME" or "CURRENTUSER" or "USERLOGIN" => Environment.UserName,
@@ -52,6 +58,7 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
             catch (Exception ex)
             {
                 LogError($"Error resolving user context rule '{rule}'", ex);
+                if (RequiredDefaultResolution.Current != null && GetType() == typeof(UserContextResolver)) return null;
                 return Environment.UserName;
             }
         }
@@ -60,6 +67,9 @@ namespace TheTechIdea.Beep.Editor.Defaults.Resolvers
         {
             if (string.IsNullOrWhiteSpace(rule))
                 return false;
+
+            if (RequiredDefaultResolution.Current != null)
+                return RequiredBuiltInRule.MatchesOperator(rule, SupportedRuleTypes);
 
             var upperRule = rule.ToUpperInvariant().Trim();
             return SupportedRuleTypes.Any(type => upperRule.Contains(type)) ||

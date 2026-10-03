@@ -1,12 +1,10 @@
-using System.Collections;
-using System.Reflection;
-
 namespace TheTechIdea.Beep.Editor.Migration.Tests;
 
 /// <summary>
 /// Phase 4: verify the core execution path (checkpoint, resume, gate sequence), including durable
 /// resume — the checkpoint is re-hydrated from persisted history after the in-memory store is gone.
 /// </summary>
+[Collection("Checkpoint restart")]
 public class ExecutionCheckpointResumeTests
 {
     private sealed class Product { public int Id { get; set; } public string Name { get; set; } }
@@ -46,13 +44,15 @@ public class ExecutionCheckpointResumeTests
     public void PlanHashMismatch_OnReusedToken_IsRejected()
     {
         // A token created for one plan hash cannot be reused for a different plan.
-        var (m, plan) = NewAdditive();
+        var harness = new MigrationTestHarness()
+            .WithDesired(typeof(Product), MigrationTestHarness.Entity("Product", "Id", "Name"));
+        var m = harness.Build();
+        var plan = m.BuildMigrationPlanForTypes(new[] { typeof(Product) });
         var first = m.ExecuteMigrationPlan(plan);
 
         // A genuinely different plan (different entity → different hash).
-        var other = new MigrationTestHarness()
-            .WithDesired(typeof(Order), MigrationTestHarness.Entity("Order", "Id", "Ref"))
-            .Build();
+        harness.WithDesired(typeof(Order), MigrationTestHarness.Entity("Order", "Id", "Ref"));
+        var other = harness.Build();
         var otherPlan = other.BuildMigrationPlanForTypes(new[] { typeof(Order) });
         Assert.NotEqual(plan.PlanHash, otherPlan.PlanHash);   // self-validate the premise
 
@@ -64,14 +64,12 @@ public class ExecutionCheckpointResumeTests
     [Fact]
     public void Resume_SurvivesA_Restart_FromPersistedCheckpoint()
     {
-        // Durable resume: checkpoints are persisted to migration history as a JSON snapshot. Simulate a
-        // restart by clearing the process-static store; the checkpoint is re-hydrated from history, so
-        // GetExecutionCheckpoint finds it and ResumeMigrationPlan succeeds.
+        // A new manager has no preview cache; it must reload the fixture's stored history.
         var (m, plan) = NewAdditive();
         var result = m.ExecuteMigrationPlan(plan);
         var token = result.ExecutionToken;
 
-        ClearStaticCheckpointStores();   // == process restart (in-memory stores gone)
+        m = new MigrationManager(m.DMEEditor, m.MigrateDataSource) { ExecutionTargetIdentity = m.ExecutionTargetIdentity };
 
         var fetched = m.GetExecutionCheckpoint(token);
         Assert.NotNull(fetched);
@@ -83,11 +81,9 @@ public class ExecutionCheckpointResumeTests
     }
 
     [Fact]
-    public void PlanHash_IsInsensitive_ToCreateEntityColumnSet()
+    public void PlanHash_Changes_WithCreateEntityColumnSet()
     {
-        // FINDING (surfaced by verification): two CreateEntity plans for the same entity name with
-        // DIFFERENT column sets hash identically — the plan hash does not fingerprint a to-be-created
-        // entity's columns. Pinned so it's visible; fixing it is future work, not verify+hygiene scope.
+        // Approval/checkpoint identity must cover the complete schema, not just the table name.
         var planA = new MigrationTestHarness()
             .WithDesired(typeof(Product), MigrationTestHarness.Entity("Product", "Id", "Name"))
             .Build().BuildMigrationPlanForTypes(new[] { typeof(Product) });
@@ -95,18 +91,7 @@ public class ExecutionCheckpointResumeTests
             .WithDesired(typeof(Product), MigrationTestHarness.Entity("Product", "Id", "Name", "Price"))
             .Build().BuildMigrationPlanForTypes(new[] { typeof(Product) });
 
-        Assert.Equal(planA.PlanHash, planB.PlanHash);
+        Assert.NotEqual(planA.PlanHash, planB.PlanHash);
     }
 
-    /// <summary>Reflectively clears the two static checkpoint/plan dictionaries on MigrationManager.</summary>
-    private static void ClearStaticCheckpointStores()
-    {
-        foreach (var name in new[] { "ExecutionCheckpoints", "ExecutionPlans" })
-        {
-            var field = typeof(MigrationManager).GetField(name,
-                BindingFlags.NonPublic | BindingFlags.Static);
-            Assert.NotNull(field);   // guard: if renamed, this test must be revisited
-            ((IDictionary)field!.GetValue(null)!).Clear();
-        }
-    }
 }
