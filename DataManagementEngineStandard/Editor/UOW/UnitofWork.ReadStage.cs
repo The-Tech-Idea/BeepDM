@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using TheTechIdea.Beep.DataBase;
+using TheTechIdea.Beep.ConfigUtil;
 using TheTechIdea.Beep.Report;
 using TheTechIdea.Beep.Utilities;
 
@@ -64,11 +65,24 @@ namespace TheTechIdea.Beep.Editor.UOW
             if (Interlocked.CompareExchange(ref _commitAdmission, 1, 0) != 0)
                 throw new InvalidOperationException("A commit or staged read is already active.");
             Volatile.Write(ref _readAdmission, 1);
+            ReadOutcome = new ErrorsInfo { Flag = Errors.Failed, Message = "Read preparation has not been acknowledged." };
             ReadStage stage = null;
             try
             {
                 if (!SupportsStagedRead) throw new NotSupportedException("This UoW does not support staged datasource reads.");
                 if (page != null && !SupportsStagedPageRead) throw new NotSupportedException("This UoW/provider does not support bounded staged pages.");
+                if (page != null && page.CopyFilters().Concat(page.CopyAnyFilters()).Concat(
+                    page.AnyRelatedFilters.Concat(page.RequiredRelatedGroups.SelectMany(group => group.Alternatives))
+                        .SelectMany(relation => relation.CopyFilters().Concat(relation.CopyAnyFilters())))
+                    .Any(filter => string.Equals(filter.Operator, "equalsordinalignorecase", StringComparison.Ordinal)) &&
+                    DataSource is not IOrdinalIgnoreCaseTextDataSource { SupportsOrdinalIgnoreCaseText: true })
+                    throw new NotSupportedException("This provider cannot enforce ordinal case-insensitive text reads.");
+                if (page?.RequiredRelatedGroups.Count > 0 && DataSource is not IBoundedGroupedRelatedPagedDataSource)
+                    throw new NotSupportedException("This provider does not support bounded grouped related pages.");
+                if (page?.AnyRelatedFilters.Count > 0 && DataSource is not IBoundedRelatedPagedDataSource)
+                    throw new NotSupportedException("This provider does not support bounded related pages.");
+                if (page != null && page.AnyRelatedFilters.Concat(page.RequiredRelatedGroups.SelectMany(group => group.Alternatives)).Any(value => value.Comparisons.Count > 0) && DataSource is not IBoundedComparedRelatedPagedDataSource)
+                    throw new NotSupportedException("This provider does not support bounded related numeric comparisons.");
                 stage = new ReadStage(this, cancellationToken, page != null);
                 stage.CheckTarget();
                 if (page != null) page = QualifyPageRequest(page);
@@ -92,10 +106,11 @@ namespace TheTechIdea.Beep.Editor.UOW
                     stage.CheckTarget();
                     candidateRows = DecodePageResponse(page, response, cancellationToken, out var info);
                     stage.Page = info;
+                    ReadOutcome = new ErrorsInfo { Flag = Errors.Ok, Message = "Bounded read acknowledged." };
                 }
                 else
                 {
-                    var rows = await stage.Source.GetEntityAsync(stage.EntityName, providerFilters).ConfigureAwait(false);
+                    var rows = await ReadWithOutcomeAsync(stage.Source, stage.EntityName, providerFilters, cancellationToken).ConfigureAwait(false);
                     stage.CheckTarget();
                     if (rows == null) throw new InvalidOperationException("Provider returned no read result; null is not an empty row set.");
                     candidateRows = new List<T>();
@@ -123,8 +138,11 @@ namespace TheTechIdea.Beep.Editor.UOW
                 stage.CheckTarget();
                 return stage;
             }
-            catch
+            catch (Exception ex)
             {
+                ReadOutcome = new ErrorsInfo { Flag = Errors.Failed, Message = "Read preparation did not complete.",
+                    Ex = ReadOutcome.Flag != Errors.Ok && ReadOutcome.Ex != null ? ReadOutcome.Ex : ex,
+                    Errors = ReadOutcome.Errors.ToList() };
                 if (stage != null) stage.Dispose();
                 else ReleaseReadAdmission();
                 throw;

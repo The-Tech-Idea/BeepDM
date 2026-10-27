@@ -1,6 +1,8 @@
 # MASTER TODO TRACKER
 # BeepDM Enhancement Plans
 
+**2026-10-26 · DoitAll ordinal substring consumer fix; In progress.** [Owner record](PHASE-219-DOITALL-ORDINAL-SUBSTRING.md) adds opt-in literal ordinal bounded filtering without changing ordinary contains semantics. Normal DoitAll SDK SQLite/LocalDB gates and898 affected consumer cases pass;104 selected app/shared inputs and six consumer copies match. net10 consumer solution builds0 errors/8726 emitted warnings. PostgreSQL/Azure runtime, net8/net9/shared-package consumer and coordinated delivery gates remain open; no framework-wide release acceptance. No Git, Actions or publication.
+
 **Goal:** Systematically enhance the core data-management layers in `BeepDM`
 to reach enterprise parity with documented phase roadmaps, and ship the
 WinForms UI shells that wrap each subsystem using the canonical

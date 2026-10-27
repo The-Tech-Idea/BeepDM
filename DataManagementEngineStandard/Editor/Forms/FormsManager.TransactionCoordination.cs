@@ -44,6 +44,8 @@ namespace TheTechIdea.Beep.Editor.UOWManager
             public bool Committed;
             public FormDataSourceCommitResult Outcome;
             public FormDataSourceAdmission Admission;
+            public IOwnedTransactionDataSource OwnedSource;
+            public object TransactionOwner;
         }
 
         private List<CommitTarget> CaptureCommitTargets(Dictionary<FormsManager, List<string>> blocksByForm)
@@ -132,8 +134,32 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     IErrorsInfo begin;
                     group.Opened = true;
                     group.Outcome.State = FormDataSourceCommitState.Unknown;
-                    try { begin = group.Source.BeginTransaction(args); }
-                    catch (NotImplementedException) { group.Opened = false; result.UsesIndependentCommits = true;
+                    try
+                    {
+                        if (group.Source is IOwnedTransactionDataSource owned)
+                        {
+                            group.OwnedSource = owned;
+                            group.Opened = false; group.Outcome.State = FormDataSourceCommitState.Unattempted;
+                            if (!owned.SupportsOwnedTransactions)
+                            {
+                                throw new NotSupportedException("This provider requires explicit form transaction ownership support.");
+                            }
+                            group.TransactionOwner = new object();
+                            group.Opened = true; group.Outcome.State = FormDataSourceCommitState.Unknown;
+                            begin = owned.BeginOwnedTransaction(group.TransactionOwner);
+                            var owns = owned.OwnsTransaction(group.TransactionOwner);
+                            if (begin is TransactionOwnershipRefusal && begin.Flag != Errors.Ok && !owns)
+                            {
+                                // Proven no dispatch: neither roll back the foreign scope nor
+                                // hold a permanent reconciliation admission for an unstarted form.
+                                group.Opened = false; group.Outcome.State = FormDataSourceCommitState.Unattempted;
+                            }
+                            else if (begin?.Flag == Errors.Ok && !owns)
+                                throw new InvalidOperationException("Provider acknowledged form begin without its explicit owner.");
+                        }
+                        else begin = group.Source.BeginTransaction(args);
+                    }
+                    catch (NotImplementedException) when (group.OwnedSource == null) { group.Opened = false; result.UsesIndependentCommits = true;
                         group.Outcome.State = FormDataSourceCommitState.Independent; continue; }
                     // A failed or thrown begin may still have allocated provider resources.
                     if (begin?.Flag != Errors.Ok)
@@ -196,7 +222,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                 {
                     group.CommitAttempted = true;
                     group.Outcome.State = FormDataSourceCommitState.Unknown;
-                    var commit = group.Source.Commit(args);
+                    var commit = group.OwnedSource != null
+                        ? group.OwnedSource.CommitOwnedTransaction(group.TransactionOwner) : group.Source.Commit(args);
+                    if (commit?.Errors != null) result.Errors.AddRange(commit.Errors);
                     if (commit?.Flag != Errors.Ok)
                         throw new InvalidOperationException($"Provider commit outcome unknown: {commit?.Message ?? "no result"}");
                     group.Committed = true;
@@ -222,7 +250,9 @@ namespace TheTechIdea.Beep.Editor.UOWManager
                     bool rolledBack = false;
                     try
                     {
-                        var abort = group.Source.EndTransaction(args);
+                        var abort = group.OwnedSource != null
+                            ? group.OwnedSource.RollbackOwnedTransaction(group.TransactionOwner) : group.Source.EndTransaction(args);
+                        if (abort?.Errors != null) result.Errors.AddRange(abort.Errors);
                         rolledBack = abort?.Flag == Errors.Ok;
                         if (!rolledBack) result.Errors.Add(new ErrorsInfo { Flag = Errors.Failed,
                             Message = $"Transaction cleanup failed: {abort?.Message ?? "no result"}" });

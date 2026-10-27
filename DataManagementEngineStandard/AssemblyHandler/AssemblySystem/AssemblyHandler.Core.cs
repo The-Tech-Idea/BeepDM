@@ -28,7 +28,8 @@ namespace TheTechIdea.Beep.Tools
         private Dictionary<string, Type> _typeCache = new Dictionary<string, Type>(StringComparer.OrdinalIgnoreCase);
         private ConcurrentDictionary<string, Assembly> _loadedAssemblyCache = new ConcurrentDictionary<string, Assembly>(StringComparer.OrdinalIgnoreCase);
         private List<ConnectionDriversConfig> DataDriversConfig = new List<ConnectionDriversConfig>();
-        private bool disposedValue;
+        private volatile bool disposedValue;
+        private readonly AppDomain _resolutionDomain;
         IProgress<PassedArgs> Progress;
         CancellationToken Token;
         /// <summary>
@@ -143,9 +144,9 @@ namespace TheTechIdea.Beep.Tools
             ErrorObject = pErrorObject;
             Logger = pLogger;
             Utilfunction = pUtilfunction;
-            CurrentDomain = AppDomain.CurrentDomain;
+            CurrentDomain = _resolutionDomain = AppDomain.CurrentDomain;
             DataSourcesClasses = new List<AssemblyClassDefinition>();
-            CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
+            _resolutionDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
 
             // NuggetManager is no longer constructed eagerly here — see the NuggetManager property.
 
@@ -162,6 +163,7 @@ namespace TheTechIdea.Beep.Tools
         /// </summary>
         public Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args)
         {
+            if (disposedValue) return null;
             try
             {
                 var assemblyName = new AssemblyName(args.Name);
@@ -243,6 +245,9 @@ namespace TheTechIdea.Beep.Tools
             {
                 if (disposing)
                 {
+                    disposedValue = true;
+                    _resolutionDomain.AssemblyResolve -= CurrentDomain_AssemblyResolve;
+                    var extensionFailures = LoaderExtensionLifetime.Release(LoaderExtensionInstances);
                     // Dispose managed state (managed objects)
                     _nuggetManager?.Clear();
                     LoaderExtensions = null;
@@ -252,6 +257,7 @@ namespace TheTechIdea.Beep.Tools
                     DataDriversConfig = null;
                     _typeCache?.Clear();
                     _loadedAssemblyCache?.Clear();
+                    if (extensionFailures.Count != 0) throw new AggregateException("Loader extension cleanup failed.", extensionFailures);
                 }
 
                 disposedValue = true;

@@ -74,7 +74,7 @@ namespace TheTechIdea.Beep
         /// <summary>
         /// Error Object Handler 
         /// </summary>
-        public IErrorsInfo ErrorObject { get; set; }
+        public IErrorsInfo ErrorObject { get => _operationErrors.Value?.Outcome ?? _sharedErrors; set => _sharedErrors = value; }
         /// <summary>
         /// Logging Class 
         /// </summary>
@@ -198,6 +198,15 @@ namespace TheTechIdea.Beep
         // More consistent error handling with detailed information
         public void AddLogMessage(string logType, string logMessage, DateTime logDate, int recordId, string miscData, Errors flag)
         {
+            // Scoped work owns its diagnostic result and observes logger faults synchronously.
+            // It must not mutate a different operation's shared last-error object.
+            if (_operationErrors.Value is { } operation)
+            {
+                operation.Outcome.Flag = flag;
+                operation.Outcome.Message = $"{logType}: {logMessage}";
+                Logger?.WriteLog(operation.Outcome.Message);
+                return;
+            }
             try
             {
                 if (Logger == null)
@@ -616,7 +625,8 @@ namespace TheTechIdea.Beep
 
                 // Create activator and instance
                 var activator = GetActivator<IDataSource>(constructor);
-                return activator(connection.ConnectionName, Logger, this, connection.DatabaseType, ErrorObject);
+                // A cached datasource must not capture a temporary caller's operation outcome.
+                return activator(connection.ConnectionName, Logger, this, connection.DatabaseType, _sharedErrors);
             }
             catch (Exception ex)
             {

@@ -324,6 +324,40 @@ namespace TheTechIdea.Beep.Helpers.DataTypesHelpers
 
         #endregion
 
+        /// <summary>
+        /// Resolves an exact numeric type's declared shape. An omitted shape uses the existing
+        /// 28/8 engine default; explicit precision with zero scale remains zero. Currency minor
+        /// units do not determine storage scale. Non-numeric custom mappings remain their owner's.
+        /// </summary>
+        public static string ResolveDecimalStorageType(string mappedType, int? precision = null, int? scale = null)
+        {
+            if (string.IsNullOrWhiteSpace(mappedType)) throw new ArgumentException("A mapped decimal storage type is required.", nameof(mappedType));
+            var match = Regex.Match(mappedType.Trim(), @"\A(decimal|numeric|number)(?:\(\s*(P,S|N,S|[0-9]+\s*,\s*[0-9]+)\s*\))?\z", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+            if (!match.Success) return mappedType;
+            var shape = match.Groups[2].Value;
+            if (!precision.HasValue && !scale.HasValue && shape.Length > 0 && char.IsDigit(shape[0])) return mappedType;
+            var (p, s) = ResolveDecimalStorageShape(precision, scale);
+            return match.Groups[1].Value + "(" + p + "," + s + ")";
+        }
+
+        /// <summary>The shared declared/default exact-decimal shape, independent of currency minor units.</summary>
+        public static (int Precision, int Scale) ResolveDecimalStorageShape(int? precision = null, int? scale = null)
+        {
+            var p = precision ?? 28;
+            var s = scale ?? (precision.HasValue ? 0 : 8);
+            if (p < 1 || s < 0 || s > p)
+                throw new ArgumentOutOfRangeException(nameof(precision), "Decimal precision and scale must be explicit valid bounds.");
+            return (p, s);
+        }
+
+        /// <summary>True only when every value in the source decimal domain fits the target exactly.</summary>
+        public static bool ContainsDecimalStorageShape(int targetPrecision, int targetScale, int sourcePrecision, int sourceScale)
+        {
+            ResolveDecimalStorageShape(targetPrecision, targetScale);
+            ResolveDecimalStorageShape(sourcePrecision, sourceScale);
+            return targetScale >= sourceScale && targetPrecision - targetScale >= sourcePrecision - sourceScale;
+        }
+
         #region Private Helper Methods
 
         private static void EnsureDataTypesMapLoaded(IDMEEditor DMEEditor)
@@ -373,7 +407,8 @@ namespace TheTechIdea.Beep.Helpers.DataTypesHelpers
                 {
                     DataSourceName = sizeMapping.DataSourceName,
                     NetDataType = sizeMapping.NetDataType,
-                    DataType = sizeMapping.DataType.Replace("(N)", $"({size})")
+                    DataType = ResolveStringLength(sizeMapping.DataType, size,
+                        string.Equals(sizeMapping.DataSourceName, "SQLServerDataSource", StringComparison.OrdinalIgnoreCase))
                 };
                 return result;
             }
@@ -431,7 +466,8 @@ namespace TheTechIdea.Beep.Helpers.DataTypesHelpers
 
                 if (dt != null)
                 {
-                    return dt.DataType.Replace("(N)", $"({fld.Size1})");
+                    return ResolveStringLength(dt.DataType, fld.Size1,
+                        string.Equals(className, "SQLServerDataSource", StringComparison.OrdinalIgnoreCase));
                 }
             }
 
@@ -456,13 +492,30 @@ namespace TheTechIdea.Beep.Helpers.DataTypesHelpers
                 : defaultMapping.DataType;
         }
 
+        // SQL Server's variable-width Unicode/non-Unicode types stop at 4000/8000
+        // byte-pairs/bytes. Larger declared payloads need its large-value type;
+        // substituting the requested number emits DDL the server cannot execute.
+        // Keep this provider rule shared by configured lookups and migration DDL.
+        internal static string ResolveStringLength(string template, int size, bool sqlServer)
+        {
+            var largeValue = sqlServer &&
+                ((size > 4000 && template.Equals("nvarchar(N)", StringComparison.OrdinalIgnoreCase)) ||
+                 (size > 8000 && template.Equals("varchar(N)", StringComparison.OrdinalIgnoreCase)));
+            return template.Replace("(N)", largeValue ? "(max)" : $"({size})");
+        }
+
         private static string ProcessNumericFieldtype(List<DatatypeMapping> mappings, string className, EntityField fld)
         {
-            // Set default precision and scale for decimals
             if (fld.Fieldtype.Equals("System.Decimal", StringComparison.InvariantCultureIgnoreCase))
             {
-                if (fld.NumericPrecision == 0) fld.NumericPrecision = 28;
-                if (fld.NumericScale == 0) fld.NumericScale = 8;
+                var mapped = FindBestMapping(mappings, fld.Fieldtype, "P,S", true) ??
+                    FindBestMapping(mappings, fld.Fieldtype, "P,S", false) ??
+                    mappings.FirstOrDefault(x => x.NetDataType.Equals(fld.Fieldtype, StringComparison.InvariantCultureIgnoreCase) && x.Fav) ??
+                    mappings.FirstOrDefault(x => x.NetDataType.Equals(fld.Fieldtype, StringComparison.InvariantCultureIgnoreCase));
+                if (mapped == null) return null;
+                int? precision = fld.NumericPrecision != 0 ? fld.NumericPrecision : null;
+                int? scale = fld.NumericPrecision != 0 || fld.NumericScale != 0 ? fld.NumericScale : null;
+                return ResolveDecimalStorageType(mapped.DataType, precision, scale);
             }
 
             if (fld.NumericPrecision > 0)
@@ -524,7 +577,8 @@ namespace TheTechIdea.Beep.Helpers.DataTypesHelpers
                 
                 if (dt != null)
                 {
-                    return dt.DataType.Replace("(N)", $"({fld.Size1})");
+                    return ResolveStringLength(dt.DataType, fld.Size1,
+                        string.Equals(className, "SQLServerDataSource", StringComparison.OrdinalIgnoreCase));
                 }
             }
 

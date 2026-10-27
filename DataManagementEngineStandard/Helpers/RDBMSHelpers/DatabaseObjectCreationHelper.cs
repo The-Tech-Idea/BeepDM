@@ -97,7 +97,7 @@ namespace TheTechIdea.Beep.Helpers.RDBMSHelpers
                 var queries = new List<string>();
                 foreach (var primaryKeyField in primaryKeyFields)
                 {
-                    string query = GeneratePrimaryKeyQuery(entity.DatabaseType, entity.EntityName, primaryKeyField.FieldName, MapDataType(primaryKeyField.Fieldtype, entity.DatabaseType));
+                    string query = GeneratePrimaryKeyQuery(entity.DatabaseType, entity.EntityName, primaryKeyField.FieldName, MapFieldDataType(primaryKeyField, entity.DatabaseType));
                     queries.Add(query);
                 }
 
@@ -283,7 +283,7 @@ namespace TheTechIdea.Beep.Helpers.RDBMSHelpers
         {
             // Honour [Unicode(false)] on string columns (default true keeps nvarchar/nchar/ntext).
             var dataType = UniversalDataSourceHelpers.RdbmsHelpers.RdbmsHelper.ApplyUnicodePreference(
-                MapDataType(field.Fieldtype, databaseType), field.IsUnicode);
+                MapFieldDataType(field, databaseType), field.IsUnicode);
             var nullable = field.AllowDBNull ? "" : " NOT NULL";
             var identity = field.IsAutoIncrement ? GetIdentityClause(databaseType) : "";
             
@@ -296,6 +296,14 @@ namespace TheTechIdea.Beep.Helpers.RDBMSHelpers
         /// <param name="Fieldtype">The .NET field type</param>
         /// <param name="databaseType">The target database type</param>
         /// <returns>Database-specific data type</returns>
+        private static string MapFieldDataType(EntityField field, DataSourceType databaseType)
+        {
+            var mapped = MapDataType(field.Fieldtype, databaseType);
+            return field.Fieldtype == "System.Decimal" ? DataTypeMappingLookup.ResolveDecimalStorageType(mapped,
+                field.NumericPrecision != 0 ? field.NumericPrecision : null,
+                field.NumericPrecision != 0 || field.NumericScale != 0 ? field.NumericScale : null) : mapped;
+        }
+
         private static string MapDataType(string Fieldtype, DataSourceType databaseType)
         {
             if (string.IsNullOrEmpty(Fieldtype))
@@ -356,7 +364,8 @@ namespace TheTechIdea.Beep.Helpers.RDBMSHelpers
                     "LONG" or "INT64" => "BIGINT",
                     "SHORT" or "INT16" => "SMALLINT",
                     "BYTE" => "TINYINT",
-                    "DECIMAL" or "DOUBLE" => "DECIMAL(18,2)",
+                    "DECIMAL" => "DECIMAL(P,S)",
+                    "DOUBLE" => "DECIMAL(18,2)",
                     "SINGLE" or "FLOAT" => "REAL",
                     "DATETIME" => "DATETIME2",
                     "DATETIMEOFFSET" => "DATETIMEOFFSET",

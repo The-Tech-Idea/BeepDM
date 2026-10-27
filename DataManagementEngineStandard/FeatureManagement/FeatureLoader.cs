@@ -13,20 +13,22 @@ using System.IO;
 
 namespace TheTechIdea.Beep.Container.FeatureManagement
 {
-    public class FeatureLoader : ILoaderExtention
+    public class FeatureLoader : ILoaderExtention, IDisposable
     {
+        private readonly AppDomain _resolutionDomain;
+        private int _disposed;
         public AppDomain CurrentDomain { get; set; }
 
 
         public IAssemblyHandler Loader { get; set; }
         public FeatureLoader(IAssemblyHandler ploader)
         {
-            Loader = ploader;
+            Loader = ploader ?? throw new ArgumentNullException(nameof(ploader));
 
             //  DMEEditor = 
-            CurrentDomain = AppDomain.CurrentDomain;
+            CurrentDomain = _resolutionDomain = AppDomain.CurrentDomain;
             // DataSourcesClasses = new List<AssemblyClassDefinition>();
-            CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
+            _resolutionDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
         }
 
         public IErrorsInfo LoadAllAssembly()
@@ -124,6 +126,12 @@ namespace TheTechIdea.Beep.Container.FeatureManagement
         #endregion "Class Extractors"
         private Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args)
         {
+            if (System.Threading.Volatile.Read(ref _disposed) != 0) return null;
+            var loader = Loader;
+            var assemblies = loader?.Assemblies;
+            var folders = loader?.ConfigEditor?.Config?.Folders;
+            // Capture the live owner references; a missing optional assembly is not an error.
+            if (assemblies == null) return null;
             // Ignore missing resources
             if (args.Name.Contains(".resources"))
                 return null;
@@ -134,7 +142,7 @@ namespace TheTechIdea.Beep.Container.FeatureManagement
             Assembly assembly = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a => a.FullName.StartsWith(filenamewo));
             if (assembly == null)
             {
-                assemblies_rep s = Loader.Assemblies.FirstOrDefault(a => a.DllLib.FullName.StartsWith(filenamewo));
+                assemblies_rep s = assemblies.FirstOrDefault(a => a.DllLib.FullName.StartsWith(filenamewo));
                 if (s != null)
                 {
                     assembly = s.DllLib;
@@ -143,8 +151,8 @@ namespace TheTechIdea.Beep.Container.FeatureManagement
             }
             if (assembly != null)
                 return assembly;
-            if (Loader.ConfigEditor.Config == null) return null;
-            foreach (var moduleDir in Loader.ConfigEditor.Config.Folders.Where(c => c.FolderFilesType == FolderFileTypes.OtherDLL))
+            if (folders == null || System.Threading.Volatile.Read(ref _disposed) != 0) return null;
+            foreach (var moduleDir in folders.Where(c => c.FolderFilesType == FolderFileTypes.OtherDLL))
             {
                 var di = new DirectoryInfo(moduleDir.FolderPath);
                 var module = di.GetFiles().FirstOrDefault(i => i.Name == filename);
@@ -155,7 +163,7 @@ namespace TheTechIdea.Beep.Container.FeatureManagement
             }
             if (assembly != null)
                 return assembly;
-            foreach (var moduleDir in Loader.ConfigEditor.Config.Folders.Where(c => c.FolderFilesType == FolderFileTypes.ConnectionDriver))
+            foreach (var moduleDir in folders.Where(c => c.FolderFilesType == FolderFileTypes.ConnectionDriver))
             {
                 var di = new DirectoryInfo(moduleDir.FolderPath);
                 var module = di.GetFiles().FirstOrDefault(i => i.Name == filename);
@@ -166,7 +174,7 @@ namespace TheTechIdea.Beep.Container.FeatureManagement
             }
             if (assembly != null)
                 return assembly;
-            foreach (var moduleDir in Loader.ConfigEditor.Config.Folders.Where(c => c.FolderFilesType == FolderFileTypes.ProjectClass))
+            foreach (var moduleDir in folders.Where(c => c.FolderFilesType == FolderFileTypes.ProjectClass))
             {
                 var di = new DirectoryInfo(moduleDir.FolderPath);
                 var module = di.GetFiles().FirstOrDefault(i => i.Name == filename);
@@ -233,6 +241,12 @@ namespace TheTechIdea.Beep.Container.FeatureManagement
 
             }
             return er;
+        }
+        public void Dispose()
+        {
+            if (System.Threading.Interlocked.Exchange(ref _disposed, 1) != 0) return;
+            _resolutionDomain.AssemblyResolve -= CurrentDomain_AssemblyResolve;
+            GC.SuppressFinalize(this);
         }
     }
 }

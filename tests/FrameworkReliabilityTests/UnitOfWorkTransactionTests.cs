@@ -46,6 +46,125 @@ public class UnitOfWorkTransactionTests
         return (uow, source);
     }
 
+    private static (UnitofWork<Row> Uow, Mock<IDataSource> Source, Mock<IOwnedTransactionDataSource> Owned) OwnedHarness(bool supported = true)
+    {
+        var source = new Mock<IDataSource>(); var owned = source.As<IOwnedTransactionDataSource>();
+        source.SetupGet(x => x.DatasourceType).Returns(DataSourceType.SqlServer);
+        owned.SetupGet(x => x.SupportsOwnedTransactions).Returns(supported);
+        source.Setup(x => x.InsertEntity("Rows", It.IsAny<object>())).Returns(new ErrorsInfo { Flag = Errors.Ok });
+        var editor = new Mock<IDMEEditor>(); editor.Setup(x => x.GetDataSource("database")).Returns(source.Object);
+        var work = new UnitofWork<Row>(editor.Object, "database", "Rows", new EntityStructure
+        { EntityName = "Rows", Fields = new List<EntityField> { new() { FieldName = "Id", IsKey = true } } }, "Id");
+        work.Units.Add(new Row()); return (work, source, owned);
+    }
+
+    [Theory]
+    [InlineData(false)] [InlineData(true)]
+    public async Task OwnedTransactionUsesOneOpaqueTokenAndNeverLegacyFinish(bool failWrite)
+    {
+        var (work, source, owned) = OwnedHarness(); object? captured = null;
+        owned.Setup(x => x.BeginOwnedTransaction(It.IsAny<object>())).Returns((object owner) =>
+        { captured = owner; return new ErrorsInfo { Flag = Errors.Ok }; });
+        owned.Setup(x => x.CommitOwnedTransaction(It.IsAny<object>())).Returns((object owner) =>
+        { Assert.Same(captured, owner); return new ErrorsInfo { Flag = Errors.Ok }; });
+        owned.Setup(x => x.RollbackOwnedTransaction(It.IsAny<object>())).Returns((object owner) =>
+        { Assert.Same(captured, owner); return new ErrorsInfo { Flag = Errors.Ok }; });
+        if (failWrite) source.Setup(x => x.InsertEntity("Rows", It.IsAny<object>())).Returns(new ErrorsInfo { Flag = Errors.Failed });
+        Assert.Equal(failWrite ? Errors.Failed : Errors.Ok, (await work.Commit()).Flag); Assert.NotNull(captured);
+        owned.Verify(x => x.CommitOwnedTransaction(It.IsAny<object>()), failWrite ? Times.Never : Times.Once);
+        owned.Verify(x => x.RollbackOwnedTransaction(It.IsAny<object>()), failWrite ? Times.Once : Times.Never);
+        source.Verify(x => x.BeginTransaction(It.IsAny<PassedArgs>()), Times.Never);
+        source.Verify(x => x.Commit(It.IsAny<PassedArgs>()), Times.Never);
+        source.Verify(x => x.EndTransaction(It.IsAny<PassedArgs>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task AcknowledgedOwnedCommitPreservesCleanupWarningsWithoutRollingBack()
+    {
+        var (work, source, owned) = OwnedHarness();
+        owned.Setup(x => x.BeginOwnedTransaction(It.IsAny<object>())).Returns(new ErrorsInfo { Flag = Errors.Ok });
+        owned.Setup(x => x.CommitOwnedTransaction(It.IsAny<object>())).Returns(new ErrorsInfo
+        { Flag = Errors.Ok, Errors = new List<IErrorsInfo> { new ErrorsInfo { Flag = Errors.Warning, Message = "Confirmed cleanup warning" } } });
+        var result = await work.Commit(); Assert.Equal(Errors.Ok, result.Flag); Assert.False(work.IsDirty);
+        Assert.Contains(result.Errors, x => x.Message == "Confirmed cleanup warning");
+        owned.Verify(x => x.RollbackOwnedTransaction(It.IsAny<object>()), Times.Never);
+        source.Verify(x => x.EndTransaction(It.IsAny<PassedArgs>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task FailedOwnedBeginCleanupDoesNotReplaceTheOriginalFailure()
+    {
+        var (work, source, owned) = OwnedHarness();
+        owned.Setup(x => x.BeginOwnedTransaction(It.IsAny<object>())).Throws(new IOException("Original owned begin failure"));
+        owned.Setup(x => x.OwnsTransaction(It.IsAny<object>())).Returns(true);
+        owned.Setup(x => x.RollbackOwnedTransaction(It.IsAny<object>())).Throws(new IOException("Owned begin cleanup failure"));
+        var result = await work.Commit(); Assert.Equal(Errors.Failed, result.Flag);
+        Assert.Contains("Original owned begin failure", result.Message);
+        Assert.Contains(result.Errors, x => x.Ex is IOException && x.Ex.Message == "Owned begin cleanup failure");
+        source.Verify(x => x.EndTransaction(It.IsAny<PassedArgs>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task UnsupportedOwnedCapabilityCannotSilentlyFallBackToLegacyTransactions()
+    {
+        var (work, source, owned) = OwnedHarness(false);
+        Assert.Equal(Errors.Failed, (await work.Commit()).Flag); Assert.True(work.IsDirty);
+        owned.Verify(x => x.BeginOwnedTransaction(It.IsAny<object>()), Times.Never);
+        source.Verify(x => x.BeginTransaction(It.IsAny<PassedArgs>()), Times.Never);
+        source.Verify(x => x.InsertEntity(It.IsAny<string>(), It.IsAny<object>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task ThrowingOwnedBeginResolvesOnlyTheTokenItActuallyAllocated()
+    {
+        var (work, source, owned) = OwnedHarness(); object? captured = null;
+        owned.Setup(x => x.BeginOwnedTransaction(It.IsAny<object>())).Returns((object owner) =>
+        { captured = owner; throw new IOException("Fictional allocated begin failure"); });
+        owned.Setup(x => x.OwnsTransaction(It.IsAny<object>())).Returns((object owner) => ReferenceEquals(captured, owner));
+        owned.Setup(x => x.RollbackOwnedTransaction(It.IsAny<object>())).Returns((object owner) =>
+        { Assert.Same(captured, owner); return new ErrorsInfo { Flag = Errors.Ok }; });
+        Assert.Equal(Errors.Failed, (await work.Commit()).Flag); Assert.True(work.IsDirty);
+        owned.Verify(x => x.RollbackOwnedTransaction(It.IsAny<object>()), Times.Once);
+        source.Verify(x => x.InsertEntity(It.IsAny<string>(), It.IsAny<object>()), Times.Never);
+        source.Verify(x => x.EndTransaction(It.IsAny<PassedArgs>()), Times.Never);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task DiscardingPendingEditsNeverEndsADatasourceTransaction(bool transactionWouldRefuse)
+    {
+        var (uow, source) = Harness();
+        var existing = new Row { Id = 12 }; uow.Units.Add(existing); uow.Units.AcceptChanges();
+        existing.Name = "unsaved edit"; uow.Units.Add(new Row());
+        if (transactionWouldRefuse)
+            source.Setup(x => x.EndTransaction(It.IsAny<PassedArgs>())).Throws(new IOException("Another owner controls this transaction"));
+        var result = await uow.Rollback();
+        Assert.Equal(Errors.Ok, result.Flag); Assert.False(uow.IsDirty);
+        Assert.Same(existing, Assert.Single(uow.Units)); Assert.Equal("initial", existing.Name);
+        source.Verify(x => x.BeginTransaction(It.IsAny<PassedArgs>()), Times.Never);
+        source.Verify(x => x.EndTransaction(It.IsAny<PassedArgs>()), Times.Never);
+        source.Verify(x => x.Commit(It.IsAny<PassedArgs>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task DiscardHoldsAdmissionWhileRestoringRowsAndRejectsReentrantCommit()
+    {
+        var (uow, source) = Harness(); var row = new Row { Id = 12 };
+        uow.Units.Add(row); uow.Units.AcceptChanges(); row.Name = "unsaved edit";
+        Errors? reentrant = null;
+        row.PropertyChanged += (_, args) =>
+        {
+            if (args.PropertyName == nameof(Row.Name))
+                reentrant = uow.Commit().GetAwaiter().GetResult().Flag;
+        };
+        Assert.Equal(Errors.Ok, (await uow.Rollback()).Flag);
+        Assert.Equal(Errors.Failed, reentrant); Assert.Equal("initial", row.Name); Assert.False(uow.IsDirty);
+        source.Verify(x => x.BeginTransaction(It.IsAny<PassedArgs>()), Times.Never);
+        source.Verify(x => x.EndTransaction(It.IsAny<PassedArgs>()), Times.Never);
+        row.Name = "later edit"; Assert.Equal(Errors.Ok, (await uow.Commit()).Flag);
+    }
+
     [Fact]
     public async Task FailedRecordRollsBackWithoutAcceptingEarlierSuccessfulRecords()
     {

@@ -80,6 +80,12 @@ namespace TheTechIdea.Beep.Editor.UOW
         public virtual async Task<ObservableBindingList<T>> Get()
         {
             RejectMutationDuringRead();
+            if (!IsInListMode && DataSource is IOwnedEntityReadDataSource)
+            {
+                using var stage = await PrepareReadAsync(new List<AppFilter>()).ConfigureAwait(false);
+                PublishAcknowledgedRead(stage);
+                return Units;
+            }
             // A tenant-scoped unit of work has no unfiltered read: the whole point of the scope is
             // that "everything" means "everything of this tenant". Routed through the filtered
             // overload so the predicate reaches the query rather than being applied afterwards.
@@ -112,6 +118,7 @@ namespace TheTechIdea.Beep.Editor.UOW
                 }
                 queryTimer.Stop();
                 RecordQueryHistory(null, queryTimer.Elapsed, querySucceeded);
+                CaptureLegacyReadOutcome(DataSource);
             }
             
             _suppressNotification = false;
@@ -132,6 +139,12 @@ namespace TheTechIdea.Beep.Editor.UOW
         public virtual async Task<ObservableBindingList<T>> Get(List<AppFilter> filters)
         {
             RejectMutationDuringRead();
+            if (!IsInListMode && DataSource is IOwnedEntityReadDataSource)
+            {
+                using var stage = await PrepareReadAsync(filters ?? new List<AppFilter>()).ConfigureAwait(false);
+                PublishAcknowledgedRead(stage);
+                return Units;
+            }
             // Applied here rather than at the call site — see UnitofWork.Tenancy.cs for why.
             // A null filter list stays null for an unscoped unit of work, preserving the
             // "no filtering requested" branch below.
@@ -175,6 +188,7 @@ namespace TheTechIdea.Beep.Editor.UOW
                 GetDataInUnits(retval);
                 queryTimer.Stop();
                 RecordQueryHistory(filters, queryTimer.Elapsed, succeeded: true);
+                CaptureLegacyReadOutcome(DataSource);
             }
             else
             {

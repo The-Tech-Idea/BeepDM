@@ -393,6 +393,7 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers
                 if (clrType == null)
                     return "VARCHAR(255)";
 
+                clrType = Nullable.GetUnderlyingType(clrType) ?? clrType;
                 var netTypeName = clrType.FullName ?? clrType.Name;
                 
                 // Get mappings for this datasource type
@@ -422,9 +423,14 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers
                         // varchar limits when the field carries no explicit size.
                         if (clrType == typeof(string) && dataType.Contains("(N)"))
                         {
-                            dataType = dataType.Replace("(N)", $"({size ?? 4000})");
+                            dataType = DataTypeMappingLookup.ResolveStringLength(
+                                dataType, size ?? 4000, SupportedType == DataSourceType.SqlServer);
                         }
-                        else if ((clrType == typeof(decimal) || clrType == typeof(float) || clrType == typeof(double)) 
+                        else if (clrType == typeof(decimal))
+                        {
+                            dataType = DataTypeMappingLookup.ResolveDecimalStorageType(dataType, precision, scale);
+                        }
+                        else if ((clrType == typeof(float) || clrType == typeof(double))
                                  && precision.HasValue && scale.HasValue && dataType.Contains("(P,S)"))
                         {
                             dataType = dataType.Replace("(P,S)", $"({precision.Value},{scale.Value})");
@@ -437,9 +443,12 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers
                 // Fallback to basic mapping logic
                 return MapClrTypeToDatabaseTypeFallback(clrType, size, precision, scale);
             }
-            catch
+            catch (Exception ex)
             {
-                return "VARCHAR(255)";  // Fallback for unknown types
+                _dmeEditor?.AddLogMessage("RdbmsHelper", "Could not map the declared CLR storage shape: " + ex.Message,
+                    DateTime.Now, 0, null, Errors.Failed);
+                if (clrType == typeof(decimal)) throw;
+                return "VARCHAR(255)";
             }
         }
 
@@ -507,7 +516,7 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers
             if (clrType == typeof(byte))
                 return "TINYINT";
             if (clrType == typeof(decimal))
-                return precision.HasValue && scale.HasValue ? $"DECIMAL({precision.Value},{scale.Value})" : "DECIMAL(18,2)";
+                return DataTypeMappingLookup.ResolveDecimalStorageType("DECIMAL(P,S)", precision, scale);
             if (clrType == typeof(double) || clrType == typeof(float))
                 return "FLOAT";
             if (clrType == typeof(DateTime))
@@ -724,8 +733,8 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers
             if (clrType != null)
             {
                 int? size = column.Size > 0 ? column.Size : null;
-                int? precision = column.NumericPrecision > 0 ? column.NumericPrecision : null;
-                int? scale = column.NumericScale > 0 ? column.NumericScale : null;
+                int? precision = column.NumericPrecision != 0 ? column.NumericPrecision : null;
+                int? scale = column.NumericPrecision != 0 || column.NumericScale != 0 ? column.NumericScale : null;
                 var mapped = MapClrTypeToDatasourceType(clrType, size, precision, scale);
                 // Honour [Unicode(false)] on string columns (default true preserves nvarchar/nchar/ntext).
                 return clrType == typeof(string) ? ApplyUnicodePreference(mapped, column.IsUnicode) : mapped;

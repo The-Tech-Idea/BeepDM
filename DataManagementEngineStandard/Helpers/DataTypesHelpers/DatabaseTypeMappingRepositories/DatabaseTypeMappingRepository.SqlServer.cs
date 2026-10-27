@@ -26,6 +26,8 @@ namespace TheTechIdea.Beep.Helpers.DataTypesHelpers
                 new DatatypeMapping { ID = 6, GuidID = Guid.NewGuid().ToString(), DataType = "datetime", DataSourceName = "SQLServerDataSource", NetDataType = "System.DateTime", Fav = false },
                 // Preserve time and fractional seconds when mapping CLR DateTime to SQL Server.
                 new DatatypeMapping { ID = 7, GuidID = Guid.NewGuid().ToString(), DataType = "datetime2", DataSourceName = "SQLServerDataSource", NetDataType = "System.DateTime", Fav = true },
+                // Keep the bare reverse mapping; forward decimal DDL must carry precision/scale.
+                new DatatypeMapping { ID = 0, GuidID = Guid.NewGuid().ToString(), DataType = "decimal(P,S)", DataSourceName = "SQLServerDataSource", NetDataType = "System.Decimal", Fav = true },
                 new DatatypeMapping { ID = 8, GuidID = Guid.NewGuid().ToString(), DataType = "decimal", DataSourceName = "SQLServerDataSource", NetDataType = "System.Decimal", Fav = false },
                 new DatatypeMapping { ID = 9, GuidID = Guid.NewGuid().ToString(), DataType = "float", DataSourceName = "SQLServerDataSource", NetDataType = "System.Double", Fav = false },
                 new DatatypeMapping { ID = 10, GuidID = Guid.NewGuid().ToString(), DataType = "image", DataSourceName = "SQLServerDataSource", NetDataType = "System.Byte[]", Fav = false },

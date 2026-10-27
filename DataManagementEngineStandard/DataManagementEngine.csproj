@@ -6,7 +6,7 @@
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <PackageId>TheTechIdea.Beep.DataManagementEngine</PackageId>
     <Authors>The Tech Idea</Authors>
-    <Version>3.1.1</Version>
+    <Version>3.2.2</Version>
 	<LangVersion>latest</LangVersion>
     <Product>TheTechIdea.Beep.DataManagementEngine</Product>
     <Description>Data Management Library</Description>
@@ -67,6 +67,8 @@
     <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.10" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.10" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+    <!-- NuGet.Packaging permits vulnerable PKCS 8.0.1; retain the patched compatible 8.x floor for every engine consumer. -->
+    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="8.0.2" />
     <PackageReference Include="NuGet.Common" Version="7.6.0" />
     <PackageReference Include="NuGet.DependencyResolver.Core" Version="7.6.0" />
     <PackageReference Include="NuGet.Frameworks" Version="7.6.0" />

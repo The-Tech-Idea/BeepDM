@@ -22,7 +22,7 @@ namespace TheTechIdea.Beep.Editor.UOW
             return text.ToString();
         }
 
-        private Dictionary<string, PropertyInfo> PageProperties()
+        private Dictionary<string, PropertyInfo> PageProperties(bool validateReadOnly = false)
         {
             var fields = EntityStructure?.Fields;
             if (fields == null || fields.Count == 0 || !fields.Any(field => field.IsKey))
@@ -33,7 +33,7 @@ namespace TheTechIdea.Beep.Editor.UOW
                 if (string.IsNullOrWhiteSpace(field.FieldName) || properties.ContainsKey(field.FieldName))
                     throw new NotSupportedException("Page fields must have unique nonempty names.");
                 var property = typeof(T).GetProperty(field.FieldName, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
-                if (property?.CanWrite != true || property.CanRead != true || property.GetIndexParameters().Length != 0)
+                if (property?.CanRead != true || (!property.CanWrite && !validateReadOnly) || property.GetIndexParameters().Length != 0)
                     throw new NotSupportedException("Page fields must map to readable/writable record properties.");
                 var type = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
                 if (!(type.IsPrimitive || type.IsEnum || type == typeof(string) || type == typeof(decimal) ||
@@ -47,7 +47,7 @@ namespace TheTechIdea.Beep.Editor.UOW
 
         private BoundedPageRequest QualifyPageRequest(BoundedPageRequest request)
         {
-            var properties = PageProperties();
+            var properties = PageProperties(request.ValidateReadOnlyScalars);
             var order = new List<PageOrder>();
             var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var column in request.Order)
@@ -67,7 +67,7 @@ namespace TheTechIdea.Beep.Editor.UOW
             if (response == null || response.RequestId != request.RequestId || response.PageNumber != request.PageNumber ||
                 response.PageSize != request.PageSize || response.TotalRecords < 0 || response.PayloadBytes > request.MaxPayloadBytes)
                 throw new InvalidOperationException("Provider page envelope or payload bound is invalid.");
-            var properties = PageProperties();
+            var properties = PageProperties(request.ValidateReadOnlyScalars);
             _ = new UTF8Encoding(false, true).GetCharCount(response.Payload.Span);
             using var document = JsonDocument.Parse(response.Payload, new JsonDocumentOptions { MaxDepth = 3 });
             var array = document.RootElement;
@@ -81,6 +81,7 @@ namespace TheTechIdea.Beep.Editor.UOW
                 token.ThrowIfCancellationRequested();
                 if (row.ValueKind != JsonValueKind.Object) throw new InvalidOperationException("Provider page has a non-object row.");
                 var record = new T();
+                var computed = new Dictionary<PropertyInfo, object>();
                 var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 foreach (var value in row.EnumerateObject())
                 {
@@ -89,9 +90,19 @@ namespace TheTechIdea.Beep.Editor.UOW
                         throw new InvalidOperationException("Provider page has an unknown, duplicate or nonscalar field.");
                     if (value.Value.ValueKind == JsonValueKind.Null && property.PropertyType.IsValueType && Nullable.GetUnderlyingType(property.PropertyType) == null)
                         throw new InvalidOperationException("Provider page has a null nonnullable field.");
-                    property.SetValue(record, value.Value.Deserialize(property.PropertyType));
+                    var decoded = value.Value.Deserialize(property.PropertyType);
+                    if (property.CanWrite) property.SetValue(record, decoded);
+                    else computed.Add(property, decoded);
                 }
                 if (seen.Count != properties.Count) throw new InvalidOperationException("Provider page omitted declared record fields.");
+                foreach (var value in computed)
+                {
+                    var actual = value.Key.GetValue(record); var expectedValue = value.Value;
+                    var matches = actual is byte[] actualBytes && expectedValue is byte[] expectedBytes ? actualBytes.SequenceEqual(expectedBytes) :
+                        actual is DateTime actualDate && expectedValue is DateTime expectedDate ? actualDate.Ticks == expectedDate.Ticks && actualDate.Kind == expectedDate.Kind :
+                        actual is DateTimeOffset actualOffset && expectedValue is DateTimeOffset expectedOffset ? actualOffset.EqualsExact(expectedOffset) : Equals(actual, expectedValue);
+                    if (!matches) throw new InvalidOperationException("Provider read-only scalar differs from the computed record value.");
+                }
                 var keyText = new StringBuilder();
                 foreach (var key in EntityStructure.Fields.Where(field => field.IsKey))
                 {

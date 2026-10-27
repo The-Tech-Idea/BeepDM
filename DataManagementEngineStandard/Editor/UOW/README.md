@@ -29,3 +29,7 @@ Unit of Work implementation for BeepDM stateful CRUD workflows.
 
 ## Multi-Source Coordination
 When parent-child entity consistency is required across units, use `MultiDataSourceUnitOfWork` to manage relationship mapping, navigation, and coordinated commits.
+
+## Optional atomic conditional batches
+
+[Conditional batches](CONDITIONAL-BATCH.md) document the bounded multi-entity physical transaction capability, tenant/clean-owner admission, known rollback and uncertain commit outcomes. It is adopted by the DoitAll approval engine; ordinary Commit keeps its existing contract.

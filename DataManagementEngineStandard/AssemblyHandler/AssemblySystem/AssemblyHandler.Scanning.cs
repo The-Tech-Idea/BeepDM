@@ -338,6 +338,7 @@ namespace TheTechIdea.Beep.Tools
                 try
                 {
                     ILoaderExtention cls = (ILoaderExtention)Activator.CreateInstance(item, new object[] { this });
+                    LoaderExtensionInstances.Add(cls);
                     cls.Scan(assembly);
                 }
                 catch (Exception ex)

@@ -11,6 +11,51 @@ namespace TheTechIdea.Beep.Helpers.RDBMSHelpers.DMLHelpers
     /// </summary>
     public static class DatabaseDMLUtilities
     {
+        /// <summary>Rejects oversized cells in SQL before ADO.NET can materialize them.
+        /// A leading marker makes refusal explicit; a rejected value is never returned as a truncated success.</summary>
+        public static List<string> GetBoundedPageProjection(DataSourceType type, IEnumerable<EntityField> fields, int bytes)
+        {
+            var checks = new List<string>();
+            var projection = new List<string>();
+            foreach (var field in fields)
+            {
+                var name = TheTechIdea.Beep.Extensions.DataSourceAppFilterExtensions.QuoteQueryIdentifier(field.FieldName, type);
+                var declared = Type.GetType(field.Fieldtype ?? "") ?? throw new NotSupportedException("Unknown page scalar type.");
+                declared = Nullable.GetUnderlyingType(declared) ?? declared;
+                if (field.FieldName == "__beep_page_limit") throw new NotSupportedException("Reserved page marker column.");
+                string length = null;
+                // SQLite's dynamic storage can put a large TEXT/BLOB in a declared numeric/date column too.
+                if (type == DataSourceType.SqlLite) length = "length(CAST(" + name + " AS BLOB))";
+                else if (type == DataSourceType.Postgre)
+                    length = declared == typeof(byte[]) ? "octet_length(" + name + ")" : "octet_length(CAST(" + name + " AS text))";
+                else if (type is DataSourceType.SqlServer or DataSourceType.AzureSQL)
+                    length = "DATALENGTH(" + name + ")";
+                else throw new NotSupportedException("This provider has no qualified cell byte bound.");
+                if (length == null) projection.Add(name);
+                else
+                {
+                    var bound = declared == typeof(byte[]) ? bytes / 4L * 3L : declared == typeof(char) ? 4 : bytes;
+                    var exceeds = length + " > " + bound;
+                    checks.Add(exceeds);
+                    projection.Add("CASE WHEN " + exceeds + " THEN NULL ELSE " + name + " END AS " + name);
+                }
+            }
+            projection.Insert(0, "CASE WHEN " + (checks.Count == 0 ? "1=0" : string.Join(" OR ", checks)) +
+                " THEN 1 ELSE 0 END AS " + TheTechIdea.Beep.Extensions.DataSourceAppFilterExtensions.QuoteQueryIdentifier("__beep_page_limit", type));
+            return projection;
+        }
+
+        /// <summary>Checked long offsets for providers admitted by the strict page owner.</summary>
+        public static string GetBoundedPagingSyntax(DataSourceType type, long offset, int size)
+        {
+            if (offset < 0 || size < 1) throw new ArgumentOutOfRangeException(nameof(offset));
+            if (type == DataSourceType.SqlServer || type == DataSourceType.AzureSQL)
+                return $"OFFSET {offset} ROWS FETCH NEXT {size} ROWS ONLY";
+            if (type == DataSourceType.Postgre || type == DataSourceType.SqlLite)
+                return $"LIMIT {size} OFFSET {offset}";
+            throw new NotSupportedException("This provider has no qualified bounded paging dialect.");
+        }
+
         /// <summary>
         /// Gets the SQL syntax for paging results
         /// </summary>
@@ -18,6 +63,7 @@ namespace TheTechIdea.Beep.Helpers.RDBMSHelpers.DMLHelpers
         /// <param name="pageNumber">Page number (1-based)</param>
         /// <param name="pageSize">Number of records per page</param>
         /// <returns>SQL paging syntax</returns>
+
         public static string GetPagingSyntax(DataSourceType dataSourceType, int pageNumber, int pageSize)
         {
             if (pageNumber < 1) pageNumber = 1;
@@ -52,6 +98,13 @@ namespace TheTechIdea.Beep.Helpers.RDBMSHelpers.DMLHelpers
             };
         }
 
+        /// <summary>Long count for the strict page envelope; SQL Server COUNT_BIG avoids Int32 overflow.</summary>
+        public static string GetBoundedRecordCountQuery(DataSourceType type, string quotedTable, string where)
+        {
+            var count = type is DataSourceType.SqlServer or DataSourceType.AzureSQL ? "COUNT_BIG(*)" : "COUNT(*)";
+            return "SELECT " + count + " FROM " + quotedTable + (string.IsNullOrWhiteSpace(where) ? "" : " WHERE " + where);
+        }
+
         /// <summary>
         /// Generates SQL to get the count of records in a table
         /// </summary>
@@ -60,6 +113,7 @@ namespace TheTechIdea.Beep.Helpers.RDBMSHelpers.DMLHelpers
         /// <param name="schemaName">Schema name (optional)</param>
         /// <param name="whereClause">Optional WHERE clause</param>
         /// <returns>SQL statement to count records</returns>
+
         public static string GetRecordCountQuery(DataSourceType dataSourceType, string tableName, string schemaName = null, string whereClause = null)
         {
             if (string.IsNullOrWhiteSpace(tableName))

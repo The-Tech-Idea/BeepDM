@@ -841,6 +841,7 @@ namespace TheTechIdea.Beep.Tools
                 {
                     var instance = _sharedContextManager.CreateInstance(extensionType.FullName, this) as ILoaderExtention;
                     if (instance == null) continue;
+                    LoaderExtensionInstances.Add(instance);
 
                     foreach (var assembly in _loadedAssemblies)
                     {
@@ -1723,6 +1724,7 @@ namespace TheTechIdea.Beep.Tools
         {
             if (!_disposed)
             {
+                var extensionFailures = LoaderExtensionLifetime.Release(LoaderExtensionInstances);
                 // Unsubscribe from AssemblyLoad event to prevent memory leaks
                 if (_assemblyLoadHandler != null)
                 {
@@ -1742,6 +1744,7 @@ namespace TheTechIdea.Beep.Tools
                 _disposed = true;
                 
                 Logger?.LogWithContext("SharedContextAssemblyHandler disposed with full cleanup", null);
+                if (extensionFailures.Count != 0) throw new AggregateException("Loader extension cleanup failed.", extensionFailures);
             }
         }
         #endregion

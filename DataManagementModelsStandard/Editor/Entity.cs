@@ -10,7 +10,7 @@ namespace TheTechIdea.Beep.Editor
     {
         public event PropertyChangedEventHandler PropertyChanged;
 
-        internal Entity CopyWithoutObservers()
+        protected internal Entity CopyWithoutObservers()
         {
             var copy = (Entity)MemberwiseClone();
             copy.PropertyChanged = null;

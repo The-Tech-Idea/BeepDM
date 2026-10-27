@@ -492,7 +492,7 @@ namespace TheTechIdea.Beep.Editor.UOW.Helpers
                 {
                     if (value is string dateString)
                     {
-                        return DateTime.TryParse(dateString, out var dateValue) ? dateValue : DateTime.MinValue;
+                        return DateTime.TryParse(dateString, System.Globalization.CultureInfo.CurrentCulture, System.Globalization.DateTimeStyles.RoundtripKind, out var dateValue) ? dateValue : DateTime.MinValue;
                     }
                 }
 

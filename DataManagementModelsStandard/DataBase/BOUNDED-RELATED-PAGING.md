@@ -1,0 +1,25 @@
+# Bounded related paging
+
+The optional IBoundedRelatedPagedDataSource capability extends the existing bounded page contract. Consumers requiring related predicates must check this capability before a read. UnitofWork<T>.PreparePageReadAsync does this check and refuses older producers before provider work. The existing five- and six-argument request constructors remain available; ordinary requests need only IBoundedPagedDataSource.
+
+A request supplies up to eight positive PageRelatedFilter alternatives. Each names an entity already declared in the producer's metadata, one to four parent/related key correlations, required filters and optional alternative filters. The parent cohort is its required filters AND its optional search alternatives AND an OR group of related EXISTS predicates. An EXISTS match never duplicates a parent because several assignments match. Each relation's required filters and optional OR alternatives are applied inside that relation. Negative joins, arbitrary query text, projections, nested relations and undeclared fields are unavailable.
+
+PageRelatedFilter copies mutable AppFilter values and key arrays. BoundedPageRequest copies the relation collection; WithValues preserves it and the original request ID while UnitofWork injects current tenant filters and the complete primary-key order. Required and alternative parent/related filters together are bounded to 64. A related group has at most 16 filters. Existing row, encoded payload, complete schema, unique key, count/page and cancellation checks still apply.
+
+## One query owner and an actual consumer
+
+DataSourceAppFilterExtensions.BuildBoundedSelectQueryDefinition owns predicate construction. Related requests require cached parent and related metadata and the provider's existing schema/identifier quoting callback. Correlation keys must have matching declared underlying scalar types. Required values are parameters; declared identifiers and aliases are quoted. The original helper overload refuses relations because it cannot qualify the related entity itself.
+
+Models/Engine 3.1.2 publish the extended contracts and admission gate. RDBSource 2.1.4 implements the optional capability using its existing independent read connection and transaction. Count and page use the same predicate and snapshot. SQLite and SQL Server/Azure SQL use serializable reads; PostgreSQL uses repeatable read. Current physical acceptance is limited to the recorded SQLite fixtures; live PostgreSQL/SQL Server schema, indexing, latency, cancellation, concurrency and clock behavior are separate gates. Contract support does not imply those installations are qualified.
+
+The DoitAll ApprovalService inbox is the production consumer. Its personal cohort correlates ApprovalRequest.Id/CompanyId to ApprovalStep.ApprovalRequestId/CompanyId and matches active pending original, delegated or escalated assignments. Delegated assignments must have no expiry or a future expiry. The explicit company view omits assignment relations under the existing approval read policy. Current account, membership, stored roles and company are independently admitted by the application; a provider relation is a query constraint, never authorization. Neither raw SQL nor a new identity/permission owner enters the application.
+
+## SQLite dates and scope
+
+The physical expiry regression initially included an expired ISO T/Z deadline when Microsoft.Data.Sqlite bound a space-separated DateTime parameter. The bounded helper now wraps both operands of typed direct DateTime comparisons in SQLite julianday and normalizes Local parameters to UTC. Unspecified values follow SQLite's documented UTC interpretation. This correction is confined to bounded direct comparisons; it does not rewrite the legacy query builder or qualify every historical timestamp store.
+
+SQLite date functions have millisecond significance. A future expiry indistinguishable at that precision can be refused early; the inbox does not round it forward. The actual decision owner independently rechecks expiry and current assignment. Sub-millisecond decision contracts and cross-provider timezone/storage acceptance remain open. Sources checked 2026-10-11: [SQLite date functions](https://www.sqlite.org/lang_datefunc.html), [Microsoft.Data.Sqlite types](https://learn.microsoft.com/en-us/dotnet/standard/data/sqlite/types).
+
+Approval readiness is observed through separate bounded request, step and rule reads. Only the parent count/page is one coherent snapshot. No cross-table read snapshot, source revision or durable write outcome is asserted by this contract. The existing atomic decision owner re-admits execution; browser/source intent and operation replay are separate application work.
+
+Focused provider and actual application evidence belongs to [Doc36](../../../Beep.DoitAll/docs/plan/odoo-saas-review/36-personal-approval-inbox.md). Shared contract changes must be rebuilt into their consumers before acceptance; a selected test against stale copied assemblies is not proof.

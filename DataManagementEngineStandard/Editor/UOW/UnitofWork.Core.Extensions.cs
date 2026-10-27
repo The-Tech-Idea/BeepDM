@@ -273,6 +273,23 @@ namespace TheTechIdea.Beep.Editor.UOW
             finally { Volatile.Write(ref _commitAdmission, 0); }
         }
 
+        private void ResolveFailedOwnedBegin(IOwnedTransactionDataSource source, object owner, ErrorsInfo result)
+        {
+            if (source == null) return;
+            try
+            {
+                if (!source.OwnsTransaction(owner)) return;
+                var cleanup = source.RollbackOwnedTransaction(owner);
+                if (cleanup?.Flag != Errors.Ok)
+                    result.Errors.Add(cleanup ?? new ErrorsInfo { Flag = Errors.Failed, Message = "Owned begin cleanup returned no outcome." });
+            }
+            catch (Exception cleanupError)
+            {
+                result.Errors.Add(new ErrorsInfo { Flag = Errors.Failed, Message = "Owned begin cleanup failed.", Ex = cleanupError });
+                DMEEditor?.AddLogMessage("UnitOfWork", "Owned begin cleanup failed: " + cleanupError, DateTime.Now, 0, DatasourceName, Errors.Failed);
+            }
+        }
+
         private async Task<IErrorsInfo> CommitOwnedAsync(IProgress<PassedArgs> progress, CancellationToken token)
         {
             var result = new ErrorsInfo { Flag = Errors.Ok };
@@ -319,16 +336,34 @@ namespace TheTechIdea.Beep.Editor.UOW
                     var useTransaction = DataSourceCapabilityMatrix.Supports(
                         DataSource.DatasourceType, CapabilityType.SupportsTransactions);
 
+                    var ownedTransactions = DataSource as IOwnedTransactionDataSource;
+                    var transactionOwner = new object();
+                    if (useTransaction && ownedTransactions != null && !ownedTransactions.SupportsOwnedTransactions)
+                        return new ErrorsInfo { Flag = Errors.Failed, Message = "This provider has not qualified explicit transaction ownership." };
                     if (useTransaction)
                     {
-                        var beginTransactionResult = DataSource.BeginTransaction(new PassedArgs());
-                        if (beginTransactionResult.Flag != Errors.Ok)
+                        IErrorsInfo beginTransactionResult;
+                        try
+                        {
+                            beginTransactionResult = ownedTransactions != null
+                                ? ownedTransactions.BeginOwnedTransaction(transactionOwner)
+                                : DataSource.BeginTransaction(new PassedArgs());
+                        }
+                        catch
+                        {
+                            ResolveFailedOwnedBegin(ownedTransactions, transactionOwner, result);
+                            throw;
+                        }
+                        if (beginTransactionResult?.Flag != Errors.Ok)
                         {
                             // A source that *does* support transactions failing to
                             // start one is a real error — writing unprotected here
                             // would be the wrong call.
                             result.Flag = Errors.Failed;
-                            result.Message = $"Failed to begin transaction: {beginTransactionResult.Message}";
+                            ResolveFailedOwnedBegin(ownedTransactions, transactionOwner, result);
+                            result.Ex = beginTransactionResult?.Ex;
+                            if (beginTransactionResult?.Errors != null) result.Errors.AddRange(beginTransactionResult.Errors);
+                            result.Message = $"Failed to begin transaction: {beginTransactionResult?.Message ?? "no result"}";
                             return result;
                         }
                     }
@@ -387,10 +422,14 @@ namespace TheTechIdea.Beep.Editor.UOW
                         if (useTransaction)
                         {
                             token.ThrowIfCancellationRequested();
-                            var commitResult = DataSource.Commit(new PassedArgs());
+                            var commitResult = ownedTransactions != null
+                                ? ownedTransactions.CommitOwnedTransaction(transactionOwner)
+                                : DataSource.Commit(new PassedArgs());
+                            if (commitResult?.Errors != null) result.Errors.AddRange(commitResult.Errors);
                             if (commitResult?.Flag != Errors.Ok)
                             {
                                 result.Flag = Errors.Failed;
+                                result.Ex = commitResult?.Ex;
                                 result.Message = $"Transaction commit failed: {commitResult?.Message}";
                                 return result;
                             }
@@ -424,7 +463,9 @@ namespace TheTechIdea.Beep.Editor.UOW
                             if (pendingCommit != null) Units.DiscardCommit(pendingCommit);
                             try
                             {
-                                var rollback = DataSource.EndTransaction(new PassedArgs());
+                                var rollback = ownedTransactions != null
+                                    ? ownedTransactions.RollbackOwnedTransaction(transactionOwner)
+                                    : DataSource.EndTransaction(new PassedArgs());
                                 if (rollback?.Flag != Errors.Ok)
                                 {
                                     result.Errors.Add(new ErrorsInfo { Flag = Errors.Failed, Message = $"Rollback failed: {rollback?.Message}" });
@@ -500,51 +541,17 @@ namespace TheTechIdea.Beep.Editor.UOW
         /// Rolls back all uncommitted changes
         /// </summary>
         /// <returns>Result of the rollback operation</returns>
-        public async Task<IErrorsInfo> Rollback()
+        public Task<IErrorsInfo> Rollback()
         {
-            if (Volatile.Read(ref _commitAdmission) != 0)
-                return new ErrorsInfo { Flag = Errors.Failed, Message = "Resolve the active commit before discarding edits." };
+            if (Interlocked.CompareExchange(ref _commitAdmission, 1, 0) != 0)
+                return Task.FromResult<IErrorsInfo>(new ErrorsInfo { Flag = Errors.Failed, Message = "Resolve the active commit before discarding edits." });
             var result = new ErrorsInfo { Flag = Errors.Ok };
 
             try
             {
-                // Only end a transaction on a source that has them.
-                //
-                // This called EndTransaction unconditionally and failed the whole
-                // rollback if the result was not Ok — the same defect fixed in
-                // Commit(), in its sibling method, and missed at the time. Every
-                // non-transactional source (JSON, CSV, file, cache) answers
-                // "Transactions not supported", so the method returned Failed
-                // *before* reaching RejectChanges: rolling back was impossible on
-                // any of them, and so was anything built on it —
-                // FormsManager.RollbackToSavepointAsync bails when this fails, so
-                // savepoint restore was dead too. (2026-08-02)
-                // A failure here must NOT abandon the in-memory rollback.
-                //
-                // Rollback does two things: abort any open database transaction,
-                // and discard the pending changes in the collection. Returning
-                // early on the first left the second undone — and there is
-                // usually no transaction open at all, because Commit opens and
-                // closes its own, so EndTransaction fails with nothing to end.
-                // The result was the worst of both: the pending write was
-                // discarded, the row underneath reverted, and the edited value
-                // stayed in the block, so the user saw their edit still on screen
-                // after rolling it back. The in-memory rollback below is
-                // unconditional now. (2026-08-03)
-                if (!IsInListMode && DataSource != null &&
-                    DataSourceCapabilityMatrix.Supports(
-                        DataSource.DatasourceType, CapabilityType.SupportsTransactions))
-                {
-                    var rollbackResult = DataSource.EndTransaction(new PassedArgs());
-                    if (rollbackResult.Flag != Errors.Ok)
-                    {
-                        DMEEditor?.AddLogMessage("UnitofWork",
-                            $"Rollback: EndTransaction reported '{rollbackResult.Message}' " +
-                            "(usually means no transaction was open); discarding in-memory changes anyway.",
-                            DateTime.Now, -1, null, Errors.Ok);
-                    }
-                }
-
+                // This operation discards this buffer only. CommitOwnedAsync opens and resolves
+                // its own transaction in its finally path; an enlisted coordinator resolves its
+                // own transaction. A shared datasource transaction may belong to another UoW.
                 // Delegate to OBL's RejectChanges which restores original values,
                 // re-adds deleted items, removes added items, and resets states
                 if (Units != null)
@@ -572,7 +579,9 @@ namespace TheTechIdea.Beep.Editor.UOW
                     DateTime.Now, -1, null, Errors.Failed);
             }
 
-            return result;
+            finally { Volatile.Write(ref _commitAdmission, 0); }
+
+            return Task.FromResult<IErrorsInfo>(result);
         }
 
         /// <summary>
