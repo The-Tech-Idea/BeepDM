@@ -262,3 +262,8 @@ The Mavis cross-project equivalent of this skill lives at `.harness/skills/beepd
 
 ## Detailed Reference
 Use [`reference.md`](./reference.md) for method-level examples and OBL passthrough patterns.
+## Detached stored-column projection (2026-10-28)
+
+`IUnitofWorkStoredProjectionRead` is an optional read capability implemented by `UnitofWork<T>` and delegated by `UnitOfWorkWrapper`. Its producer must implement `IBoundedStoredProjectionDataSource`. Select declared scalar columns, including the complete primary key, tenant field when scoped, and order fields. The result is immutable `StoredProjectionPage`/`StoredProjectionRow` data; it never publishes partial entities to `Units` or grants write/authorization authority. Unsupported adapters/providers refuse without a legacy fallback.
+
+The owner retains clean-buffer, scope/schema/target retirement, independent tenant filtering, coherent bounded count/page, strict payload/type/key validation and awaited cancellation. Stored projection reads do not evaluate computed getters; full-record read-only scalar validation remains unchanged. Current native verification is SQL Server LocalDB on Windows/net10.0 through DoitAll's normal SDK/MigrationManager fixture, plus controlled protocol faults; other frameworks/providers and package consumers remain unverified. DoitAll Doc239 records the application regression and focused evidence.

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
@@ -30,7 +30,7 @@ namespace TheTechIdea.Beep.Editor.UOW
     // Array.Empty for every block while ClearBlockQueryHistory did nothing.
     // GetChangeSummary, GetQueryHistory, ClearQueryHistory and CloneItem were all
     // already here — only the declaration was missing. (2026-08-03)
-    public class UnitOfWorkWrapper : IUnitOfWorkWrapper, IUnitofWork, IAggregatable, IUndoable, IUnitofWorkHistory, IEnlistedUnitofWork, IStagedUnitofWorkRead, IStagedUnitofWorkPageRead, IUnitofWorkRecordRevision, IUnitofWorkReadBufferIdentity
+    public class UnitOfWorkWrapper : IUnitOfWorkWrapper, IUnitofWork, IAggregatable, IUndoable, IUnitofWorkHistory, IEnlistedUnitofWork, IStagedUnitofWorkRead, IStagedUnitofWorkPageRead, IUnitofWorkRecordRevision, IUnitofWorkReadBufferIdentity, IUnitofWorkStoredProjectionRead
     {
         private dynamic _unitOfWork;
         private bool _disposed = false;
@@ -58,6 +58,14 @@ namespace TheTechIdea.Beep.Editor.UOW
                 return source.TryGetRecordRevision(out revision);
             revision = 0;
             return false;
+        }
+
+        public bool SupportsStoredProjectionRead => !_disposed &&
+            (object)_unitOfWork is IUnitofWorkStoredProjectionRead reader && reader.SupportsStoredProjectionRead;
+        public Task<StoredProjectionPage> ReadStoredProjectionPageAsync(BoundedPageRequest request,IEnumerable<string> fields,CancellationToken cancellationToken=default)
+        {
+            if(!SupportsStoredProjectionRead)throw new NotSupportedException("Underlying UoW does not support detached stored projections.");
+            return ((IUnitofWorkStoredProjectionRead)(object)_unitOfWork).ReadStoredProjectionPageAsync(request,fields,cancellationToken);
         }
 
         public bool SupportsStagedRead => !_disposed &&
