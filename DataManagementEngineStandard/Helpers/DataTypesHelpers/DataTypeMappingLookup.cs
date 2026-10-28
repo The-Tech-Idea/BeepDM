@@ -408,7 +408,8 @@ namespace TheTechIdea.Beep.Helpers.DataTypesHelpers
                     DataSourceName = sizeMapping.DataSourceName,
                     NetDataType = sizeMapping.NetDataType,
                     DataType = ResolveStringLength(sizeMapping.DataType, size,
-                        string.Equals(sizeMapping.DataSourceName, "SQLServerDataSource", StringComparison.OrdinalIgnoreCase))
+                        string.Equals(sizeMapping.DataSourceName, "SQLServerDataSource", StringComparison.OrdinalIgnoreCase),
+                        string.Equals(sizeMapping.DataSourceName, "PostgreDataSource", StringComparison.OrdinalIgnoreCase))
                 };
                 return result;
             }
@@ -467,7 +468,8 @@ namespace TheTechIdea.Beep.Helpers.DataTypesHelpers
                 if (dt != null)
                 {
                     return ResolveStringLength(dt.DataType, fld.Size1,
-                        string.Equals(className, "SQLServerDataSource", StringComparison.OrdinalIgnoreCase));
+                        string.Equals(className, "SQLServerDataSource", StringComparison.OrdinalIgnoreCase),
+                        string.Equals(className, "PostgreDataSource", StringComparison.OrdinalIgnoreCase));
                 }
             }
 
@@ -496,8 +498,15 @@ namespace TheTechIdea.Beep.Helpers.DataTypesHelpers
         // byte-pairs/bytes. Larger declared payloads need its large-value type;
         // substituting the requested number emits DDL the server cannot execute.
         // Keep this provider rule shared by configured lookups and migration DDL.
-        internal static string ResolveStringLength(string template, int size, bool sqlServer)
+        internal static string ResolveStringLength(string template, int size, bool sqlServer, bool postgre = false)
         {
+            // PostgreSQL caps declared varchar(n) at 10,485,760 characters. Its
+            // unbounded variable type preserves the complete string domain; fixed
+            // char mappings retain their distinct padding semantics.
+            if (postgre && size > 10485760 &&
+                (template.Equals("varchar(N)", StringComparison.OrdinalIgnoreCase) ||
+                 template.Equals("character varying(N)", StringComparison.OrdinalIgnoreCase)))
+                return template.Replace("(N)", "");
             var largeValue = sqlServer &&
                 ((size > 4000 && template.Equals("nvarchar(N)", StringComparison.OrdinalIgnoreCase)) ||
                  (size > 8000 && template.Equals("varchar(N)", StringComparison.OrdinalIgnoreCase)));
@@ -578,7 +587,8 @@ namespace TheTechIdea.Beep.Helpers.DataTypesHelpers
                 if (dt != null)
                 {
                     return ResolveStringLength(dt.DataType, fld.Size1,
-                        string.Equals(className, "SQLServerDataSource", StringComparison.OrdinalIgnoreCase));
+                        string.Equals(className, "SQLServerDataSource", StringComparison.OrdinalIgnoreCase),
+                        string.Equals(className, "PostgreDataSource", StringComparison.OrdinalIgnoreCase));
                 }
             }
 
