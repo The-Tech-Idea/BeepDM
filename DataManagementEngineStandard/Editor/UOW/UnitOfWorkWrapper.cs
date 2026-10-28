@@ -30,7 +30,7 @@ namespace TheTechIdea.Beep.Editor.UOW
     // Array.Empty for every block while ClearBlockQueryHistory did nothing.
     // GetChangeSummary, GetQueryHistory, ClearQueryHistory and CloneItem were all
     // already here — only the declaration was missing. (2026-08-03)
-    public class UnitOfWorkWrapper : IUnitOfWorkWrapper, IUnitofWork, IAggregatable, IUndoable, IUnitofWorkHistory, IEnlistedUnitofWork, IStagedUnitofWorkRead, IStagedUnitofWorkPageRead, IUnitofWorkRecordRevision, IUnitofWorkReadBufferIdentity, IUnitofWorkStoredProjectionRead
+    public class UnitOfWorkWrapper : IUnitOfWorkWrapper, IUnitofWork, IAggregatable, IUndoable, IUnitofWorkHistory, IEnlistedUnitofWork, IStagedUnitofWorkRead, IStagedUnitofWorkPageRead, IUnitofWorkRecordRevision, IUnitofWorkReadBufferIdentity, IUnitofWorkStoredProjectionRead, IUnitofWorkStoredProjectionGuardRead, IUnitofWorkProjectionGuardedBatch
     {
         private dynamic _unitOfWork;
         private bool _disposed = false;
@@ -62,6 +62,21 @@ namespace TheTechIdea.Beep.Editor.UOW
 
         public bool SupportsStoredProjectionRead => !_disposed &&
             (object)_unitOfWork is IUnitofWorkStoredProjectionRead reader && reader.SupportsStoredProjectionRead;
+        public Task<ConditionalStoredProjectionGuard> PrepareStoredProjectionGuardAsync(BoundedPageRequest request,IEnumerable<string> fields,CancellationToken cancellationToken=default)
+        {
+            if(!SupportsStoredProjectionGuardRead||(object)_unitOfWork is not IUnitofWorkStoredProjectionGuardRead reader)
+                throw new NotSupportedException("Underlying UoW cannot prepare complete stored projection guards.");
+            return reader.PrepareStoredProjectionGuardAsync(request,fields,cancellationToken);
+        }
+        public bool SupportsStoredProjectionGuardRead => !_disposed&&
+            (object)_unitOfWork is IUnitofWorkStoredProjectionGuardRead reader&&reader.SupportsStoredProjectionGuardRead;
+        public bool SupportsProjectionGuardedBatch => !_disposed&&
+            (object)_unitOfWork is IUnitofWorkProjectionGuardedBatch writer&&writer.SupportsProjectionGuardedBatch;
+        public Task<ConditionalMutationBatchResponse> MutateProjectionGuardedBatchAsync(ProjectionGuardedMutationBatchRequest request,CancellationToken cancellationToken=default)
+        {
+            if(!SupportsProjectionGuardedBatch)throw new NotSupportedException("Underlying UoW cannot enforce stored projection batch guards.");
+            return ((IUnitofWorkProjectionGuardedBatch)(object)_unitOfWork).MutateProjectionGuardedBatchAsync(request,cancellationToken);
+        }
         public Task<StoredProjectionPage> ReadStoredProjectionPageAsync(BoundedPageRequest request,IEnumerable<string> fields,CancellationToken cancellationToken=default)
         {
             if(!SupportsStoredProjectionRead)throw new NotSupportedException("Underlying UoW does not support detached stored projections.");

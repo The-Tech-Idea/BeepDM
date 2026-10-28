@@ -14,13 +14,24 @@ using TheTechIdea.Beep.Report;
 
 namespace TheTechIdea.Beep.Editor.UOW
 {
-    public partial class UnitofWork<T> : IUnitofWorkStoredProjectionRead
+    public partial class UnitofWork<T> : IUnitofWorkStoredProjectionRead, IUnitofWorkStoredProjectionGuardRead
     {
         public virtual bool SupportsStoredProjectionRead => SupportsStagedPageRead && DataSource is IBoundedStoredProjectionDataSource &&
             GetType().GetMethod(nameof(PreparePageReadAsync),new[]{typeof(BoundedPageRequest),typeof(CancellationToken)})?.DeclaringType==typeof(UnitofWork<T>);
+        public bool SupportsStoredProjectionGuardRead => SupportsStoredProjectionRead &&
+            GetType().GetMethod(nameof(ReadStoredProjectionPageAsync),new[]{typeof(BoundedPageRequest),typeof(IEnumerable<string>),typeof(CancellationToken)})?.DeclaringType==typeof(UnitofWork<T>)&&
+            GetType().GetMethod(nameof(PrepareStoredProjectionGuardAsync),new[]{typeof(BoundedPageRequest),typeof(IEnumerable<string>),typeof(CancellationToken)})?.DeclaringType==typeof(UnitofWork<T>);
 
         public virtual async Task<StoredProjectionPage> ReadStoredProjectionPageAsync(BoundedPageRequest request,
             IEnumerable<string> fields, CancellationToken cancellationToken=default)
+            => (await ReadStoredProjectionCoreAsync(request,fields,false,cancellationToken).ConfigureAwait(false)).Page;
+
+        public virtual async Task<ConditionalStoredProjectionGuard> PrepareStoredProjectionGuardAsync(BoundedPageRequest request,
+            IEnumerable<string> fields, CancellationToken cancellationToken=default)
+            => (await ReadStoredProjectionCoreAsync(request,fields,true,cancellationToken).ConfigureAwait(false)).Guard;
+
+        private async Task<(StoredProjectionPage Page,ConditionalStoredProjectionGuard Guard)> ReadStoredProjectionCoreAsync(BoundedPageRequest request,
+            IEnumerable<string> fields,bool prepareGuard,CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(request);ArgumentNullException.ThrowIfNull(fields);
             cancellationToken.ThrowIfCancellationRequested();
@@ -29,6 +40,7 @@ namespace TheTechIdea.Beep.Editor.UOW
             try
             {
                 if(!SupportsStoredProjectionRead)throw new NotSupportedException("This UoW/provider does not support detached bounded stored projections.");
+                if(prepareGuard&&!SupportsStoredProjectionGuardRead)throw new NotSupportedException("An adapter that replaces projection reads requires its own qualified guard preparation.");
                 if(request.ValidateReadOnlyScalars)throw new ArgumentException("A stored projection does not evaluate calculated entity getters.");
                 stage=new ReadStage(this,cancellationToken,true);stage.CheckTarget();
                 var selected=fields.ToArray();
@@ -69,9 +81,11 @@ namespace TheTechIdea.Beep.Editor.UOW
                     Array.AsReadOnly(properties.Keys.ToArray()),cancellationToken).ConfigureAwait(false);
                 stage.CheckTarget();
                 var result=DecodeStoredProjection(qualified,response,properties,keys.Select(key=>key.FieldName).ToArray(),cancellationToken);
+                var guard=prepareGuard?new ConditionalStoredProjectionGuard(stage.EntityName,qualified,properties.Keys,
+                    keys.Select(key=>key.FieldName),result):null;
                 stage.CheckTarget();
                 ReadOutcome=new ErrorsInfo{Flag=Errors.Ok,Message="Detached bounded stored projection acknowledged."};
-                return result;
+                return(result,guard);
             }
             catch(Exception ex)
             {
