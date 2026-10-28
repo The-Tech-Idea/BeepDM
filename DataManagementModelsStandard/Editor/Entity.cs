@@ -24,7 +24,16 @@ namespace TheTechIdea.Beep.Editor
 
         protected virtual void SetProperty<T>(ref T field, T value, [CallerMemberName] string propertyName = null)
         {
-            if (!EqualityComparer<T>.Default.Equals(field, value))
+            // Default temporal equality ignores DateTime.Kind and DateTimeOffset.Offset.
+            // A materializer must retain the provider-observed representation even when
+            // constructor defaults have the same ticks/instant. Nullable values box as
+            // their underlying temporal type; null/ordinary scalar equality stays intact.
+            var same = field is DateTime beforeDate && value is DateTime afterDate
+                ? beforeDate.Ticks == afterDate.Ticks && beforeDate.Kind == afterDate.Kind
+                : field is DateTimeOffset beforeOffset && value is DateTimeOffset afterOffset
+                    ? beforeOffset.EqualsExact(afterOffset)
+                    : EqualityComparer<T>.Default.Equals(field, value);
+            if (!same)
             {
                 field = value;
                 OnPropertyChanged(propertyName);
