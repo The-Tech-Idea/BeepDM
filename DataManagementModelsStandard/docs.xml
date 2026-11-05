@@ -1589,6 +1589,183 @@
             </summary>
             <returns>Dictionary mapping datasource type to capability summary</returns>
         </member>
+        <member name="T:TheTechIdea.Beep.DataBase.ConditionalCohortSelector">
+            <summary>Bounded selector for a count-only reference-integrity check; no row materialization or authority grant.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.ConditionalCohortSelector.EntityName">
+            <summary>Declared reference entity.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.ConditionalCohortSelector.Request">
+            <summary>Copied immutable predicates. Paging, ordering and computed getters are not part of a count.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.ConditionalCohortSelector.#ctor(System.String,TheTechIdea.Beep.DataBase.BoundedPageRequest)">
+            <summary>Require explicit predicates and no unused paging/order metadata.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.DataBase.ConditionalCohortComparison">
+            <summary>Require equal complete counts in the same transaction. Counts may exceed interactive row limits.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.ConditionalCohortComparison.#ctor(TheTechIdea.Beep.DataBase.ConditionalCohortSelector,TheTechIdea.Beep.DataBase.ConditionalCohortSelector)">
+            <summary>Require equal complete counts in the same transaction. Counts may exceed interactive row limits.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.DataBase.IComparedCohortMutationBatchDataSource">
+            <summary>Optional capability; producers without it must refuse comparisons rather than ignore them.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.IComparedCohortMutationBatchDataSource.SupportsCohortComparisons">
+            <summary>Whether complete cohort equality is enforced before writes and commit.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.DataBase.ConditionalDateRange">
+            <summary>A bounded physical date/time interval, without time-zone conversion or clock semantics.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.ConditionalDateRange.FieldName">
+            <summary>Declared DateTime metadata field.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.ConditionalDateRange.From">
+            <summary>Physical lower endpoint (Unspecified kind).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.ConditionalDateRange.Through">
+            <summary>Physical upper endpoint (Unspecified kind).</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.ConditionalDateRange.IncludeFrom">
+            <summary>Whether the lower endpoint belongs to the interval.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.ConditionalDateRange.IncludeThrough">
+            <summary>Whether the upper endpoint belongs to the interval.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.ConditionalDateRange.#ctor(System.String,System.DateTime,System.DateTime,System.Boolean,System.Boolean)">
+            <summary>Copies a nonempty physical interval. Callers must explicitly resolve instant/calendar meaning before capture.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.DataBase.ConditionalMutationBatchBudget">
+            <summary>Explicit physical batch budget; neither value grants application permissions.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.DataBase.ConditionalMutationBatchBudget.Standard">
+            <summary>Existing 64-operation and 8192-scalar contract.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.DataBase.ConditionalMutationBatchBudget.Document">
+            <summary>Complete documents: 1024 operations, 512 cohorts, 65536 scalars and16 MiB encoded request.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.DataBase.ConditionalMutationBatchRequest">
+            <summary>Immutable transaction data; the app owns authorization and observation.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.ConditionalMutationBatchRequest.RequestId">
+            <summary>Transaction correlation identifier.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.ConditionalMutationBatchRequest.Mutations">
+            <summary>Ordered operations; every operation must change exactly one row.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.ConditionalMutationBatchRequest.Guards">
+            <summary>Required observed foreign rows, evaluated before changes.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.ConditionalMutationBatchRequest.Sets">
+            <summary>Required cohort cardinalities, evaluated before changes.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.ConditionalMutationBatchRequest.CommitGuards">
+            <summary>Stable authority/time guards rechecked immediately before commit.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.ConditionalMutationBatchRequest.Budget">
+            <summary>Selected explicit request budget.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.ConditionalMutationBatchRequest.#ctor(System.Collections.Generic.IEnumerable{TheTechIdea.Beep.DataBase.ConditionalMutationRequest},System.Collections.Generic.IEnumerable{TheTechIdea.Beep.DataBase.ConditionalGuardGroup},System.Collections.Generic.IEnumerable{TheTechIdea.Beep.DataBase.ConditionalRowSetGuard},System.Collections.Generic.IEnumerable{TheTechIdea.Beep.DataBase.ConditionalGuardGroup})">
+            <summary>Copies a bounded, nonempty transaction: at most 64 operations, 128 row groups, 64 cohorts, 16 commit groups and 8192 aggregate scalar observations. Complete source-bound line revisions can retain per-line identity absence checks without splitting the physical transaction.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.ConditionalMutationBatchRequest.#ctor(System.Collections.Generic.IEnumerable{TheTechIdea.Beep.DataBase.ConditionalMutationRequest},System.Collections.Generic.IEnumerable{TheTechIdea.Beep.DataBase.ConditionalGuardGroup},System.Collections.Generic.IEnumerable{TheTechIdea.Beep.DataBase.ConditionalRowSetGuard},System.Collections.Generic.IEnumerable{TheTechIdea.Beep.DataBase.ConditionalGuardGroup},TheTechIdea.Beep.DataBase.ConditionalMutationBatchBudget)">
+            <summary>Copies one complete explicitly bounded document without changing the existing standard constructor.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.DataBase.ConditionalMutationBatchResponse">
+            <summary>Acknowledged row count; null means unknown, never zero work.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.ConditionalMutationBatchResponse.RequestId">
+            <summary>Transaction correlation identifier.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.ConditionalMutationBatchResponse.Status">
+            <summary>Physical transaction outcome.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.ConditionalMutationBatchResponse.ChangedRows">
+            <summary>Confirmed changed rows, or null for an uncertain outcome.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.ConditionalMutationBatchResponse.Failure">
+            <summary>Full internal failure; never display to users.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.ConditionalMutationBatchResponse.#ctor(System.Guid,TheTechIdea.Beep.DataBase.ConditionalMutationBatchStatus,System.Nullable{System.Int32},System.Exception)">
+            <summary>Validates a physical acknowledgement up to the document ceiling; callers still require exact request correlation and operation count.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.DataBase.ConditionalMutationBatchStatus">
+            <summary>Atomic outcomes distinguish acknowledged rollback from uncertain commit.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.DataBase.ConditionalMutationBatchStatus.Applied">
+            <summary>All operations and commit acknowledged.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.DataBase.ConditionalMutationBatchStatus.NoMatch">
+            <summary>An observation did not match; rollback acknowledged.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.DataBase.ConditionalMutationBatchStatus.NotApplied">
+            <summary>Refused before mutation dispatch.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.DataBase.ConditionalMutationBatchStatus.RolledBack">
+            <summary>Execution failed or cancelled and rollback acknowledged.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.DataBase.ConditionalMutationBatchStatus.Unconfirmed">
+            <summary>Commit or rollback may have occurred; reload before another mutation.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.DataBase.ConditionalRowSetGuard">
+            <summary>Exact cardinality of a declared filtered cohort, checked inside the transaction.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.ConditionalRowSetGuard.EntityName">
+            <summary>Declared entity.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.ConditionalRowSetGuard.Match">
+            <summary>Copied equality predicates.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.ConditionalRowSetGuard.ExpectedCount">
+            <summary>Expected bounded cohort count.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.ConditionalRowSetGuard.DateRanges">
+            <summary>Copied optional physical date/time intervals, combined with the equality predicates.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.ConditionalRowSetGuard.TextEqualities">
+            <summary>Optional exact ordinal case-insensitive string comparisons, enforced inside the transaction.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.ConditionalRowSetGuard.#ctor(System.String,System.Collections.Generic.IReadOnlyDictionary{System.String,System.Object},System.Int32)">
+            <summary>Copies a bounded cohort observation.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.ConditionalRowSetGuard.#ctor(System.String,System.Collections.Generic.IReadOnlyDictionary{System.String,System.Object},System.Int32,System.Collections.Generic.IEnumerable{TheTechIdea.Beep.DataBase.ConditionalDateRange})">
+            <summary>Copies a cohort with at most four distinct declared date/time intervals.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.ConditionalRowSetGuard.#ctor(System.String,System.Collections.Generic.IReadOnlyDictionary{System.String,System.Object},System.Int32,System.Collections.Generic.IEnumerable{TheTechIdea.Beep.DataBase.ConditionalDateRange},System.Collections.Generic.IEnumerable{TheTechIdea.Beep.DataBase.OrdinalIgnoreCaseTextEquality})">
+            <summary>Copies up to four nonoverlapping declared string comparisons alongside the existing equality/date cohorts.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.DataBase.ConditionalStoredProjectionGuard">
+            <summary>Complete counted stored-column observation. Logical digest, never an actor or write grant.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.DataBase.ConditionalStoredProjectionGuard.MaximumRows">
+            <summary>Maximum complete reference rows per cohort; never a truncation allowance.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.ConditionalStoredProjectionGuard.EntityName">
+            <summary>Cached declared reference entity.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.ConditionalStoredProjectionGuard.Request">
+            <summary>Copied immutable bounded selector, including all related predicates.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.ConditionalStoredProjectionGuard.Fields">
+            <summary>Selected stored fields; includes the complete primary key.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.ConditionalStoredProjectionGuard.KeyFields">
+            <summary>Complete observed key; the producer verifies it against metadata.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.ConditionalStoredProjectionGuard.ExpectedCount">
+            <summary>Count of the entire selected cohort.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.ConditionalStoredProjectionGuard.ExpectedDigest">
+            <summary>Versioned logical content digest; not a signature or authority grant.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.ConditionalStoredProjectionGuard.CanonicalBytes">
+            <summary>Actual canonical bytes counted while preparing this digest.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.ConditionalStoredProjectionGuard.#ctor(System.String,TheTechIdea.Beep.DataBase.BoundedPageRequest,System.Collections.Generic.IEnumerable{System.String},System.Collections.Generic.IEnumerable{System.String},TheTechIdea.Beep.Editor.StoredProjectionPage)">
+            <summary>Capture one complete acknowledged first page; partial observations refuse.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.ConditionalStoredProjectionGuard.ComputeDigest(System.Collections.Generic.IEnumerable{System.String},System.Collections.Generic.IEnumerable{System.String},System.Collections.Generic.IEnumerable{TheTechIdea.Beep.Editor.StoredProjectionRow})">
+            <summary>Order-independent rows; exact string/binary values, numeric value and stored date ticks/kind. Bounded canonical encoding.</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.DataBase.EntityMetadataSnapshot">
             <summary>Creates an owned, mutable copy of supported entity metadata without event subscribers.</summary>
             <remarks>
@@ -1630,6 +1807,312 @@
         </member>
         <member name="P:TheTechIdea.Beep.DataBase.EntityIndex.Options">
             <summary>Optional opaque options dictionary passed through to <c>IDataSourceHelper</c>.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.DataBase.IBoundedPagedDataSource">
+            <summary>
+            Optional bounded page producer. Apply every filter before count/page, use the complete order,
+            and count/read from one coherent snapshot. Bound rows and encoded bytes at the producer;
+            do not implement by loading an unbounded GetEntity result and truncating it.
+            Await physical completion even when cancellation is requested. No background work may outlive the task.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.IBoundedPagedDataSource.ReadPageAsync(System.String,TheTechIdea.Beep.DataBase.BoundedPageRequest,System.Threading.CancellationToken)">
+            <summary>Reads an admitted bounded page and its snapshot count; physical work completes before the task.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.DataBase.PageOrder">
+            <summary>One declared field in a deterministic page order.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.PageOrder.FieldName">
+            <summary>Declared metadata field used for ordering.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.PageOrder.Descending">
+            <summary>Whether this field is ordered from greatest to least.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.PageOrder.#ctor(System.String,System.Boolean)">
+            <summary>Creates one declared order field.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.DataBase.BoundedPageRequest">
+            <summary>Immutable admission bounds and copied filter/order values, not a security credential.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.DataBase.BoundedPageRequest.MaximumPageSize">
+            <summary>Absolute producer row limit; callers may request a smaller limit.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.DataBase.BoundedPageRequest.MaximumPayloadBytes">
+            <summary>Absolute encoded UTF-8 payload limit in bytes.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.BoundedPageRequest.RequiredRelatedGroups">
+            <summary>Every immutable related group must match before count/page; alternatives within a group are OR.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.BoundedPageRequest.AnyRelatedFilters">
+            <summary>At least one related predicate must match together with every required parent predicate.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.BoundedPageRequest.ValidateReadOnlyScalars">
+            <summary>Explicit client-side validation of every transported read-only scalar against its getter after writable cells are loaded.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.BoundedPageRequest.RequestId">
+            <summary>Correlation identifier preserved through UnitofWork admission.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.BoundedPageRequest.PageNumber">
+            <summary>Requested one-based page number.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.BoundedPageRequest.PageSize">
+            <summary>Maximum rows on this page.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.BoundedPageRequest.MaxPayloadBytes">
+            <summary>Maximum encoded bytes admitted for this response.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.BoundedPageRequest.Offset">
+            <summary>Checked zero-based row offset.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.BoundedPageRequest.Order">
+            <summary>Copied deterministic order; admission adds the complete primary key.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.BoundedPageRequest.CopyFilters">
+            <summary>Returns independent copies of every required parent predicate.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.BoundedPageRequest.CopyAnyFilters">
+            <summary>Alternatives in a single OR group; required filters remain AND predicates.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.BoundedPageRequest.#ctor(System.Int64,System.Int32,System.Int32,System.Collections.Generic.IEnumerable{TheTechIdea.Beep.DataBase.PageOrder},System.Collections.Generic.IEnumerable{TheTechIdea.Beep.Report.AppFilter})">
+            <summary>Creates a bounded request with copied required predicates and ordering.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.BoundedPageRequest.#ctor(System.Int64,System.Int32,System.Int32,System.Collections.Generic.IEnumerable{TheTechIdea.Beep.DataBase.PageOrder},System.Collections.Generic.IEnumerable{TheTechIdea.Beep.Report.AppFilter},System.Collections.Generic.IEnumerable{TheTechIdea.Beep.Report.AppFilter})">
+            <summary>Adds a copied any-of group without changing the original constructor signature.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.BoundedPageRequest.#ctor(System.Int64,System.Int32,System.Int32,System.Collections.Generic.IEnumerable{TheTechIdea.Beep.DataBase.PageOrder},System.Collections.Generic.IEnumerable{TheTechIdea.Beep.Report.AppFilter},System.Collections.Generic.IEnumerable{TheTechIdea.Beep.Report.AppFilter},System.Collections.Generic.IEnumerable{TheTechIdea.Beep.DataBase.PageRelatedFilter})">
+            <summary>Requires the optional related-page producer; legacy producers must refuse this request.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.BoundedPageRequest.#ctor(System.Int64,System.Int32,System.Int32,System.Collections.Generic.IEnumerable{TheTechIdea.Beep.DataBase.PageOrder},System.Collections.Generic.IEnumerable{TheTechIdea.Beep.Report.AppFilter},System.Collections.Generic.IEnumerable{TheTechIdea.Beep.Report.AppFilter},System.Collections.Generic.IEnumerable{TheTechIdea.Beep.DataBase.PageRelatedFilter},System.Collections.Generic.IEnumerable{TheTechIdea.Beep.DataBase.PageRelatedFilterGroup})">
+            <summary>Requires the optional grouped related-page producer; older producers must refuse rather than ignore groups.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.BoundedPageRequest.WithReadOnlyScalarValidation">
+            <summary>Preserves the request identity/bounds while requiring computed scalar transport validation; no fields are ignored.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.BoundedPageRequest.ForPage(System.Int64)">
+            <summary>Preserves the traversal identity, copied predicates and bounds for a numbered batch.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.DataBase.BoundedPageResponse">
+            <summary>
+            Copied UTF-8 JSON array of scalar-valued row objects (binary fields use base64 strings).
+            Envelope evidence is validated by the consumer, not trusted merely because it matches a request.
+            No record objects or enumerable row producers cross this boundary.
+            </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.BoundedPageResponse.RequestId">
+            <summary>Request correlation observed by the producer.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.BoundedPageResponse.PageNumber">
+            <summary>One-based page number observed by the producer.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.BoundedPageResponse.PageSize">
+            <summary>Row limit observed by the producer.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.BoundedPageResponse.TotalRecords">
+            <summary>Snapshot count after applying every predicate.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.BoundedPageResponse.PayloadBytes">
+            <summary>Encoded size of the copied JSON payload.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.BoundedPageResponse.CopyPayload">
+            <summary>Returns an independent copy of the encoded rows.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.BoundedPageResponse.#ctor(System.Guid,System.Int64,System.Int32,System.Int64,System.ReadOnlySpan{System.Byte})">
+            <summary>Copies the producer envelope and payload; consumer admission still validates them.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.DataBase.ProviderPageInfo">
+            <summary>Validated page/count observation; publication acknowledgement is reported separately.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.ProviderPageInfo.RequestId">
+            <summary>Correlation identifier of the admitted request.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.ProviderPageInfo.PageNumber">
+            <summary>Requested one-based page number.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.ProviderPageInfo.PageSize">
+            <summary>Admitted row limit.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.ProviderPageInfo.TotalRecords">
+            <summary>Validated filtered snapshot count.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.ProviderPageInfo.TotalPages">
+            <summary>Number of pages implied by the count and admitted row limit.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.ProviderPageInfo.LoadedRecords">
+            <summary>Validated number of decoded rows.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.ProviderPageInfo.PayloadBytes">
+            <summary>Validated encoded response size.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.ProviderPageInfo.IsOutOfRange">
+            <summary>Whether a page beyond the first lies outside the observed count.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.ProviderPageInfo.#ctor(TheTechIdea.Beep.DataBase.BoundedPageRequest,System.Int64,System.Int32,System.Int32)">
+            <summary>Validates exact row cardinality and byte limits against the admitted request.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.DataBase.IBoundedSnapshotPagedDataSource">
+            <summary>Optional complete filtered traversal. One independent coherent native transaction
+            owns the count and every bounded batch. It is not a sequence of independent page reads.
+            Callbacks are synchronous, private-memory consumers: no provider I/O or partial publication.
+            Completion includes native commit/reader/command/connection cleanup; cancellation never detaches work.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.IBoundedSnapshotPagedDataSource.VisitSnapshotPagesAsync(System.String,TheTechIdea.Beep.DataBase.BoundedPageRequest,System.Action{TheTechIdea.Beep.DataBase.BoundedPageResponse},System.Threading.CancellationToken)">
+            <summary>Visits every bounded batch in one coherent native snapshot before acknowledging completion.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.DataBase.SnapshotReadCompletion">
+            <summary>Correlated acknowledgement of a completely drained coherent traversal.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.SnapshotReadCompletion.RequestId">
+            <summary>Traversal correlation copied from the admitted first request.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.SnapshotReadCompletion.TotalRecords">
+            <summary>Count of every matching row in the same native snapshot.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.SnapshotReadCompletion.RowsVisited">
+            <summary>Total rows privately consumed before completion.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.SnapshotReadCompletion.PagesVisited">
+            <summary>Bounded batches consumed, including one empty batch for an empty cohort.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.SnapshotReadCompletion.#ctor(System.Guid,System.Int64,System.Int64,System.Int64)">
+            <summary>Copies a complete correlated traversal receipt.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.DataBase.IBoundedStoredProjectionDataSource">
+            <summary>Optional counted snapshot of explicitly selected stored scalar columns.
+            Never materializes or claims a complete entity, and never evaluates calculated getters.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.DataBase.ICalendarGuardedMutationDataSource">
+            <summary>Optional explicit capability for inclusive civil-date guards using the provider UTC day.
+            Implementations enforce the entire alternative group at mutation and immediately before commit.
+            Older conditional providers without this capability must be refused before dispatch.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.ICalendarGuardedMutationDataSource.SupportsCalendarGuards">
+            <summary>Whether this configured provider implements the calendar guard contract.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.DataBase.IConditionalMutationBatchDataSource">
+            <summary>Optional bounded multi-entity physical transaction; no ordinary-write fallback.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.IConditionalMutationBatchDataSource.MutateBatchConditionallyAsync(TheTechIdea.Beep.DataBase.ConditionalMutationBatchRequest,System.Threading.CancellationToken)">
+            <summary>Awaits all guarded changes and one transaction acknowledgement.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.DataBase.IConditionalMutationDataSource">
+            <summary>Optional atomic single-row mutation. No read/ordinary-update fallback is permitted.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.IConditionalMutationDataSource.MutateConditionallyAsync(TheTechIdea.Beep.DataBase.ConditionalMutationRequest,System.Threading.CancellationToken)">
+            <summary>Awaits physical completion of one guarded mutation.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.DataBase.ConditionalMutationKind">
+            <summary>The supported single-row operation.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.DataBase.ConditionalMutationKind.Insert">
+            <summary>Create a new guarded row.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.DataBase.ConditionalMutationKind.Update">
+            <summary>Replace fields only if the expected predicates still match.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.DataBase.ConditionalMutationKind.Delete">
+            <summary>Remove only the expected guarded row.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.DataBase.ConditionalMutationStatus">
+            <summary>Physical acknowledgement, distinct from admission or uncertain dispatch.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.DataBase.ConditionalMutationStatus.Applied">
+            <summary>Exactly one row changed and commit was acknowledged.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.DataBase.ConditionalMutationStatus.NoMatch">
+            <summary>No row matched and rollback was acknowledged.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.DataBase.ConditionalMutationStatus.NotApplied">
+            <summary>The operation was refused before dispatch.</summary>
+        </member>
+        <member name="F:TheTechIdea.Beep.DataBase.ConditionalMutationStatus.Unconfirmed">
+            <summary>The operation may have reached the provider; reload before another mutation.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.DataBase.ConditionalRowGuard">
+            <summary>One row that must exist. Fields are equality predicates; null means IS NULL.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.ConditionalRowGuard.EntityName">
+            <summary>Declared entity identifier.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.ConditionalRowGuard.Match">
+            <summary>Copied expected equality predicates.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.ConditionalRowGuard.NotExpiredUtcField">
+            <summary>Optional declared UTC expiry column; null values allow indefinite validity.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.ConditionalRowGuard.CalendarFromField">
+            <summary>Optional civil-date lower endpoint, inclusive against the provider UTC calendar day. Null values are open.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.ConditionalRowGuard.CalendarThroughField">
+            <summary>Optional civil-date upper endpoint, inclusive against the provider UTC calendar day. Null values are open.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.ConditionalRowGuard.HasCalendarWindow">
+            <summary>Requires explicit calendar capability; providers recheck these groups immediately before commit.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.ConditionalRowGuard.#ctor(System.String,System.Collections.Generic.IReadOnlyDictionary{System.String,System.Object})">
+            <summary>Constructs a bounded foreign-row guard.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.ConditionalRowGuard.#ctor(System.String,System.Collections.Generic.IReadOnlyDictionary{System.String,System.Object},System.String)">
+            <summary>Constructs a guard with a declared UTC expiry column.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.ConditionalRowGuard.#ctor(System.String,System.Collections.Generic.IReadOnlyDictionary{System.String,System.Object},System.String,System.String,System.String)">
+            <summary>Constructs independent UTC-instant and inclusive civil-date windows.
+            Calendar columns must preserve their recorded day and use date/date-time fields without an offset.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.DataBase.ConditionalGuardGroup">
+            <summary>At least one alternative must match. Every guard group in a mutation is required.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.ConditionalGuardGroup.Alternatives">
+            <summary>Any matching foreign row satisfies this group.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.ConditionalGuardGroup.#ctor(System.Collections.Generic.IEnumerable{TheTechIdea.Beep.DataBase.ConditionalRowGuard})">
+            <summary>Copies a bounded set of alternatives.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.DataBase.ConditionalMutationRequest">
+            <summary>Copied scalar values, expected row predicates and required foreign-row guards.
+            This is data, not authorization: the application owns who may construct it.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.ConditionalMutationRequest.RequestId">
+            <summary>Mutation correlation identifier.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.ConditionalMutationRequest.EntityName">
+            <summary>Declared entity identifier.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.ConditionalMutationRequest.Kind">
+            <summary>Requested operation.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.ConditionalMutationRequest.Values">
+            <summary>Copied replacement scalar values.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.ConditionalMutationRequest.Match">
+            <summary>Copied expected equality predicates.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.ConditionalMutationRequest.Guards">
+            <summary>All required foreign-row guard groups.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.ConditionalMutationRequest.#ctor(System.String,TheTechIdea.Beep.DataBase.ConditionalMutationKind,System.Collections.Generic.IReadOnlyDictionary{System.String,System.Object},System.Collections.Generic.IReadOnlyDictionary{System.String,System.Object},System.Collections.Generic.IEnumerable{TheTechIdea.Beep.DataBase.ConditionalGuardGroup})">
+            <summary>Constructs an immutable guarded mutation.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.DataBase.ConditionalMutationResponse">
+            <summary>Applied means exactly one row and an acknowledged commit. Unconfirmed is never retry permission.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.ConditionalMutationResponse.RequestId">
+            <summary>Mutation correlation identifier.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.ConditionalMutationResponse.Status">
+            <summary>Physical acknowledgement outcome.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.ConditionalMutationResponse.Failure">
+            <summary>Full provider diagnostic; never present its text to a user.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.ConditionalMutationResponse.#ctor(System.Guid,TheTechIdea.Beep.DataBase.ConditionalMutationStatus,System.Exception)">
+            <summary>Returns the acknowledgement and optional diagnostic.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.DataBase.IDateRangeGuardedMutationBatchDataSource">
+            <summary>Optional explicit admission for physical DateTime cohort intervals in conditional batches.
+            Older batch producers must be refused rather than silently dropping interval predicates.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.IDateRangeGuardedMutationBatchDataSource.SupportsDateRangeGuards">
+            <summary>Whether the configured native provider enforces all date-range cohort observations.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.DataBase.IInMemoryDB">
              <summary>
@@ -1675,11 +2158,144 @@
         <member name="E:TheTechIdea.Beep.DataBase.IInMemoryDB.StateChanged">
             <summary>Raised whenever any state flag (IsCreated / IsLoaded / IsSaved / IsSynced) flips.</summary>
         </member>
+        <member name="T:TheTechIdea.Beep.DataBase.IOwnedEntityReadDataSource">
+            <summary>Optional acknowledged, physically drained entity read. It must preserve provider
+            hooks and transaction-bound reads, and never fall back after owned acquisition fails.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.DataBase.IOwnedTransactionDataSource">
+            <summary>Optional explicit transaction ownership. A caller-created opaque token owns one
+            begin/commit/rollback lifetime. Refusals must not finish or poison another owner's outcome.
+            An advertised but unsupported capability must not silently fall back to legacy transactions.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.DataBase.TransactionOwnershipRefusal">
+            <summary>This call was refused before native transactional dispatch or resource changes.
+            Another owner's scope may exist; this is never an unknown/partially allocated begin result.</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.DataBase.IParameterizedScalarDataSource">
             <summary>Optional scalar execution contract; bind every definition parameter as data.</summary>
         </member>
+        <member name="T:TheTechIdea.Beep.DataBase.IProjectionGuardedMutationBatchDataSource">
+            <summary>Optional producer: recheck complete projection count/content before mutations and before commit in the same physical transaction.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.IProjectionGuardedMutationBatchDataSource.SupportsProjectionGuardedBatches">
+            <summary>Whether this producer enforces every stored projection guard inside its transaction.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.IProjectionGuardedMutationBatchDataSource.MutateProjectionGuardedBatchAsync(TheTechIdea.Beep.DataBase.ProjectionGuardedMutationBatchRequest,System.Threading.CancellationToken)">
+            <summary>Await all source checks, mutations, final checks and the exact original batch acknowledgement.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.DataBase.ProjectionGuardedMutationBatchRequest">
+            <summary>Additional source observations; the ordinary batch, its identity, authority guards and outcomes stay unchanged.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.ProjectionGuardedMutationBatchRequest.Batch">
+            <summary>Original batch identity, authority observations, operations and result semantics.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.ProjectionGuardedMutationBatchRequest.ProjectionGuards">
+            <summary>Complete additional reference cohorts checked before writes and commit.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.ProjectionGuardedMutationBatchRequest.CohortComparisons">
+            <summary>Additional complete-count equalities; requires the explicit comparison producer capability.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.ProjectionGuardedMutationBatchRequest.#ctor(TheTechIdea.Beep.DataBase.ConditionalMutationBatchRequest,System.Collections.Generic.IEnumerable{TheTechIdea.Beep.DataBase.ConditionalStoredProjectionGuard})">
+            <summary>Copy at most16 cohorts with a combined16 MiB canonical/source request budget.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.ProjectionGuardedMutationBatchRequest.#ctor(TheTechIdea.Beep.DataBase.ConditionalMutationBatchRequest,System.Collections.Generic.IEnumerable{TheTechIdea.Beep.DataBase.ConditionalStoredProjectionGuard},System.Collections.Generic.IEnumerable{TheTechIdea.Beep.DataBase.ConditionalCohortComparison})">
+            <summary>Compose count equalities without weakening existing row/count or source-payload budgets.</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.DataBase.IUpsertDataSource">
             <summary>Optional native upsert capability. A failed update alone never implies a missing row.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.DataBase.IOrdinalIgnoreCaseTextDataSource">
+            <summary>Optional native capability for the same ordinal case-insensitive text semantics in reads and transaction cohorts.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.IOrdinalIgnoreCaseTextDataSource.SupportsOrdinalIgnoreCaseText">
+            <summary>Whether this provider enforces the declared text semantics rather than its default database collation.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.DataBase.OrdinalIgnoreCaseTextEquality">
+            <summary>One immutable, bounded, declared string-column comparison under the current runtime's OrdinalIgnoreCase policy.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.OrdinalIgnoreCaseTextEquality.FieldName">
+            <summary>Declared column, resolved and quoted by the native metadata owner.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.OrdinalIgnoreCaseTextEquality.Value">
+            <summary>Exact text, including whitespace; no trimming, linguistic or compatibility normalization is performed.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.OrdinalIgnoreCaseTextEquality.ScalarCost">
+            <summary>Expanded comparison cost included in the physical batch budget.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.OrdinalIgnoreCaseTextEquality.RuntimePolicyFingerprint">
+            <summary>Fingerprint of the actual runtime case-equivalence table; persisted reviewed commands can fence a changed policy.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.OrdinalIgnoreCaseTextEquality.#ctor(System.String,System.String)">
+            <summary>Captures up to256 valid UTF-16 code units; null, embedded NUL and malformed surrogate sequences refuse.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.DataBase.IBoundedRelatedPagedDataSource">
+            <summary>Optional producer that applies copied related-row predicates before both count and page.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.DataBase.IBoundedComparedRelatedPagedDataSource">
+            <summary>Optional producer admitting declared same-type numeric parent/related field comparisons before count/page.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.DataBase.PageRelatedComparison">
+            <summary>One immutable numeric comparison, never an SQL expression or authorization credential.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.PageRelatedComparison.ParentField">
+            <summary>Declared numeric field on the parent entity.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.PageRelatedComparison.RelatedField">
+            <summary>Declared same-type numeric field on the related entity.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.PageRelatedComparison.Operator">
+            <summary>One admitted comparison symbol; arbitrary expressions are refused.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.PageRelatedComparison.#ctor(System.String,System.String,System.String)">
+            <summary>Creates one immutable declared-field comparison.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.DataBase.PageRelatedKey">
+            <summary>One immutable pair of declared fields that correlates a related row to its parent.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.PageRelatedKey.ParentField">
+            <summary>Declared field on the parent entity.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.PageRelatedKey.RelatedField">
+            <summary>Declared field on the related entity with the same underlying type.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.PageRelatedKey.#ctor(System.String,System.String)">
+            <summary>Creates a declared correlation; the provider validates metadata before execution.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.DataBase.PageRelatedFilter">
+            <summary>A positive EXISTS predicate over cached declared metadata; it adds no authorization.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.PageRelatedFilter.Comparisons">
+            <summary>Copied positive comparisons evaluated in the same related EXISTS predicate.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.PageRelatedFilter.EntityName">
+            <summary>Related entity name resolved through cached declared metadata.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.PageRelatedFilter.Keys">
+            <summary>Copied one-to-four field correlations applied together.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.PageRelatedFilter.CopyFilters">
+            <summary>Returns independent copies of required related-row predicates.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.PageRelatedFilter.CopyAnyFilters">
+            <summary>Returns independent copies of alternatives within one related-row OR group.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.PageRelatedFilter.#ctor(System.String,System.Collections.Generic.IEnumerable{TheTechIdea.Beep.DataBase.PageRelatedKey},System.Collections.Generic.IEnumerable{TheTechIdea.Beep.Report.AppFilter},System.Collections.Generic.IEnumerable{TheTechIdea.Beep.Report.AppFilter})">
+            <summary>Copies declared keys and predicates within the related query bounds.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.PageRelatedFilter.#ctor(System.String,System.Collections.Generic.IEnumerable{TheTechIdea.Beep.DataBase.PageRelatedKey},System.Collections.Generic.IEnumerable{TheTechIdea.Beep.Report.AppFilter},System.Collections.Generic.IEnumerable{TheTechIdea.Beep.Report.AppFilter},System.Collections.Generic.IEnumerable{TheTechIdea.Beep.DataBase.PageRelatedComparison})">
+            <summary>Copies correlations, filters and optional exact numeric field comparisons within the related bounds.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.DataBase.IBoundedGroupedRelatedPagedDataSource">
+            <summary>Optional producer admitting every required group of related-row alternatives before count and page.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.DataBase.PageRelatedFilterGroup">
+            <summary>One immutable, nonempty OR group. Every required group must independently match.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.DataBase.PageRelatedFilterGroup.Alternatives">
+            <summary>Immutable alternatives; their keys, predicates and comparisons are already captured.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.DataBase.PageRelatedFilterGroup.#ctor(System.Collections.Generic.IEnumerable{TheTechIdea.Beep.DataBase.PageRelatedFilter})">
+            <summary>Captures one to eight related-row alternatives; arbitrary expressions are not accepted.</summary>
         </member>
         <member name="P:TheTechIdea.Beep.DataBase.RelationShipKeys.OnDeleteBehavior">
             <summary>
@@ -4301,8 +4917,8 @@
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IPagingManager.SetCurrentPage(System.String,System.Int32)">
             <summary>
-            Advances the paging state to the specified page number and returns the resulting
-            <see cref="T:TheTechIdea.Beep.Editor.Forms.Models.PageInfo"/>.  Does NOT load data — callers must re-execute the query.
+            Changes arithmetic bookkeeping only, not cursor/data acknowledgement. Use managed
+            local paging outcomes or a separately qualified provider path to publish loaded state.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IPagingManager.SetTotalRecordCount(System.String,System.Int64)">
@@ -4357,14 +4973,29 @@
         <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormsEditorOutcomes">
             <summary>Optional captured-record outcomes for platform-neutral editor popups.</summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormsLocalPaging">
+            <summary>Optional local cursor paging; never fetches a datasource page.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.LocalPagePlan">
+            <summary>Immutable local-page proposal. Token belongs to the supplying paging helper.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.ILocalPagingPublication">
+            <summary>Optional atomic helper bookkeeping. The callback writes owned manager memory only, synchronously.</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IObservableSecurityPolicy">
             <summary>Optional helper notification. Publish outside policy monitors and isolate observer failures.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormsPolicyNotifications">
             <summary>Optional manager feed for host-owned, revision-checked UI reconciliation.</summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormsProviderPaging">
+            <summary>Optional policy-gated bounded provider paging, distinct from local cursor navigation.</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormsQueryOutcomes">
             <summary>Optional managed query outcome/cancellation capability; not a raw SQL entry point.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IItemSecurityProjection">
+            <summary>Optional registry-gated projection. Authorizer invokes the pure owned-memory action synchronously, once.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IFormRegistry">
             <summary>
@@ -5348,9 +5979,8 @@
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.LoadPageAsync(System.String,System.Int32,System.Threading.CancellationToken)">
             <summary>
             Navigates the block's cursor to the first record of <paramref name="pageNumber"/> and
-            returns the resulting <see cref="T:TheTechIdea.Beep.Editor.Forms.Models.PageInfo"/>. Combines <see cref="P:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.Paging"/>'s
-            <c>SetCurrentPage</c> with the actual cursor move -- calling <c>Paging</c> alone would
-            update the paging state without moving the cursor.
+            returns acknowledged local <see cref="T:TheTechIdea.Beep.Editor.Forms.Models.PageInfo"/> or null. This does not fetch a
+            provider page. Optional IFormsLocalPaging outcomes retain partial cursor/observer evidence.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.Interfaces.IUnitofWorksManager.GetTotalRecordCount(System.String)">
@@ -6786,7 +7416,8 @@
         </member>
         <member name="T:TheTechIdea.Beep.Editor.UOWManager.Models.DataBlockInfo">
             <summary>
-            Information about a registered data block
+            Information about a registered data block.
+            Permission setters configure the block; getters include its runtime security overlay.
             </summary>
         </member>
         <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.DataBlockInfo.BlockName">
@@ -6853,7 +7484,7 @@
             <summary>Lazy-load strategy for this block.</summary>
         </member>
         <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.DataBlockInfo.CurrentPage">
-            <summary>Current 1-based page number (used when paging is active).</summary>
+            <summary>Current 1-based local cursor page. Long provider pages are reported in FormQueryResult.ProviderPage.</summary>
         </member>
         <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.DataBlockInfo.ExtendedProperties">
             <summary>Gets or sets extended properties for the block</summary>
@@ -7340,6 +7971,7 @@
             <summary>
             Represents an item/field definition with Oracle Forms-compatible properties.
             UI-agnostic version that can be used by any UI framework.
+            Enabled/Visible setters configure the item; getters include its runtime security overlay.
             </summary>
         </member>
         <member name="P:TheTechIdea.Beep.Editor.UOWManager.Models.ItemInfo.ItemName">
@@ -10343,6 +10975,9 @@
         <member name="P:TheTechIdea.Beep.Editor.Forms.Models.FormQueryResult.RequestRevision">
             <summary>Monotonic within RegistrationId, not across replacements or independent forms.</summary>
         </member>
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.FormQueryResult.ProviderPage">
+            <summary>Validated provider observation only. Check RecordsPublished before displaying an accepted page.</summary>
+        </member>
         <member name="P:TheTechIdea.Beep.Editor.Forms.Models.FormQueryResult.LegacyPublicationPossible">
             <summary>Legacy Get was invoked and can have published before late rejection.</summary>
         </member>
@@ -10629,9 +11264,9 @@
             <summary>Number of records per page.</summary>
         </member>
         <member name="P:TheTechIdea.Beep.Editor.Forms.Models.PageInfo.TotalRecords">
-            <summary>Total records available in the data source for the current query.</summary>
+            <summary>Records in the declared result scope; local paging reports loaded records, not a remote count hint.</summary>
         </member>
-        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.PageInfo.TotalPages">
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.PageInfo.TotalPagesLong">
             <summary>Total number of pages (computed).</summary>
         </member>
         <member name="P:TheTechIdea.Beep.Editor.Forms.Models.PageInfo.HasPrevious">
@@ -10640,7 +11275,7 @@
         <member name="P:TheTechIdea.Beep.Editor.Forms.Models.PageInfo.HasNext">
             <summary>Whether a next page exists.</summary>
         </member>
-        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.PageInfo.Skip">
+        <member name="P:TheTechIdea.Beep.Editor.Forms.Models.PageInfo.SkipLong">
             <summary>0-based index of the first record on this page (useful for skip/take).</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.Forms.Models.CacheStats">
@@ -12672,6 +13307,24 @@
         <member name="P:TheTechIdea.Beep.Editor.Forms.Models.TriggerChainCompletedEventArgs.OverallResult">
             <summary>Overall chain result</summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Editor.IConditionalUnitOfWorkBatchMutation">
+            <summary>Clean tenant-scoped owner of an optional atomic multi-entity mutation.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.IConditionalUnitOfWorkBatchMutation.SupportsConditionalMutationBatch">
+            <summary>Whether the provider has the physical batch capability.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.IConditionalUnitOfWorkBatchMutation.MutateBatchConditionallyAsync(TheTechIdea.Beep.DataBase.ConditionalMutationBatchRequest,System.Threading.CancellationToken)">
+            <summary>Awaits and validates one atomic batch acknowledgement.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.IConditionalUnitOfWorkMutation">
+            <summary>Optional isolated mutation owner. Does not commit ordinary tracked changes or bypass tenant scope.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.IConditionalUnitOfWorkMutation.SupportsConditionalMutation">
+            <summary>Whether this clean owner supports guarded physical mutation.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.IConditionalUnitOfWorkMutation.MutateConditionallyAsync(TheTechIdea.Beep.DataBase.ConditionalMutationRequest,System.Threading.CancellationToken)">
+            <summary>Awaits the guarded mutation and validates its acknowledgement.</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.IDataSourceHelper">
             <summary>
             Defines the contract for all datasource-specific helper implementations.
@@ -13558,6 +14211,13 @@
             or accepted tracking. Text messages alone do not establish safe replay.
             </summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Editor.IScopedEditorErrors">
+            <summary>Optional operation-local error/diagnostic routing. Dispose in the entering flow
+            after physical work drains; nested operations must restore their parent.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.IStagedUnitofWorkPageRead">
+            <summary>Optional staged bounded provider read. Never fall back to unbounded Get.</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.IStagedUnitofWorkRead">
             <summary>Optional read capability. Preparation does not replace live records.</summary>
         </member>
@@ -13606,6 +14266,24 @@
         <member name="E:TheTechIdea.Beep.Editor.IUnitofWork.ItemChanged">
             <summary>Fires when a field changes on a tracked item.</summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Editor.IUnitofWorkStoredProjectionGuardRead">
+            <summary>Optional preparation through the staged, scoped stored-column read owner.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.IUnitofWorkStoredProjectionGuardRead.SupportsStoredProjectionGuardRead">
+            <summary>Whether the underlying owner and provider support bounded stored projections.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.IUnitofWorkStoredProjectionGuardRead.PrepareStoredProjectionGuardAsync(TheTechIdea.Beep.DataBase.BoundedPageRequest,System.Collections.Generic.IEnumerable{System.String},System.Threading.CancellationToken)">
+            <summary>Prepare a complete cohort without publishing partial entities or granting write authority.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.IUnitofWorkProjectionGuardedBatch">
+            <summary>Optional transaction capability; no ordinary batch fallback is permitted.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.IUnitofWorkProjectionGuardedBatch.SupportsProjectionGuardedBatch">
+            <summary>Whether this clean canonical owner can enforce projection source guards.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.IUnitofWorkProjectionGuardedBatch.MutateProjectionGuardedBatchAsync(TheTechIdea.Beep.DataBase.ProjectionGuardedMutationBatchRequest,System.Threading.CancellationToken)">
+            <summary>Await the exact atomic batch acknowledgement or its explicit uncertain outcome.</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.IUnitofWorkReadBufferIdentity">
             <summary>Optional opaque identity for the current read buffer, not its row contents.</summary>
         </member>
@@ -13627,6 +14305,15 @@
             This is not a mutation lock
             or a guarantee that arbitrary external edits produce notifications.
             </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.IUnitofWorkStoredProjectionRead">
+            <summary>Optional bounded detached stored-column read. Does not publish partial entities to Units.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.StoredProjectionRow">
+            <summary>Frozen stored scalars. Binary values are copied on input and every access.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.StoredProjectionPage">
+            <summary>Detached validated page observation; it is not an authorization or write capability.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.Mapping.Models.MappingKpiSnapshot">
             <summary>
@@ -13707,6 +14394,27 @@
             failed step in <c>MigrationExecutionResult.FailedSteps</c>. Dependency
             blocks and pre-flight gates always abort regardless of this flag.
             </summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.SchemaMigration.DatabaseTargetMigrationIdentity">
+            <summary>Immutable catalog identity captured before any provisioning work.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.SchemaMigration.DatabaseTargetMigrationIdentity.#ctor(System.String,System.String,System.String,System.String)">
+            <summary>Immutable catalog identity captured before any provisioning work.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.SchemaMigration.DatabaseTargetLegacyClaimBinding">
+            <summary>Explicit compatibility mapping for an existing unscoped v1 receipt.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.SchemaMigration.DatabaseTargetLegacyClaimBinding.#ctor(System.String,System.String)">
+            <summary>Explicit compatibility mapping for an existing unscoped v1 receipt.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.SchemaMigration.IDatabaseTargetMigrationProvider">
+            <summary>Optional native catalog capability used only by MigrationManager's target lifecycle.
+            Entity/schema migrations still use ISchemaMigrationProvider. No caller-supplied SQL is accepted.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Editor.SchemaMigration.IDecimalColumnMigrationProvider">
+            <summary>Optional native capability. Locks and validates the exact existing decimal shape,
+            then widens without reducing integer/fractional capacity or changing nullability.
+            Unsupported providers must not emulate this with an unlocked ALTER.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.SchemaMigration.IMigrationProviderRegistry">
             <summary>
@@ -16103,6 +16811,18 @@
             Query text and parameter payload produced from AppFilter values.
             </summary>
         </member>
+        <member name="P:TheTechIdea.Beep.Extensions.AppFilterQueryDefinition.QueryText">
+            <summary>Query text generated by the shared metadata and parameter owner.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Extensions.AppFilterQueryDefinition.WhereClause">
+            <summary>Predicate fragment reused by snapshot count and page commands.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Extensions.AppFilterQueryDefinition.Parameters">
+            <summary>Bound values keyed by provider parameter name.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Extensions.AppFilterQueryDefinition.NormalizedFilters">
+            <summary>Normalized required predicates consumed by the query owner.</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Extensions.DataSourceAppFilterExtensions">
             <summary>
             IDataSource extensions for normalized AppFilter-based entity and query operations.
@@ -16149,6 +16869,16 @@
             Returns a datasource-aware parameter token prefix.
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Extensions.DataSourceAppFilterExtensions.BuildBoundedSelectQueryDefinition(TheTechIdea.Beep.IDataSource,System.String,TheTechIdea.Beep.DataBase.BoundedPageRequest,System.Collections.Generic.IEnumerable{System.String})">
+            <summary>Strict page predicates: required filters AND one parenthesized any-of group.
+            Invalid operators are refused rather than silently removed.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Extensions.DataSourceAppFilterExtensions.BuildBoundedSelectQueryDefinition(TheTechIdea.Beep.IDataSource,System.String,TheTechIdea.Beep.DataBase.BoundedPageRequest,System.Collections.Generic.IEnumerable{System.String},TheTechIdea.Beep.DataBase.EntityStructure,System.Func{System.String,System.String})">
+            <summary>Related predicates require cached metadata and the producer's existing schema/quoting owner.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Extensions.DataSourceAppFilterExtensions.QuoteQueryIdentifier(System.String,TheTechIdea.Beep.Utilities.DataSourceType)">
+            <summary>Quotes a declared identifier for shared provider query construction.</summary>
+        </member>
         <member name="F:TheTechIdea.Beep.Extensions.DataSourceAppFilterExtensions.DirectComparisonOperators">
             <summary>
             The only operators the WHERE builders may interpolate directly into SQL. Everything else
@@ -16169,6 +16899,20 @@
         </member>
         <member name="M:TheTechIdea.Beep.Extensions.DataSourceAppFilterExtensions.ParseCollectionFilterValues(System.String)">
             <summary>Decodes delimited filter values, preserving quoted commas and empty strings.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Extensions.DataSourceAppFilterExtensions.DateTimeComparisonExpression(System.String,TheTechIdea.Beep.Utilities.DataSourceType)">
+            <summary>Comparison/order expression for a declared DateTime field. SQLite ISO/driver text
+            is compared as UTC whole seconds plus exact 100ns fractions; other providers retain their native field.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Extensions.DataSourceAppFilterExtensions.DateTimeComparisonValue(System.DateTime,TheTechIdea.Beep.Utilities.DataSourceType)">
+            <summary>Comparison-only transport. Unmarked DateTime retains its recorded ticks as UTC;
+            local values become UTC. This does not change stored rows or mutation replacement values.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.Extensions.OrdinalIgnoreCaseTextQuery">
+            <summary>Shared bounded-read/conditional-cohort compiler. Text never enters generated syntax or native linguistic case conversion.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Extensions.OrdinalIgnoreCaseTextQuery.Build(TheTechIdea.Beep.Utilities.DataSourceType,System.String,TheTechIdea.Beep.DataBase.OrdinalIgnoreCaseTextEquality,System.Func{System.Int32,System.String})">
+            <summary>Builds one exact predicate from a metadata-owned quoted column and a caller-owned integer parameter binder.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.FileManager.Attributes.FileReaderAttribute">
             <summary>

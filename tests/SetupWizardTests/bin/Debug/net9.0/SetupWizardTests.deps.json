@@ -12,8 +12,8 @@
           "Moq": "4.20.72",
           "TheTechIdea.Beep.DataManagementEngine": "3.1.1",
           "xunit": "2.9.3",
-          "DataManagementEngine": "3.1.1.0",
-          "DataManagementModels": "3.1.1.0"
+          "DataManagementEngine": "3.1.4.0",
+          "DataManagementModels": "3.1.4.0"
         },
         "runtime": {
           "SetupWizardTests.dll": {}
@@ -1083,32 +1083,32 @@
         },
         "runtime": {
           "DataManagementEngine.dll": {
-            "assemblyVersion": "3.1.1.0",
-            "fileVersion": "3.1.1.0"
+            "assemblyVersion": "3.1.4.0",
+            "fileVersion": "3.1.4.0"
           }
         }
       },
       "TheTechIdea.Beep.DataManagementModels/3.1.1": {
         "runtime": {
           "DataManagementModels.dll": {
-            "assemblyVersion": "3.1.1.0",
-            "fileVersion": "3.1.1.0"
+            "assemblyVersion": "3.1.4.0",
+            "fileVersion": "3.1.4.0"
           }
         }
       },
-      "DataManagementEngine/3.1.1.0": {
+      "DataManagementEngine/3.1.4.0": {
         "runtime": {
           "DataManagementEngine.dll": {
-            "assemblyVersion": "3.1.1.0",
-            "fileVersion": "3.1.1.0"
+            "assemblyVersion": "3.1.4.0",
+            "fileVersion": "3.1.4.0"
           }
         }
       },
-      "DataManagementModels/3.1.1.0": {
+      "DataManagementModels/3.1.4.0": {
         "runtime": {
           "DataManagementModels.dll": {
-            "assemblyVersion": "3.1.1.0",
-            "fileVersion": "3.1.1.0"
+            "assemblyVersion": "3.1.4.0",
+            "fileVersion": "3.1.4.0"
           }
         }
       }
@@ -1564,12 +1564,12 @@
       "serviceable": false,
       "sha512": ""
     },
-    "DataManagementEngine/3.1.1.0": {
+    "DataManagementEngine/3.1.4.0": {
       "type": "reference",
       "serviceable": false,
       "sha512": ""
     },
-    "DataManagementModels/3.1.1.0": {
+    "DataManagementModels/3.1.4.0": {
       "type": "reference",
       "serviceable": false,
       "sha512": ""
