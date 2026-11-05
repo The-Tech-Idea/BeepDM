@@ -2158,6 +2158,9 @@
         <member name="E:TheTechIdea.Beep.DataBase.IInMemoryDB.StateChanged">
             <summary>Raised whenever any state flag (IsCreated / IsLoaded / IsSaved / IsSynced) flips.</summary>
         </member>
+        <member name="T:TheTechIdea.Beep.DataBase.IOwnedEntityProjectionDataSource">
+            <summary>An owned, drained read whose required column names and raw values are acknowledged by the provider.</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.DataBase.IOwnedEntityReadDataSource">
             <summary>Optional acknowledged, physically drained entity read. It must preserve provider
             hooks and transaction-bound reads, and never fall back after owned acquisition fails.</summary>
@@ -2166,6 +2169,9 @@
             <summary>Optional explicit transaction ownership. A caller-created opaque token owns one
             begin/commit/rollback lifetime. Refusals must not finish or poison another owner's outcome.
             An advertised but unsupported capability must not silently fall back to legacy transactions.</summary>
+        </member>
+        <member name="T:TheTechIdea.Beep.DataBase.IIsolationOwnedTransactionDataSource">
+            <summary>Owned transactions whose isolation can be chosen before the physical transaction begins.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.DataBase.TransactionOwnershipRefusal">
             <summary>This call was refused before native transactional dispatch or resource changes.

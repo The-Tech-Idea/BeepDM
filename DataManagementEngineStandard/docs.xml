@@ -523,6 +523,13 @@
             Scan assemblies for data sources
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.ScanConnectionDriverDataSources">
+            <summary>
+            Scans assemblies loaded from a connection-driver folder for IDataSource implementations.
+            Modern packages ship the ADO provider and the data source class side by side; without
+            this, only the ADO driver was registered and the provider never appeared in the catalog.
+            </summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Tools.AssemblyHandler.ScanProjectAndAddinAssemblies">
             <summary>
             Scan project and addin assemblies
@@ -33765,6 +33772,14 @@
         <member name="M:TheTechIdea.Beep.Logger.DMLogger.WriteLog(System.String)">
             <summary>
             Writes a general log message.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Logger.DMLogger.RollingFileLoggerProvider.ResolveDefaultLogDirectory">
+            <summary>
+            A relative log file name used to land in the application directory. Under Program
+            Files that is not writable for a standard user, and it also left the log behind on
+            uninstall. <c>BEEP_LOG_DIR</c> lets the host redirect the file to a writable data
+            folder without changing the default for existing hosts.
             </summary>
         </member>
         <member name="T:TheTechIdea.Beep.Logger.Providers.DMLoggerProvider">
