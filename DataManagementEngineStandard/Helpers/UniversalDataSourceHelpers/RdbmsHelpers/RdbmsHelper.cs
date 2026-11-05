@@ -424,7 +424,7 @@ namespace TheTechIdea.Beep.Helpers.UniversalDataSourceHelpers.RdbmsHelpers
                         if (clrType == typeof(string) && dataType.Contains("(N)"))
                         {
                             dataType = DataTypeMappingLookup.ResolveStringLength(
-                                dataType, size ?? 4000, SupportedType == DataSourceType.SqlServer);
+                                dataType, size ?? 4000, SupportedType == DataSourceType.SqlServer, SupportedType == DataSourceType.Postgre);
                         }
                         else if (clrType == typeof(decimal))
                         {

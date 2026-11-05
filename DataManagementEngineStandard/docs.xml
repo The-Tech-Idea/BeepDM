@@ -694,6 +694,9 @@
             Get nugget version from assembly
             </summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Tools.LoaderExtensionLifetime">
+            <summary>Releases each owned loader extension once, retaining independent cleanup failures for the owner to report.</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Tools.PluginSystem.AssemblyLoadingAssistant">
             <summary>
             Refactored AssemblyLoadingAssistant that delegates to SharedContextManager for true isolation
@@ -20712,7 +20715,7 @@
             </summary>
         </member>
         <member name="P:TheTechIdea.Beep.Editor.UOWManager.FormsManager.PendingCallbackCount">
-            <summary>Manager-owned callbacks, registration, managed reads/LOV and synchronous validation, including awaited work.</summary>
+            <summary>Manager-owned callbacks, registration, managed reads/LOV, local paging and synchronous validation, including awaited work.</summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.WaitForPendingCallbacksAsync(System.Threading.CancellationToken)">
             <summary>Waits for the current callback set. After Dispose, callback admission remains closed.</summary>
@@ -21819,7 +21822,7 @@
             </summary>
             <remarks>
             B4 (audit pass 3, 2026-06): the other navigation paths
-            (<see cref="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.NavigateToRecordInternalAsync(System.String,System.Int32,System.Boolean)"/> and
+            (<see cref="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.NavigateToRecordInternalAsync(System.String,System.Int32,System.Boolean,System.Action,System.Action,System.Action,System.Threading.CancellationToken)"/> and
             <see cref="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.NavigateWithValidationAsync(System.String,TheTechIdea.Beep.Editor.UOWManager.Models.NavigationType)"/>) honor
             <c>Configuration.Navigation.ValidateBeforeNavigation</c>
             but this method did not. Added the same check so a
@@ -21892,9 +21895,8 @@
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.LoadPageAsync(System.String,System.Int32,System.Threading.CancellationToken)">
             <summary>
-            Navigates the UoW cursor to the first record of the specified page and returns
-            a <see cref="T:TheTechIdea.Beep.Editor.Forms.Models.PageInfo"/> describing the new position.
-            Returns <c>null</c> if the block is not found or the page number is out of range.
+            Local cursor paging over already loaded, authorized rows; never fetches a provider page.
+            Returns null unless page state is acknowledged. Use typed local outcomes for partial effects.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.GetTotalRecordCount(System.String)">
@@ -21911,8 +21913,7 @@
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.SetFetchAheadDepth(System.String,System.Int32)">
             <summary>
-            Configures how many pages beyond the current one should be pre-fetched.
-            Set to 0 to disable fetch-ahead.
+            Stores intended fetch-ahead depth. This facade does not fetch or cache provider pages.
             </summary>
         </member>
         <member name="P:TheTechIdea.Beep.Editor.UOWManager.FormsManager.Paging">
@@ -21926,14 +21927,12 @@
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.SetMaxRecordsPerFetch(System.String,System.Int32)">
             <summary>
-            Configures the maximum number of records fetched per load cycle when lazy loading
-            or paged loading is active.
+            Stores an intended fetch limit; this setting alone does not bound managed/provider reads.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.InvalidateBlockCache(System.String)">
             <summary>
-            Removes a block from the performance cache, forcing the next read to go to the data source.
-            Use when an external process has modified the data.
+            Removes cached block metadata. This does not itself re-query records or refresh a view.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.SetBlockCacheTtl(System.String,System.TimeSpan)">
@@ -22196,7 +22195,7 @@
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.ClearBlockSecurity(System.String)">
             <summary>
             Removes all security rules (block- and field-level) for the named block.
-            After calling this, the block reverts to default open-access permissions.
+            Removes policy restrictions, preserving authored flags. Cached rows still require read authorization.
             </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.UOWManager.FormsManager.GetNextSequence(System.String)">
@@ -24697,37 +24696,7 @@
             <summary>A .NET custom numeric format string, e.g. "#,##0.00".</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.Forms.Helpers.PagingManager">
-            <summary>
-            Manages per-block paging state for virtual scrolling — Phase 7.
-            Does not load data itself; callers re-execute their query after calling <see cref="M:TheTechIdea.Beep.Editor.Forms.Helpers.PagingManager.SetCurrentPage(System.String,System.Int32)"/>.
-            </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.Forms.Helpers.PagingManager.SetPageSize(System.String,System.Int32)">
-            <summary>Sets the page size for a block.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.Forms.Helpers.PagingManager.GetPageSize(System.String)">
-            <summary>Returns the configured page size for a block.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.Forms.Helpers.PagingManager.GetCurrentPage(System.String)">
-            <summary>Returns current paging information for a block.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.Forms.Helpers.PagingManager.SetCurrentPage(System.String,System.Int32)">
-            <summary>Sets the current page number for a block and returns the updated page info.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.Forms.Helpers.PagingManager.SetTotalRecordCount(System.String,System.Int64)">
-            <summary>Sets the total record count for a block.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.Forms.Helpers.PagingManager.GetTotalRecordCount(System.String)">
-            <summary>Returns the total record count for a block.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.Forms.Helpers.PagingManager.SetFetchAheadDepth(System.String,System.Int32)">
-            <summary>Sets the fetch-ahead depth for a block.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.Forms.Helpers.PagingManager.GetFetchAheadDepth(System.String)">
-            <summary>Returns the fetch-ahead depth for a block.</summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.Forms.Helpers.PagingManager.ResetPaging(System.String)">
-            <summary>Clears paging state for a block.</summary>
+            <summary>Bookkeeping only; neither fetch-ahead nor datasource reads are performed here.</summary>
         </member>
         <member name="T:TheTechIdea.Beep.Editor.Forms.Helpers.DefaultFieldMaskProvider">
             <summary>
@@ -27530,6 +27499,13 @@
         <member name="P:TheTechIdea.Beep.Editor.Migration.BeepSchemaVersionRecord.PayloadJson">
             <summary>Lossless JSON of the full <c>DatabaseVersion</c>, so a reader reconstructs it exactly.</summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Editor.Migration.DatabaseTargetMigration">
+            <summary>Owns acknowledged catalog-creation intent, identity, ownership and recovery.
+            Construct through MigrationManager.BindDatabaseTarget. No retry, drop, adoption or CRUD.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Migration.DatabaseTargetMigration.Exists">
+            <summary>Read-only status. No claim, catalog or schema is created.</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.Migration.DbSchemaVersionStore">
             <summary>
             Reads and writes the authoritative schema-version marker <em>inside the target database</em>
@@ -28621,6 +28597,16 @@
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.GetDdlEvidence">
             <summary>Returns all DDL operation evidence accumulated in this session.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.BindDatabaseTarget(TheTechIdea.Beep.Editor.SchemaMigration.IDatabaseTargetMigrationProvider,System.String,TheTechIdea.Beep.Editor.SchemaMigration.DatabaseTargetLegacyClaimBinding)">
+            <summary>Bind native database creation to the framework's guarded pre-open lifecycle.
+            A catalog must exist before a datasource can open and migrate its entity schema.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.CheckDecimalWideningReadiness">
+            <summary>Refuses unresolved native decimal work even when live columns already reached their target.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.WidenDecimalColumn(System.String,TheTechIdea.Beep.DataBase.EntityField,TheTechIdea.Beep.DataBase.EntityField)">
+            <summary>Native guarded decimal widening with acknowledged intent/outcome and existing migration ownership.</summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.DiscoverEntityTypes(System.String,System.Reflection.Assembly,System.Boolean)">
             <summary>
@@ -30066,6 +30052,18 @@
             </summary>
             <typeparam name="T">The type of entity.</typeparam>
         </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.SupportsConditionalMutation">
+            <summary>Whether this clean owner supports guarded physical mutation.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.MutateConditionallyAsync(TheTechIdea.Beep.DataBase.ConditionalMutationRequest,System.Threading.CancellationToken)">
+            <summary>Awaits the guarded mutation and validates its acknowledgement.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.SupportsConditionalMutationBatch">
+            <summary>Whether this owner can dispatch an isolated atomic batch.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.MutateBatchConditionallyAsync(TheTechIdea.Beep.DataBase.ConditionalMutationBatchRequest,System.Threading.CancellationToken)">
+            <summary>Awaits a scoped clean batch and validates its physical acknowledgement.</summary>
+        </member>
         <member name="F:TheTechIdea.Beep.Editor.UOW.UnitofWork`1._suppressNotification">
             <summary>Indicates whether notifications should be suppressed.</summary>
         </member>
@@ -31270,6 +31268,14 @@
             <summary>
             Invalidates all cached pages, forcing a re-fetch on next access.
             </summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.ReadOutcome">
+            <summary>The last read's own acknowledgement, never a later caller's shared last error.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.VisitSnapshotAsync(TheTechIdea.Beep.DataBase.BoundedPageRequest,System.Action{System.Collections.Generic.IReadOnlyList{`0}},System.Threading.CancellationToken)">
+            <summary>Visits all rows privately in bounded batches from one native snapshot.
+            Live Units are never replaced. A callback must not publish partial results or perform I/O.
+            No complete result is acknowledged until the provider and all callbacks finish.</summary>
         </member>
         <member name="P:TheTechIdea.Beep.Editor.UOW.UnitofWork`1.TenantFieldName">
              <summary>
@@ -37377,6 +37383,19 @@
             </summary>
             <returns>Dictionary containing cache statistics.</returns>
         </member>
+        <member name="M:TheTechIdea.Beep.Helpers.DataTypesHelpers.DataTypeMappingLookup.ResolveDecimalStorageType(System.String,System.Nullable{System.Int32},System.Nullable{System.Int32})">
+            <summary>
+            Resolves an exact numeric type's declared shape. An omitted shape uses the existing
+            28/8 engine default; explicit precision with zero scale remains zero. Currency minor
+            units do not determine storage scale. Non-numeric custom mappings remain their owner's.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.DataTypesHelpers.DataTypeMappingLookup.ResolveDecimalStorageShape(System.Nullable{System.Int32},System.Nullable{System.Int32})">
+            <summary>The shared declared/default exact-decimal shape, independent of currency minor units.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.DataTypesHelpers.DataTypeMappingLookup.ContainsDecimalStorageShape(System.Int32,System.Int32,System.Int32,System.Int32)">
+            <summary>True only when every value in the source decimal domain fits the target exactly.</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Helpers.DataTypesHelpers.DataTypeMappingRepository">
             <summary>
             Helper class for retrieving data type mappings for different data sources.
@@ -38935,7 +38954,7 @@
             <param name="databaseType">The target database type</param>
             <returns>Column definition string</returns>
         </member>
-        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelpers.DatabaseObjectCreationHelper.MapDataType(System.String,TheTechIdea.Beep.Utilities.DataSourceType)">
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelpers.DatabaseObjectCreationHelper.MapFieldDataType(TheTechIdea.Beep.DataBase.EntityField,TheTechIdea.Beep.Utilities.DataSourceType)">
             <summary>
             Maps .NET data types to database-specific data types.
             </summary>
@@ -39542,6 +39561,21 @@
             Helper class for generating parameterized queries with proper parameter placeholders for each database type.
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelpers.DMLHelpers.DatabaseDMLParameterizedQueries.GenerateConditionalCalendarCommitQuery(TheTechIdea.Beep.Utilities.DataSourceType,TheTechIdea.Beep.DataBase.ConditionalMutationRequest,System.Func{System.String,System.String},System.Func{System.String,System.String,System.String})">
+            <summary>Rechecks complete alternative groups containing calendar windows after a single mutation, before commit.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelpers.DMLHelpers.DatabaseDMLParameterizedQueries.GenerateConditionalBatchGuardQuery(TheTechIdea.Beep.Utilities.DataSourceType,TheTechIdea.Beep.DataBase.ConditionalMutationBatchRequest,System.Func{System.String,System.String},System.Func{System.String,System.String,System.String},System.Boolean)">
+            <summary>Parameterized preflight observations, under the provider's owned serializable transaction.
+            Complete groups containing calendar windows are also rechecked before commit.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelpers.DMLHelpers.DatabaseDMLParameterizedQueries.GenerateConditionalBatchGuardQueries(TheTechIdea.Beep.Utilities.DataSourceType,TheTechIdea.Beep.DataBase.ConditionalMutationBatchRequest,System.Func{System.String,System.String},System.Func{System.String,System.String,System.String},System.Boolean)">
+            <summary>Bounded physical observations, all executed under the caller's one serializable transaction.
+            Guard alternatives remain intact; this never splits mutations or commits.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelpers.DMLHelpers.DatabaseDMLParameterizedQueries.GenerateConditionalMutationQuery(TheTechIdea.Beep.Utilities.DataSourceType,TheTechIdea.Beep.DataBase.ConditionalMutationRequest,System.Func{System.String,System.String},System.Func{System.String,System.String,System.String})">
+            <summary>Parameterized insert/update with expected values and required foreign-row guards.
+            Callers resolve every table/field through declared metadata before generation.</summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelpers.DMLHelpers.DatabaseDMLParameterizedQueries.GenerateParameterizedInsertQuery(TheTechIdea.Beep.Utilities.DataSourceType,System.String,System.Collections.Generic.IEnumerable{System.String})">
             <summary>
             Generates a parameterized INSERT query with proper parameter placeholders for each database type.
@@ -39684,6 +39718,13 @@
             Utility methods for database operations including paging, counting, and value handling.
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelpers.DMLHelpers.DatabaseDMLUtilities.GetBoundedPageProjection(TheTechIdea.Beep.Utilities.DataSourceType,System.Collections.Generic.IEnumerable{TheTechIdea.Beep.DataBase.EntityField},System.Int32)">
+            <summary>Rejects oversized cells in SQL before ADO.NET can materialize them.
+            A leading marker makes refusal explicit; a rejected value is never returned as a truncated success.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelpers.DMLHelpers.DatabaseDMLUtilities.GetBoundedPagingSyntax(TheTechIdea.Beep.Utilities.DataSourceType,System.Int64,System.Int32)">
+            <summary>Checked long offsets for providers admitted by the strict page owner.</summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelpers.DMLHelpers.DatabaseDMLUtilities.GetPagingSyntax(TheTechIdea.Beep.Utilities.DataSourceType,System.Int32,System.Int32)">
             <summary>
             Gets the SQL syntax for paging results
@@ -39692,6 +39733,9 @@
             <param name="pageNumber">Page number (1-based)</param>
             <param name="pageSize">Number of records per page</param>
             <returns>SQL paging syntax</returns>
+        </member>
+        <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelpers.DMLHelpers.DatabaseDMLUtilities.GetBoundedRecordCountQuery(TheTechIdea.Beep.Utilities.DataSourceType,System.String,System.String)">
+            <summary>Long count for the strict page envelope; SQL Server COUNT_BIG avoids Int32 overflow.</summary>
         </member>
         <member name="M:TheTechIdea.Beep.Helpers.RDBMSHelpers.DMLHelpers.DatabaseDMLUtilities.GetRecordCountQuery(TheTechIdea.Beep.Utilities.DataSourceType,System.String,System.String,System.String)">
             <summary>
