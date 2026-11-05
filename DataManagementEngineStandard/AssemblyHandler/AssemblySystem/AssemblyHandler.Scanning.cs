@@ -373,6 +373,26 @@ namespace TheTechIdea.Beep.Tools
         }
 
         /// <summary>
+        /// Scans assemblies loaded from a connection-driver folder for IDataSource implementations.
+        /// Modern packages ship the ADO provider and the data source class side by side; without
+        /// this, only the ADO driver was registered and the provider never appeared in the catalog.
+        /// </summary>
+        private void ScanConnectionDriverDataSources()
+        {
+            foreach (assemblies_rep item in Assemblies.Where(c => c.FileTypes == FolderFileTypes.ConnectionDriver).ToList())
+            {
+                try
+                {
+                    ScanAssemblyForDataSources(item.DllLib);
+                }
+                catch (Exception ex)
+                {
+                    Logger?.WriteLog($"ScanConnectionDriverDataSources: Error scanning {item.DllLib?.GetName().Name}: {ex.Message}");
+                }
+            }
+        }
+
+        /// <summary>
         /// Scan project and addin assemblies
         /// </summary>
         private void ScanProjectAndAddinAssemblies()

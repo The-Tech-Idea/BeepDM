@@ -261,6 +261,11 @@ namespace TheTechIdea.Beep.Tools
             SendMessege(progress, token, "Getting Drivers Classes");
             LoadFolderAssemblies(FolderFileTypes.ConnectionDriver, progress, token);
 
+            // Offline packages stage the ADO provider and the IDataSource implementation together
+            // in ConnectionDrivers. Scan those assemblies for data sources too, otherwise the ADO
+            // driver is registered but the provider class never reaches DataSourcesClasses.
+            ScanConnectionDriverDataSources();
+
             SendMessege(progress, token, "Getting Data Sources Classes");
             LoadFolderAssemblies(FolderFileTypes.DataSources, progress, token);
 

@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Collections.Concurrent;
+using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Text.RegularExpressions;
 using TheTechIdea.Beep.Utilities;
 using TheTechIdea.Beep.DataBase;
@@ -23,9 +25,46 @@ namespace TheTechIdea.Beep.Helpers.DataTypesHelpers
         private const string PRECISION_SCALE_PLACEHOLDER = "(N,S)";
         
         // Thread-safe caches for improved performance
-        private static readonly ConcurrentDictionary<string, DatatypeMapping> _mappingCache = new();
-        private static readonly ConcurrentDictionary<string, string> _dataTypeCache = new();
-        private static readonly ConcurrentDictionary<string, List<DatatypeMapping>> _classTypeMappingsCache = new();
+        private sealed class EditorCaches
+        {
+            public readonly ConcurrentDictionary<string, DatatypeMapping> Mappings = new();
+            public readonly ConcurrentDictionary<string, string> DataTypes = new();
+            public readonly ConcurrentDictionary<string, List<DatatypeMapping>> ClassMappings = new();
+        }
+        private sealed class EditorCacheState
+        {
+            public EditorCaches Current = new();
+            public (string Source, string Provider, string Net, bool Favorite)[] Snapshot = Array.Empty<(string, string, string, bool)>();
+            public readonly Dictionary<string, string> Bindings = new(StringComparer.OrdinalIgnoreCase);
+        }
+        private static ConditionalWeakTable<IDMEEditor, EditorCacheState> _caches = new();
+        private static EditorCaches Caches(IDMEEditor editor, string dataSource = null)
+        {
+            var state = _caches.GetValue(editor, _ => new EditorCacheState());
+            var snapshot = editor.ConfigEditor?.DataTypesMap?.Select(m => (m.DataSourceName, m.DataType, m.NetDataType, m.Fav)).ToArray()
+                ?? Array.Empty<(string, string, string, bool)>();
+            string binding = null;
+            if (dataSource is not null)
+            {
+                try { binding = editor.GetDataSourceClass(dataSource)?.className; }
+                catch (Exception ex)
+                {
+                    editor.AddLogMessage("DataTypeMappingLookup", $"Error resolving class for data source '{dataSource}': {ex.Message}", DateTime.Now, -1, null, Errors.Failed);
+                }
+            }
+            lock (state)
+            {
+                if (!state.Snapshot.SequenceEqual(snapshot))
+                {
+                    state.Current = new EditorCaches();
+                    state.Snapshot = snapshot;
+                }
+                if (dataSource is not null && state.Bindings.TryGetValue(dataSource, out var previous) && previous != binding)
+                    state.Current = new EditorCaches();
+                if (dataSource is not null) state.Bindings[dataSource] = binding;
+                return state.Current;
+            }
+        }
         
         // Regex patterns for better performance
         private static readonly Regex _parenthesesPattern = new(@"\([^)]*\)", RegexOptions.Compiled);
@@ -52,7 +91,7 @@ namespace TheTechIdea.Beep.Helpers.DataTypesHelpers
 
             var cacheKey = $"{className}|{Fieldtype}|{fld.Size1}";
             
-            return _mappingCache.GetOrAdd(cacheKey, _ =>
+            return Caches(DMEEditor).Mappings.GetOrAdd(cacheKey, _ =>
             {
                 try
                 {
@@ -105,7 +144,7 @@ namespace TheTechIdea.Beep.Helpers.DataTypesHelpers
 
             var cacheKey = $"{DSname}|{providerfldtype}";
             
-            return _dataTypeCache.GetOrAdd(cacheKey, _ =>
+            return Caches(DMEEditor, DSname).DataTypes.GetOrAdd(cacheKey, _ =>
             {
                 try
                 {
@@ -166,7 +205,7 @@ namespace TheTechIdea.Beep.Helpers.DataTypesHelpers
 
             var cacheKey = $"{DSname}|{fld.EntityName}|{fld.FieldName}|{fld.Fieldtype}|{fld.Size1}|{fld.NumericPrecision}|{fld.NumericScale}";
             
-            return _dataTypeCache.GetOrAdd(cacheKey, _ =>
+            return Caches(DMEEditor, DSname).DataTypes.GetOrAdd(cacheKey, _ =>
             {
                 try
                 {
@@ -236,7 +275,7 @@ namespace TheTechIdea.Beep.Helpers.DataTypesHelpers
 
             var cacheKey = $"class|{className}|{fld.Fieldtype}|{fld.Size1}|{fld.NumericPrecision}|{fld.NumericScale}";
             
-            return _dataTypeCache.GetOrAdd(cacheKey, _ =>
+            return Caches(DMEEditor).DataTypes.GetOrAdd(cacheKey, _ =>
             {
                 try
                 {
@@ -269,7 +308,7 @@ namespace TheTechIdea.Beep.Helpers.DataTypesHelpers
 
             var cacheKey = $"wo_conv|{DSname}|{fld.Fieldtype}|{fld.Size1}|{fld.NumericPrecision}|{fld.NumericScale}";
             
-            return _dataTypeCache.GetOrAdd(cacheKey, _ =>
+            return Caches(DMEEditor, DSname).DataTypes.GetOrAdd(cacheKey, _ =>
             {
                 try
                 {
@@ -302,9 +341,7 @@ namespace TheTechIdea.Beep.Helpers.DataTypesHelpers
         /// </summary>
         public static void ClearCache()
         {
-            _mappingCache.Clear();
-            _dataTypeCache.Clear();
-            _classTypeMappingsCache.Clear();
+            Interlocked.Exchange(ref _caches, new ConditionalWeakTable<IDMEEditor, EditorCacheState>());
         }
 
         /// <summary>
@@ -313,12 +350,16 @@ namespace TheTechIdea.Beep.Helpers.DataTypesHelpers
         /// <returns>Dictionary containing cache statistics.</returns>
         public static Dictionary<string, object> GetCacheStatistics()
         {
+            var caches = _caches.Select(entry => entry.Value.Current).ToArray();
+            var mappings = caches.Sum(cache => cache.Mappings.Count);
+            var dataTypes = caches.Sum(cache => cache.DataTypes.Count);
+            var classes = caches.Sum(cache => cache.ClassMappings.Count);
             return new Dictionary<string, object>
             {
-                ["MappingCacheCount"] = _mappingCache.Count,
-                ["DataTypeCacheCount"] = _dataTypeCache.Count,
-                ["ClassMappingsCacheCount"] = _classTypeMappingsCache.Count,
-                ["TotalCachedItems"] = _mappingCache.Count + _dataTypeCache.Count + _classTypeMappingsCache.Count
+                ["MappingCacheCount"] = mappings,
+                ["DataTypeCacheCount"] = dataTypes,
+                ["ClassMappingsCacheCount"] = classes,
+                ["TotalCachedItems"] = mappings + dataTypes + classes
             };
         }
 
@@ -370,7 +411,7 @@ namespace TheTechIdea.Beep.Helpers.DataTypesHelpers
 
         private static List<DatatypeMapping> GetCachedClassMappings(string className, IDMEEditor DMEEditor)
         {
-            return _classTypeMappingsCache.GetOrAdd(className, _ =>
+            return Caches(DMEEditor).ClassMappings.GetOrAdd(className, _ =>
             {
                 return DMEEditor.ConfigEditor.DataTypesMap?
                     .Where(x => x.DataSourceName.Equals(className, StringComparison.InvariantCultureIgnoreCase))

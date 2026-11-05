@@ -98,6 +98,7 @@ namespace TheTechIdea.Beep.Utilities
             string fullNamespace = string.IsNullOrEmpty(classNamespace)
                 ? (!string.IsNullOrEmpty(dataSourceName) ? dataSourceName : "TheTechIdea.Classes")
                 : classNamespace;
+            fullNamespace = NormalizeGeneratedNamespace(fullNamespace);
 
             string fullTypeName = $"{fullNamespace}.{typeName}";
 
@@ -116,6 +117,19 @@ namespace TheTechIdea.Beep.Utilities
                     ((ICollection<KeyValuePair<string, Type>>)typeCache).Remove(generatedCacheEntries.Dequeue());
             }
             return compiled.Item1;
+        }
+
+        // Connection names are not C# namespaces. Encode invalid segments without
+        // merging distinct names such as "permit-provider" and "permit_provider".
+        private static string NormalizeGeneratedNamespace(string value)
+        {
+            const string encodedPrefix = "_BeepEncoded_";
+            return string.Join(".", value.Split('.').Select(segment =>
+                Microsoft.CodeAnalysis.CSharp.SyntaxFacts.IsValidIdentifier(segment) &&
+                !segment.StartsWith(encodedPrefix, StringComparison.Ordinal)
+                    ? segment
+                    : encodedPrefix + string.Concat(segment.Select(character =>
+                        ((int)character).ToString("X4", System.Globalization.CultureInfo.InvariantCulture)))));
         }
 
         public static object CreateNewObject(IDMEEditor editor, string classNamespace, string dataSourceName, string typeName, List<EntityField> fields)

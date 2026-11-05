@@ -23,7 +23,7 @@
    
   </PropertyGroup>
 	<Target Name="CopyPackage" AfterTargets="Pack">
-		<Copy SourceFiles="$(OutputPath)$(PackageId).$(PackageVersion).nupkg" DestinationFolder="..\..\..\LocalNugetFiles" />
+		<Copy Condition="'$(SkipLocalPackageCopy)' != 'true'" SourceFiles="$(OutputPath)$(PackageId).$(PackageVersion).nupkg" DestinationFolder="..\..\..\LocalNugetFiles" />
 	</Target>
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
 		<Copy SourceFiles="$(TargetDir)$(MSBuildProjectName).dll" DestinationFolder="$(ProjectDir)..\..\outputDLL\$(PackageId)\$(TargetFramework)" SkipUnchangedFiles="false" />

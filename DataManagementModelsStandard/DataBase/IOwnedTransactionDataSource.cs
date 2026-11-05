@@ -1,4 +1,5 @@
 using TheTechIdea.Beep.ConfigUtil;
+using System.Data;
 
 namespace TheTechIdea.Beep.DataBase
 {
@@ -12,6 +13,12 @@ namespace TheTechIdea.Beep.DataBase
         IErrorsInfo BeginOwnedTransaction(object owner);
         IErrorsInfo CommitOwnedTransaction(object owner);
         IErrorsInfo RollbackOwnedTransaction(object owner);
+    }
+
+    /// <summary>Owned transactions whose isolation can be chosen before the physical transaction begins.</summary>
+    public interface IIsolationOwnedTransactionDataSource : IOwnedTransactionDataSource
+    {
+        IErrorsInfo BeginOwnedTransaction(object owner, IsolationLevel isolation);
     }
 
     /// <summary>This call was refused before native transactional dispatch or resource changes.

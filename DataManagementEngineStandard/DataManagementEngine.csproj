@@ -27,7 +27,7 @@
 	</Target>
  
 	<Target Name="CopyPackage" AfterTargets="Pack">
-		<Copy SourceFiles="$(OutputPath)$(PackageId).$(PackageVersion).nupkg" DestinationFolder="..\..\..\LocalNugetFiles" />
+		<Copy Condition="'$(SkipLocalPackageCopy)' != 'true'" SourceFiles="$(OutputPath)$(PackageId).$(PackageVersion).nupkg" DestinationFolder="..\..\..\LocalNugetFiles" />
 	</Target>
  
 	<ItemGroup>

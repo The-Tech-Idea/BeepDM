@@ -331,7 +331,7 @@ namespace TheTechIdea.Beep.Logger
                         string ext = Path.GetExtension(_baseFileName);
                         string name = Path.GetFileNameWithoutExtension(_baseFileName);
                         string dir = Path.GetDirectoryName(_baseFileName);
-                        if (string.IsNullOrEmpty(dir)) dir = AppDomain.CurrentDomain.BaseDirectory;
+                        if (string.IsNullOrEmpty(dir)) dir = ResolveDefaultLogDirectory();
                         
                         string currentFile = Path.Combine(dir, $"{name}{currentDate}{ext}");
                         
@@ -345,8 +345,32 @@ namespace TheTechIdea.Beep.Logger
                 }
             }
 
-            private void CleanupOldFiles(string directory, string fileNameWithoutExt, string ext)
+            /// <summary>
+            /// A relative log file name used to land in the application directory. Under Program
+            /// Files that is not writable for a standard user, and it also left the log behind on
+            /// uninstall. <c>BEEP_LOG_DIR</c> lets the host redirect the file to a writable data
+            /// folder without changing the default for existing hosts.
+            /// </summary>
+            private static string ResolveDefaultLogDirectory()
             {
+                var configured = Environment.GetEnvironmentVariable("BEEP_LOG_DIR");
+                if (!string.IsNullOrWhiteSpace(configured))
+                {
+                    try
+                    {
+                        Directory.CreateDirectory(configured);
+                        return configured;
+                    }
+                    catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"DMLogger.ResolveDefaultLogDirectory: ignoring '{configured}': {ex.Message}");
+                    }
+                }
+
+                return AppDomain.CurrentDomain.BaseDirectory;
+            }
+
+            private void CleanupOldFiles(string directory, string fileNameWithoutExt, string ext)            {
                 try
                 {
                     var files = Directory.GetFiles(directory, $"{fileNameWithoutExt}*{ext}")
