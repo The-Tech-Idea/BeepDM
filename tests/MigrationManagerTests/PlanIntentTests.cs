@@ -364,10 +364,14 @@ public class PlanIntentTests
         var (harness, manager, plan) = Build();
         var result = manager.ExecuteMigrationPlan(plan);
         Assert.True(result.Success, result.Message);
-        var record = harness.History.Migrations.Last(item => item.Name == "ExecuteMigrationPlan.Checkpoint");
-        var old = Newtonsoft.Json.JsonConvert.DeserializeObject<MigrationExecutionCheckpoint>(record.Notes)!;
-        old.ApprovedPlan = null;
-        record.Notes = Newtonsoft.Json.JsonConvert.SerializeObject(old);
+        // A legacy execution recorded no approved plan at all. The current format writes the plan once, in the
+        // execution's first checkpoint record, so the legacy shape is "no record of this execution has a plan".
+        foreach (var record in harness.History.Migrations.Where(item => item.Name == "ExecuteMigrationPlan.Checkpoint"))
+        {
+            var old = Newtonsoft.Json.JsonConvert.DeserializeObject<MigrationExecutionCheckpoint>(record.Notes)!;
+            old.ApprovedPlan = null;
+            record.Notes = Newtonsoft.Json.JsonConvert.SerializeObject(old);
+        }
         var resumed = harness.Build().ResumeMigrationPlan(result.ExecutionToken);
         Assert.False(resumed.Success);
         Assert.Contains("Legacy", resumed.Message);

@@ -79,12 +79,6 @@ namespace TheTechIdea.Beep.Editor.Migration
                 checkpoint.OwnershipTargetKey = _executionScope.Value.TargetKey;
                 checkpoint.OwnershipStoreIdentity = _executionScope.Value.Storage.ScopeIdentity;
             }
-            else if (checkpoint.ApprovedPlan == null)
-            {
-                // The record carries the plan's identity, not the plan; resume re-attaches the persisted artifact.
-                checkpoint.ApprovedPlan = plan ?? TryLoadPersistedPlan(checkpoint.PlanId);
-            }
-
 
             if (!CheckpointScopeMatches(checkpoint)) throw new MigrationCheckpointPersistenceException(checkpoint,
                 new PersistenceWriteResult(PersistenceWriteStatus.Failed), requiresReconciliation: true);
@@ -610,21 +604,6 @@ namespace TheTechIdea.Beep.Editor.Migration
             return null;
         }
 
-        /// <summary>The plan a checkpoint belongs to, read back when a resume is asked for by token alone.</summary>
-        private MigrationPlanArtifact TryLoadPersistedPlan(string planId)
-        {
-            if (string.IsNullOrWhiteSpace(planId)) return null;
-
-            try
-            {
-                return LoadMigrationPlan(planId);
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
         private static MigrationExecutionCheckpoint BuildNewCheckpoint(MigrationPlanArtifact plan, string token)
         {
             return new MigrationExecutionCheckpoint
@@ -928,9 +907,11 @@ namespace TheTechIdea.Beep.Editor.Migration
                               || CheckpointEverySteps <= 1;
 
             int calls;
+            bool firstRecord;
 
             lock (_checkpointCalls)
             {
+                firstRecord = !_persistedCheckpointCalls.ContainsKey(checkpoint.ExecutionToken);
                 _checkpointCalls.TryGetValue(checkpoint.ExecutionToken, out var previousCalls);
                 calls = previousCalls + 1;
                 _checkpointCalls[checkpoint.ExecutionToken] = calls;
@@ -948,13 +929,15 @@ namespace TheTechIdea.Beep.Editor.Migration
             }
 
             checkpoint.UpdatedOnUtc = DateTime.UtcNow;
-            // Checkpoints never carry the plan: the planning step persists the artifact once, and a resume re-attaches
-            // it by id. Embedding it in every checkpoint record is what grew the history to 1 GB on a single module.
+            // The approved plan is written once per execution: in the first checkpoint record this manager writes for
+            // the token. Embedding it in every record is what grew the history to 1 GB on a single module. Later
+            // records carry the identity and every step's state; LoadPersistedCheckpoint attaches the plan again from
+            // the record that has it, and refuses a checkpoint whose plan cannot be found or no longer matches.
             var outcome = MigrationRecordWriter.WriteExecutionSnapshotToStore(
                 scope.Storage,
                 checkpoint,
                 scope.DataSourceName, scope.DataSourceType, token,
-                includePlanAndSteps: false);
+                includePlan: firstRecord);
             if (!outcome.IsSaved) throw new MigrationCheckpointPersistenceException(checkpoint, outcome);
             ExecutionCheckpoints.TryRemove(checkpoint.ExecutionToken, out _);
 
@@ -984,15 +967,34 @@ namespace TheTechIdea.Beep.Editor.Migration
                 if (string.IsNullOrWhiteSpace(dsName)) return null;
 
                 var history = scope.Storage.LoadMigrationHistory(dsName);
-                var record = history?.Migrations?
+                var records = history?.Migrations?
                     .Where(r => r != null
                                 && string.Equals(r.MigrationId, executionToken.Trim(), StringComparison.Ordinal)
                                 && string.Equals(r.Name, "ExecuteMigrationPlan.Checkpoint", StringComparison.Ordinal))
                     .OrderBy(r => r.AppliedOnUtc)
-                    .LastOrDefault();
+                    .ToList();
+                var record = records?.LastOrDefault();
                 if (record == null) return null;
 
                 var checkpoint = ReadSnapshot<MigrationExecutionCheckpoint>(record.Notes);
+                if (checkpoint != null && checkpoint.ApprovedPlan == null)
+                {
+                    // Only the first record of an execution carries the approved plan. Take it from the newest record
+                    // that has one, and accept it only when it is still the plan this checkpoint was approved for.
+                    const string planMarker = "\"" + nameof(MigrationExecutionCheckpoint.ApprovedPlan) + "\":{";
+                    for (var index = records.Count - 2; index >= 0 && checkpoint.ApprovedPlan == null; index--)
+                    {
+                        if (records[index].Notes?.Contains(planMarker, StringComparison.Ordinal) != true) continue;
+                        var carrier = ReadSnapshot<MigrationExecutionCheckpoint>(records[index].Notes);
+                        if (carrier?.ApprovedPlan == null) continue;
+                        if (!string.Equals(carrier.ExecutionToken, checkpoint.ExecutionToken, StringComparison.Ordinal) ||
+                            !string.Equals(ComputePlanHash(carrier.ApprovedPlan), checkpoint.PlanHash, StringComparison.Ordinal))
+                            throw new System.IO.InvalidDataException("Persisted checkpoint plan belongs to a different execution or plan hash.");
+                        checkpoint.ApprovedPlan = carrier.ApprovedPlan;
+                    }
+                    // No record of this execution has a plan: a legacy checkpoint. It stays without one, and
+                    // ValidateCheckpointIntent refuses it with the rebuild-and-re-approve answer before any replay.
+                }
                 if (checkpoint == null || !string.Equals(checkpoint.ExecutionToken, executionToken.Trim(), StringComparison.Ordinal) ||
                     checkpoint.Steps == null || checkpoint.Steps.Any(s => s == null || !Enum.IsDefined(s.Status) || s.AttemptCount < 0) ||
                     checkpoint.CompensationSteps == null || checkpoint.CompensationSteps.Any(s => s == null ||

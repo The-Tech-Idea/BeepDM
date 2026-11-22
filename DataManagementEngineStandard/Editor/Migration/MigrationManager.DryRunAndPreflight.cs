@@ -242,8 +242,8 @@ namespace TheTechIdea.Beep.Editor.Migration
                     var snapshot = operation.SchemaSnapshot;
                     var exists = MigrateDataSource.CheckEntityExist(operation.EntityName);
                     if (exists != snapshot.ExpectedEntityExists) return true;
-                    if (exists && !string.Equals(CanonicalJson(SchemaIntent(snapshot.ExpectedSchema)),
-                        CanonicalJson(SchemaIntent(MigrateDataSource.GetEntityStructure(operation.EntityName, true))),
+                    if (exists && !string.Equals(CanonicalJson(SchemaSignature(snapshot.ExpectedSchema)),
+                        CanonicalJson(SchemaSignature(MigrateDataSource.GetEntityStructure(operation.EntityName, true))),
                         StringComparison.Ordinal)) return true;
                 }
                 return false;

@@ -12,7 +12,7 @@ namespace TheTechIdea.Beep.Editor.Migration
 {
     public partial class MigrationManager
     {
-        // Version 3 hashes a compact projection of each operation's schema instead of the whole entity structure.
+        // Version 3 hashes each operation's schema definition read property by property instead of the serialised entity structure.
         // Version 2 plans are refused rather than re-hashed: their identity was computed from a different document, so
         // accepting them would mean "the plan changed after approval" for a plan nobody touched.
         private const int CurrentPlanHashVersion = 3;
@@ -50,39 +50,14 @@ namespace TheTechIdea.Beep.Editor.Migration
             JToken.FromObject(checkpoint, SnapshotSerializer()).ToString(Formatting.None);
 
         /// <summary>
-        /// The checkpoint record's snapshot, without the approved plan it carries. The plan is already persisted (or
-        /// held in memory by the caller) and is hundreds of megabytes for a large module; embedding it in every
-        /// per-step checkpoint record made the history quadratic in plan size. Identity and step state remain.
+        /// The checkpoint record's snapshot, without the approved plan it carries. The plan is hundreds of megabytes
+        /// for a large module; embedding it in every per-step checkpoint record made the history quadratic in plan
+        /// size. The first record of an execution carries the plan; identity and every step's state remain here.
         /// </summary>
         internal static string SerializeCheckpointSnapshotWithoutPlan(MigrationExecutionCheckpoint checkpoint)
         {
             var json = JObject.FromObject(checkpoint, SnapshotSerializer());
             json.Remove(nameof(MigrationExecutionCheckpoint.ApprovedPlan));
-            return json.ToString(Formatting.None);
-        }
-
-        /// <summary>
-        /// The compact snapshot written with each checkpoint record: identity, status and position, without the
-        /// approved plan or the full step list.
-        /// </summary>
-        /// <remarks>
-        /// Every execution step writes a checkpoint. Carrying all 2716 steps (and the plan) in each record made a
-        /// record about a megabyte and its serialization about two seconds - the schema apply spent its time
-        /// re-serializing the same growing state instead of creating tables. <c>LastCompletedStep</c> plus the plan
-        /// is what resume needs; the failed/current steps are attached separately to the record.
-        /// </remarks>
-        internal static string SerializeCheckpointSnapshotCompact(MigrationExecutionCheckpoint checkpoint)
-        {
-            var json = JObject.FromObject(checkpoint, SnapshotSerializer());
-
-            foreach (var property in json.Properties()
-                         .Where(property => string.Equals(property.Name, nameof(MigrationExecutionCheckpoint.ApprovedPlan), StringComparison.OrdinalIgnoreCase)
-                                            || string.Equals(property.Name, nameof(MigrationExecutionCheckpoint.Steps), StringComparison.OrdinalIgnoreCase))
-                         .ToList())
-            {
-                property.Remove();
-            }
-
             return json.ToString(Formatting.None);
         }
 
@@ -127,29 +102,6 @@ namespace TheTechIdea.Beep.Editor.Migration
                 json[name]?.DeepClone() ?? JValue.CreateNull())));
         }
 
-        private static JToken SchemaIntent(EntityStructure schema)
-        {
-            if (schema == null) return JValue.CreateNull();
-            var json = (JObject)SelectProperties(schema,
-                "EntityName DatasourceEntityName OriginalEntityName SchemaOrOwnerOrDatabase DatabaseType EntityType PrimaryKeyString CustomBuildQuery IsIdentity");
-            const string fieldNames = "FieldName Originalfieldname Fieldtype Size Size1 Size2 NumericPrecision NumericScale FieldCategory ValueMin ValueMax IsRequired IsIndexed IsAutoIncrement AllowDBNull IsCheck IsUnique IsKey FieldIndex IsIdentity EntityName OrdinalPosition IsReadOnly IsRowVersion IsLong DefaultValue Expression BaseTableName BaseColumnName MaxLength IsFixedLength ColumnName ColumnTypeName DatabaseGeneratedOptionName IsNotMapped IsUnicode";
-            json["Fields"] = new JArray((schema.Fields ?? new List<EntityField>())
-                .OrderBy(field => field?.OrdinalPosition ?? 0).ThenBy(field => field?.FieldIndex ?? 0)
-                .ThenBy(field => field?.FieldName, StringComparer.Ordinal)
-                .Select(field => SelectProperties(field, fieldNames)));
-            // Composite key and index column order is semantic, unlike unrelated descriptors.
-            json["PrimaryKeys"] = new JArray((schema.PrimaryKeys ?? new List<EntityField>())
-                .Select(field => SelectProperties(field, fieldNames)));
-            json["Relations"] = new JArray((schema.Relations ?? new List<RelationShipKeys>())
-                .Select(relation => SelectProperties(relation,
-                    "RalationName RelatedEntityID RelatedEntityColumnID RelatedColumnSequenceID EntityColumnID EntityColumnSequenceID OnDeleteBehavior OnUpdateBehavior"))
-                .OrderBy(item => CanonicalJson(item), StringComparer.Ordinal));
-            json["Indexes"] = new JArray((schema.Indexes ?? new List<EntityIndex>())
-                .Select(index => SelectProperties(index, "Name EntityName Columns IsUnique IsClustered Options"))
-                .OrderBy(item => CanonicalJson(item), StringComparer.Ordinal));
-            return json;
-        }
-
         private static JToken Canonicalize(JToken token)
         {
             if (token is JObject obj)
@@ -189,45 +141,73 @@ namespace TheTechIdea.Beep.Editor.Migration
         }
 
         /// <summary>
-        /// The part of an entity's shape that belongs to the plan's identity: its name, its key and each field's
-        /// name/type/size/nullability/flags. Built by reading properties directly - no serialiser, no whole-object
-        /// graph - because hashing a plan used to serialise every operation's full desired and expected structure,
-        /// which cost minutes and gigabytes on a large module.
+        /// The part of an entity's shape that belongs to the plan's identity: the entity's own descriptors, every
+        /// field's definition, the ordered primary key, its relations and its indexes. Each value is read straight
+        /// from its property - no serialiser and no whole-object graph - because hashing a plan used to serialise
+        /// every operation's full desired and expected structure, which cost minutes and gigabytes on a large
+        /// module. Reading directly is the saving; the definition itself is complete, so a change to a size, a
+        /// default, a column name, a key order or an index is a different plan and needs approval again.
         /// </summary>
         private static JToken SchemaSignature(EntityStructure schema)
         {
             if (schema == null) return JValue.CreateNull();
 
-            var fields = new JArray((schema.Fields ?? new List<EntityField>())
+            var json = Signature(schema, EntitySignatureProperties);
+            json["Fields"] = new JArray((schema.Fields ?? new List<EntityField>())
                 .Where(field => field != null)
-                .OrderBy(field => field.OrdinalPosition)
-                .ThenBy(field => field.FieldIndex)
+                .OrderBy(field => field.OrdinalPosition).ThenBy(field => field.FieldIndex)
                 .ThenBy(field => field.FieldName, StringComparer.Ordinal)
-                .Select(field => new JObject(
-                    new JProperty("n", field.FieldName ?? string.Empty),
-                    new JProperty("t", field.Fieldtype ?? string.Empty),
-                    new JProperty("s", field.Size1),
-                    new JProperty("k", field.IsKey),
-                    new JProperty("nn", !field.AllowDBNull),
-                    new JProperty("r", field.IsRequired),
-                    new JProperty("i", field.IsAutoIncrement))));
-
-            // Relations decide foreign-key operations; their identity is a handful of names, not object graphs.
-            var relations = new JArray((schema.Relations ?? new List<RelationShipKeys>())
+                .Select(field => Signature(field, FieldSignatureProperties)));
+            // Composite key and index column order is semantic, unlike unrelated descriptors.
+            json["PrimaryKeys"] = new JArray((schema.PrimaryKeys ?? new List<EntityField>())
+                .Where(field => field != null)
+                .Select(field => Signature(field, FieldSignatureProperties)));
+            json["Relations"] = new JArray((schema.Relations ?? new List<RelationShipKeys>())
                 .Where(relation => relation != null)
-                .Select(relation =>
-                    $"{relation.RalationName}|{relation.RelatedEntityID}|{relation.RelatedEntityColumnID}|" +
-                    $"{relation.RelatedColumnSequenceID}|{relation.EntityColumnID}|{relation.EntityColumnSequenceID}|" +
-                    $"{relation.OnDeleteBehavior}|{relation.OnUpdateBehavior}")
-                .OrderBy(text => text, StringComparer.Ordinal)
-                .Select(text => new JValue(text)));
-
-            return new JObject(
-                new JProperty("entity", schema.EntityName ?? string.Empty),
-                new JProperty("pk", schema.PrimaryKeyString ?? string.Empty),
-                new JProperty("fields", fields),
-                new JProperty("relations", relations));
+                .Select(relation => Signature(relation, RelationSignatureProperties))
+                .OrderBy(item => item.ToString(Formatting.None), StringComparer.Ordinal));
+            json["Indexes"] = new JArray((schema.Indexes ?? new List<EntityIndex>())
+                .Where(index => index != null)
+                .Select(index => new JObject(
+                    new JProperty("Name", index.Name ?? string.Empty),
+                    new JProperty("EntityName", index.EntityName ?? string.Empty),
+                    new JProperty("Columns", new JArray(index.Columns ?? new List<string>())),
+                    new JProperty("IsUnique", index.IsUnique),
+                    new JProperty("IsClustered", index.IsClustered),
+                    new JProperty("Options", new JObject((index.Options ?? new Dictionary<string, object>())
+                        .OrderBy(option => option.Key, StringComparer.Ordinal)
+                        .Select(option => new JProperty(option.Key, SignatureValue(option.Value)))))))
+                .OrderBy(item => item.ToString(Formatting.None), StringComparer.Ordinal));
+            return json;
         }
+
+        private static readonly System.Reflection.PropertyInfo[] EntitySignatureProperties = SignatureProperties(typeof(EntityStructure),
+            "EntityName DatasourceEntityName OriginalEntityName SchemaOrOwnerOrDatabase DatabaseType EntityType PrimaryKeyString CustomBuildQuery IsIdentity");
+        private static readonly System.Reflection.PropertyInfo[] FieldSignatureProperties = SignatureProperties(typeof(EntityField),
+            "FieldName Originalfieldname Fieldtype Size Size1 Size2 NumericPrecision NumericScale FieldCategory ValueMin ValueMax IsRequired IsIndexed IsAutoIncrement AllowDBNull IsCheck IsUnique IsKey FieldIndex IsIdentity EntityName OrdinalPosition IsReadOnly IsRowVersion IsLong DefaultValue Expression BaseTableName BaseColumnName MaxLength IsFixedLength ColumnName ColumnTypeName DatabaseGeneratedOptionName IsNotMapped IsUnicode");
+        private static readonly System.Reflection.PropertyInfo[] RelationSignatureProperties = SignatureProperties(typeof(RelationShipKeys),
+            "RalationName RelatedEntityID RelatedEntityColumnID RelatedColumnSequenceID EntityColumnID EntityColumnSequenceID OnDeleteBehavior OnUpdateBehavior");
+
+        /// <summary>The named properties, in ordinal name order. A name the type does not have is a programming error and stops the type from loading.</summary>
+        private static System.Reflection.PropertyInfo[] SignatureProperties(Type type, string names) =>
+            names.Split(' ').OrderBy(name => name, StringComparer.Ordinal)
+                .Select(name => type.GetProperty(name) ?? throw new InvalidOperationException(
+                    $"{type.Name} has no property '{name}' to include in the migration plan identity."))
+                .ToArray();
+
+        private static JObject Signature(object source, System.Reflection.PropertyInfo[] properties) =>
+            new JObject(properties.Select(property => new JProperty(property.Name, SignatureValue(property.GetValue(source)))));
+
+        /// <summary>One property value in its culture-independent form.</summary>
+        private static JToken SignatureValue(object value) => value switch
+        {
+            null => JValue.CreateNull(),
+            string text => new JValue(text),
+            Enum member => new JValue(member.ToString()),
+            IFormattable formattable => new JValue(formattable.ToString(null, System.Globalization.CultureInfo.InvariantCulture)),
+            bool flag => new JValue(flag),
+            _ => new JValue(Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture))
+        };
 
         private static JToken OperationIntent(MigrationPlanOperation operation)
         {

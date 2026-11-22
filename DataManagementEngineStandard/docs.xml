@@ -28758,9 +28758,6 @@
             same naming convention used by the plan builder.
             </summary>
         </member>
-        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.TryLoadPersistedPlan(System.String)">
-            <summary>The plan a checkpoint belongs to, read back when a resume is asked for by token alone.</summary>
-        </member>
         <member name="P:TheTechIdea.Beep.Editor.Migration.MigrationManager.CheckpointEverySteps">
             <summary>
             How many completed steps may pass between persisted execution checkpoints. One (the default) persists
@@ -28912,33 +28909,29 @@
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.SerializeCheckpointSnapshotWithoutPlan(TheTechIdea.Beep.Editor.Migration.MigrationExecutionCheckpoint)">
             <summary>
-            The checkpoint record's snapshot, without the approved plan it carries. The plan is already persisted (or
-            held in memory by the caller) and is hundreds of megabytes for a large module; embedding it in every
-            per-step checkpoint record made the history quadratic in plan size. Identity and step state remain.
+            The checkpoint record's snapshot, without the approved plan it carries. The plan is hundreds of megabytes
+            for a large module; embedding it in every per-step checkpoint record made the history quadratic in plan
+            size. The first record of an execution carries the plan; identity and every step's state remain here.
             </summary>
-        </member>
-        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.SerializeCheckpointSnapshotCompact(TheTechIdea.Beep.Editor.Migration.MigrationExecutionCheckpoint)">
-            <summary>
-            The compact snapshot written with each checkpoint record: identity, status and position, without the
-            approved plan or the full step list.
-            </summary>
-            <remarks>
-            Every execution step writes a checkpoint. Carrying all 2716 steps (and the plan) in each record made a
-            record about a megabyte and its serialization about two seconds - the schema apply spent its time
-            re-serializing the same growing state instead of creating tables. <c>LastCompletedStep</c> plus the plan
-            is what resume needs; the failed/current steps are attached separately to the record.
-            </remarks>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.LoadMigrationPlan(System.String)">
             <summary>Loads a captured plan from this datasource's history. Legacy summary-only records cannot be applied.</summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.SchemaSignature(TheTechIdea.Beep.DataBase.EntityStructure)">
             <summary>
-            The part of an entity's shape that belongs to the plan's identity: its name, its key and each field's
-            name/type/size/nullability/flags. Built by reading properties directly - no serialiser, no whole-object
-            graph - because hashing a plan used to serialise every operation's full desired and expected structure,
-            which cost minutes and gigabytes on a large module.
+            The part of an entity's shape that belongs to the plan's identity: the entity's own descriptors, every
+            field's definition, the ordered primary key, its relations and its indexes. Each value is read straight
+            from its property - no serialiser and no whole-object graph - because hashing a plan used to serialise
+            every operation's full desired and expected structure, which cost minutes and gigabytes on a large
+            module. Reading directly is the saving; the definition itself is complete, so a change to a size, a
+            default, a column name, a key order or an index is a different plan and needs approval again.
             </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.SignatureProperties(System.Type,System.String)">
+            <summary>The named properties, in ordinal name order. A name the type does not have is a programming error and stops the type from loading.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.SignatureValue(System.Object)">
+            <summary>One property value in its culture-independent form.</summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.CreateMigrationPlanRevision(TheTechIdea.Beep.Editor.Migration.MigrationPlanArtifact,TheTechIdea.Beep.Editor.Migration.MigrationExecutionPolicy,TheTechIdea.Beep.Editor.Migration.MigrationPolicyOptions)">
             <summary>Creates a new plan identity for an explicit retry/failure policy revision. Re-approval is required.</summary>
