@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -79,6 +79,13 @@ namespace TheTechIdea.Beep.Editor.Migration
                 checkpoint.OwnershipTargetKey = _executionScope.Value.TargetKey;
                 checkpoint.OwnershipStoreIdentity = _executionScope.Value.Storage.ScopeIdentity;
             }
+            else if (checkpoint.ApprovedPlan == null)
+            {
+                // The record carries the plan's identity, not the plan; resume re-attaches the persisted artifact.
+                checkpoint.ApprovedPlan = plan ?? TryLoadPersistedPlan(checkpoint.PlanId);
+            }
+
+
             if (!CheckpointScopeMatches(checkpoint)) throw new MigrationCheckpointPersistenceException(checkpoint,
                 new PersistenceWriteResult(PersistenceWriteStatus.Failed), requiresReconciliation: true);
             if (checkpoint.RequiresReconciliation || checkpoint.CompensationSteps.Count > 0 ||
@@ -603,6 +610,21 @@ namespace TheTechIdea.Beep.Editor.Migration
             return null;
         }
 
+        /// <summary>The plan a checkpoint belongs to, read back when a resume is asked for by token alone.</summary>
+        private MigrationPlanArtifact TryLoadPersistedPlan(string planId)
+        {
+            if (string.IsNullOrWhiteSpace(planId)) return null;
+
+            try
+            {
+                return LoadMigrationPlan(planId);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
         private static MigrationExecutionCheckpoint BuildNewCheckpoint(MigrationPlanArtifact plan, string token)
         {
             return new MigrationExecutionCheckpoint
@@ -882,19 +904,64 @@ namespace TheTechIdea.Beep.Editor.Migration
             { Checkpoint = checkpoint; Outcome = outcome; RequiresReconciliation = requiresReconciliation; }
         }
 
+        /// <summary>
+        /// How many completed steps may pass between persisted execution checkpoints. One (the default) persists
+        /// after every step, which is the contract callers and tests rely on: a checkpoint write failure stops the
+        /// run. A caller executing a very large plan in one session may raise it, accepting a coarser cold-resume
+        /// granularity in exchange for not re-serializing the whole execution state after every step.
+        /// </summary>
+        public int CheckpointEverySteps { get; set; } = 1;
+
+        private readonly Dictionary<string, int> _checkpointCalls = new(StringComparer.Ordinal);
+        private readonly Dictionary<string, int> _persistedCheckpointCalls = new(StringComparer.Ordinal);
+
         private void PersistExecutionCheckpoint(MigrationExecutionCheckpoint checkpoint, CancellationToken token = default)
         {
             if (checkpoint == null) return;
             var scope = _executionScope.Value;
             if (scope?.ClaimValidated != true || !CheckpointScopeMatches(checkpoint))
                 throw new InvalidOperationException("Checkpoint mutation requires captured ownership.");
+
+            var mustPersist = checkpoint.IsCompleted
+                              || checkpoint.HasFailed
+                              || checkpoint.RequiresReconciliation
+                              || CheckpointEverySteps <= 1;
+
+            int calls;
+
+            lock (_checkpointCalls)
+            {
+                _checkpointCalls.TryGetValue(checkpoint.ExecutionToken, out var previousCalls);
+                calls = previousCalls + 1;
+                _checkpointCalls[checkpoint.ExecutionToken] = calls;
+
+                if (!mustPersist)
+                {
+                    _persistedCheckpointCalls.TryGetValue(checkpoint.ExecutionToken, out var persisted);
+                    mustPersist = calls - persisted >= CheckpointEverySteps;
+                }
+            }
+
+            if (!mustPersist)
+            {
+                return;
+            }
+
             checkpoint.UpdatedOnUtc = DateTime.UtcNow;
+            // Checkpoints never carry the plan: the planning step persists the artifact once, and a resume re-attaches
+            // it by id. Embedding it in every checkpoint record is what grew the history to 1 GB on a single module.
             var outcome = MigrationRecordWriter.WriteExecutionSnapshotToStore(
                 scope.Storage,
                 checkpoint,
-                scope.DataSourceName, scope.DataSourceType, token);
+                scope.DataSourceName, scope.DataSourceType, token,
+                includePlanAndSteps: false);
             if (!outcome.IsSaved) throw new MigrationCheckpointPersistenceException(checkpoint, outcome);
             ExecutionCheckpoints.TryRemove(checkpoint.ExecutionToken, out _);
+
+            lock (_checkpointCalls)
+            {
+                _persistedCheckpointCalls[checkpoint.ExecutionToken] = calls;
+            }
         }
 
         /// <summary>

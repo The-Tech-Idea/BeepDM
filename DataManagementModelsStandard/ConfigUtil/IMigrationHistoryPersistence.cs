@@ -3,7 +3,7 @@ using System.Threading;
 
 namespace TheTechIdea.Beep.ConfigUtil
 {
-    public enum PersistenceWriteStatus { Saved, Failed, Cancelled, Unsupported }
+    public enum PersistenceWriteStatus { Saved, Failed, Cancelled, Unsupported, Skipped }
 
     /// <summary>Acknowledgement of a completed storage operation, not a power-loss guarantee.</summary>
     public sealed class PersistenceWriteResult

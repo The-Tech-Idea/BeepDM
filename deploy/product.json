@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "productCode": "beepdm",
+  "name": "Data Management Engine",
+  "kind": "nuget-library",
+  "tier": "subscriber",
+  "repository": "https://github.com/The-Tech-Idea/BeepDM",
+  "license": "MIT",
+  "version": {
+    "file": "DataManagementEngineStandard/DataManagementEngine.csproj",
+    "xpath": "//Version"
+  },
+  "checks": [
+    {
+      "name": "Framework reliability tests",
+      "command": "dotnet test tests/FrameworkReliabilityTests"
+    },
+    {
+      "name": "Migration manager tests",
+      "command": "dotnet test tests/MigrationManagerTests"
+    }
+  ],
+  "artifacts": [
+    {
+      "kind": "nuget-package",
+      "builder": "dotnet-pack",
+      "platform": "Any",
+      "source": "DataManagementModelsStandard/DataManagementModels.csproj"
+    },
+    {
+      "kind": "nuget-package",
+      "builder": "dotnet-pack",
+      "platform": "Any",
+      "source": "DataManagementEngineStandard/DataManagementEngine.csproj"
+    }
+  ]
+}

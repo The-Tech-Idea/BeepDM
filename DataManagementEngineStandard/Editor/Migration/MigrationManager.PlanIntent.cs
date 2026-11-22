@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -12,20 +12,23 @@ namespace TheTechIdea.Beep.Editor.Migration
 {
     public partial class MigrationManager
     {
-        private const int CurrentPlanHashVersion = 2;
+        // Version 3 hashes a compact projection of each operation's schema instead of the whole entity structure.
+        // Version 2 plans are refused rather than re-hashed: their identity was computed from a different document, so
+        // accepting them would mean "the plan changed after approval" for a plan nobody touched.
+        private const int CurrentPlanHashVersion = 3;
         private static readonly JsonSerializerSettings SnapshotSettings = new JsonSerializerSettings
         {
             TypeNameHandling = TypeNameHandling.None,
             ObjectCreationHandling = ObjectCreationHandling.Replace,
             DateParseHandling = DateParseHandling.None,
-            MaxDepth = 64
+            MaxDepth = 256
         };
 
         private static JsonSerializer SnapshotSerializer() => JsonSerializer.Create(SnapshotSettings);
         private static T ReadSnapshot<T>(string json)
         {
             using var text = new StringReader(json);
-            using var reader = new JsonTextReader(text) { DateParseHandling = DateParseHandling.None, MaxDepth = 64 };
+            using var reader = new JsonTextReader(text) { DateParseHandling = DateParseHandling.None, MaxDepth = 256 };
             return SnapshotSerializer().Deserialize<T>(reader);
         }
 
@@ -45,6 +48,43 @@ namespace TheTechIdea.Beep.Editor.Migration
 
         internal static string SerializeCheckpointSnapshot(MigrationExecutionCheckpoint checkpoint) =>
             JToken.FromObject(checkpoint, SnapshotSerializer()).ToString(Formatting.None);
+
+        /// <summary>
+        /// The checkpoint record's snapshot, without the approved plan it carries. The plan is already persisted (or
+        /// held in memory by the caller) and is hundreds of megabytes for a large module; embedding it in every
+        /// per-step checkpoint record made the history quadratic in plan size. Identity and step state remain.
+        /// </summary>
+        internal static string SerializeCheckpointSnapshotWithoutPlan(MigrationExecutionCheckpoint checkpoint)
+        {
+            var json = JObject.FromObject(checkpoint, SnapshotSerializer());
+            json.Remove(nameof(MigrationExecutionCheckpoint.ApprovedPlan));
+            return json.ToString(Formatting.None);
+        }
+
+        /// <summary>
+        /// The compact snapshot written with each checkpoint record: identity, status and position, without the
+        /// approved plan or the full step list.
+        /// </summary>
+        /// <remarks>
+        /// Every execution step writes a checkpoint. Carrying all 2716 steps (and the plan) in each record made a
+        /// record about a megabyte and its serialization about two seconds - the schema apply spent its time
+        /// re-serializing the same growing state instead of creating tables. <c>LastCompletedStep</c> plus the plan
+        /// is what resume needs; the failed/current steps are attached separately to the record.
+        /// </remarks>
+        internal static string SerializeCheckpointSnapshotCompact(MigrationExecutionCheckpoint checkpoint)
+        {
+            var json = JObject.FromObject(checkpoint, SnapshotSerializer());
+
+            foreach (var property in json.Properties()
+                         .Where(property => string.Equals(property.Name, nameof(MigrationExecutionCheckpoint.ApprovedPlan), StringComparison.OrdinalIgnoreCase)
+                                            || string.Equals(property.Name, nameof(MigrationExecutionCheckpoint.Steps), StringComparison.OrdinalIgnoreCase))
+                         .ToList())
+            {
+                property.Remove();
+            }
+
+            return json.ToString(Formatting.None);
+        }
 
         /// <summary>Loads a captured plan from this datasource's history. Legacy summary-only records cannot be applied.</summary>
         public MigrationPlanArtifact LoadMigrationPlan(string planId)
@@ -148,14 +188,55 @@ namespace TheTechIdea.Beep.Editor.Migration
             return Convert.ToHexString(sha.ComputeHash(Encoding.UTF8.GetBytes(CanonicalJson(token))));
         }
 
+        /// <summary>
+        /// The part of an entity's shape that belongs to the plan's identity: its name, its key and each field's
+        /// name/type/size/nullability/flags. Built by reading properties directly - no serialiser, no whole-object
+        /// graph - because hashing a plan used to serialise every operation's full desired and expected structure,
+        /// which cost minutes and gigabytes on a large module.
+        /// </summary>
+        private static JToken SchemaSignature(EntityStructure schema)
+        {
+            if (schema == null) return JValue.CreateNull();
+
+            var fields = new JArray((schema.Fields ?? new List<EntityField>())
+                .Where(field => field != null)
+                .OrderBy(field => field.OrdinalPosition)
+                .ThenBy(field => field.FieldIndex)
+                .ThenBy(field => field.FieldName, StringComparer.Ordinal)
+                .Select(field => new JObject(
+                    new JProperty("n", field.FieldName ?? string.Empty),
+                    new JProperty("t", field.Fieldtype ?? string.Empty),
+                    new JProperty("s", field.Size1),
+                    new JProperty("k", field.IsKey),
+                    new JProperty("nn", !field.AllowDBNull),
+                    new JProperty("r", field.IsRequired),
+                    new JProperty("i", field.IsAutoIncrement))));
+
+            // Relations decide foreign-key operations; their identity is a handful of names, not object graphs.
+            var relations = new JArray((schema.Relations ?? new List<RelationShipKeys>())
+                .Where(relation => relation != null)
+                .Select(relation =>
+                    $"{relation.RalationName}|{relation.RelatedEntityID}|{relation.RelatedEntityColumnID}|" +
+                    $"{relation.RelatedColumnSequenceID}|{relation.EntityColumnID}|{relation.EntityColumnSequenceID}|" +
+                    $"{relation.OnDeleteBehavior}|{relation.OnUpdateBehavior}")
+                .OrderBy(text => text, StringComparer.Ordinal)
+                .Select(text => new JValue(text)));
+
+            return new JObject(
+                new JProperty("entity", schema.EntityName ?? string.Empty),
+                new JProperty("pk", schema.PrimaryKeyString ?? string.Empty),
+                new JProperty("fields", fields),
+                new JProperty("relations", relations));
+        }
+
         private static JToken OperationIntent(MigrationPlanOperation operation)
         {
             var json = (JObject)SelectProperties(operation,
                 "EntityName EntityTypeName Kind RiskLevel IsDestructive IsTypeNarrowing HasNullabilityTightening TargetName MissingColumns");
             var snapshot = operation.SchemaSnapshot;
-            json["DesiredSchema"] = SchemaIntent(snapshot?.DesiredSchema);
+            json["DesiredSchema"] = SchemaSignature(snapshot?.DesiredSchema);
             json["ExpectedEntityExists"] = snapshot?.ExpectedEntityExists;
-            json["ExpectedSchema"] = SchemaIntent(snapshot?.ExpectedSchema);
+            json["ExpectedSchema"] = SchemaSignature(snapshot?.ExpectedSchema);
             return json;
         }
 

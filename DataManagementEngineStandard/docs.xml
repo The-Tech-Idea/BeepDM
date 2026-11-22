@@ -28588,6 +28588,28 @@
             Uses the current <see cref="P:TheTechIdea.Beep.Editor.Migration.MigrationManager.MigrateDataSource"/> when parameters are null.
             </summary>
         </member>
+        <member name="P:TheTechIdea.Beep.Editor.Migration.MigrationManager.PersistPlanArtifactsInHistory">
+            <summary>
+            Whether planning writes the full plan artifact into the migration history.
+            </summary>
+            <remarks>
+            The history file is a single JSON document rewritten on every record, so a plan record that carries the
+            whole artifact makes each later append rewrite it too. For a plan over thousands of entities that record
+            is hundreds of megabytes, and appending per operation then costs O(plan size) each time - which is what
+            made a 2716-entity schema apply take minutes per module. Callers that keep the plan in memory and execute
+            it in the same session (the desktop's module setup) set this to false; execution and checkpoint records
+            are still written, so the audit trail of what ran remains. Defaults to true, which is the existing
+            behaviour for callers that reload a plan by id after a restart.
+            </remarks>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Migration.MigrationManager.TrackOperationsInHistory">
+            <summary>
+            Whether each executed operation (one record per created/altered entity) is appended to the migration
+            history. The history is a whole-file JSON document, so one record per entity makes a large apply rewrite
+            it thousands of times. A caller running a generated, thousands-of-entities setup in one session can turn
+            this off; the throttled execution checkpoints still record progress and outcome. Defaults to true.
+            </summary>
+        </member>
         <member name="P:TheTechIdea.Beep.Editor.Migration.MigrationManager.ReadOptions">
             <summary>
             Phase 7 (C0): options controlling how .NET entity classes are read into structures during
@@ -28736,6 +28758,17 @@
             same naming convention used by the plan builder.
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.TryLoadPersistedPlan(System.String)">
+            <summary>The plan a checkpoint belongs to, read back when a resume is asked for by token alone.</summary>
+        </member>
+        <member name="P:TheTechIdea.Beep.Editor.Migration.MigrationManager.CheckpointEverySteps">
+            <summary>
+            How many completed steps may pass between persisted execution checkpoints. One (the default) persists
+            after every step, which is the contract callers and tests rely on: a checkpoint write failure stops the
+            run. A caller executing a very large plan in one session may raise it, accepting a coarser cold-resume
+            granularity in exchange for not re-serializing the whole execution state after every step.
+            </summary>
+        </member>
         <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.TryLoadPersistedCheckpoint(System.String)">
             <summary>
             Loads the most recent persisted execution checkpoint for <paramref name="executionToken"/>
@@ -28877,8 +28910,35 @@
             requiring callers to walk audit events.
             </summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.SerializeCheckpointSnapshotWithoutPlan(TheTechIdea.Beep.Editor.Migration.MigrationExecutionCheckpoint)">
+            <summary>
+            The checkpoint record's snapshot, without the approved plan it carries. The plan is already persisted (or
+            held in memory by the caller) and is hundreds of megabytes for a large module; embedding it in every
+            per-step checkpoint record made the history quadratic in plan size. Identity and step state remain.
+            </summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.SerializeCheckpointSnapshotCompact(TheTechIdea.Beep.Editor.Migration.MigrationExecutionCheckpoint)">
+            <summary>
+            The compact snapshot written with each checkpoint record: identity, status and position, without the
+            approved plan or the full step list.
+            </summary>
+            <remarks>
+            Every execution step writes a checkpoint. Carrying all 2716 steps (and the plan) in each record made a
+            record about a megabyte and its serialization about two seconds - the schema apply spent its time
+            re-serializing the same growing state instead of creating tables. <c>LastCompletedStep</c> plus the plan
+            is what resume needs; the failed/current steps are attached separately to the record.
+            </remarks>
+        </member>
         <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.LoadMigrationPlan(System.String)">
             <summary>Loads a captured plan from this datasource's history. Legacy summary-only records cannot be applied.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.SchemaSignature(TheTechIdea.Beep.DataBase.EntityStructure)">
+            <summary>
+            The part of an entity's shape that belongs to the plan's identity: its name, its key and each field's
+            name/type/size/nullability/flags. Built by reading properties directly - no serialiser, no whole-object
+            graph - because hashing a plan used to serialise every operation's full desired and expected structure,
+            which cost minutes and gigabytes on a large module.
+            </summary>
         </member>
         <member name="M:TheTechIdea.Beep.Editor.Migration.MigrationManager.CreateMigrationPlanRevision(TheTechIdea.Beep.Editor.Migration.MigrationPlanArtifact,TheTechIdea.Beep.Editor.Migration.MigrationExecutionPolicy,TheTechIdea.Beep.Editor.Migration.MigrationPolicyOptions)">
             <summary>Creates a new plan identity for an explicit retry/failure policy revision. Re-approval is required.</summary>

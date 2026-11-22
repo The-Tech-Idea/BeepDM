@@ -445,6 +445,14 @@ namespace TheTechIdea.Beep.Editor.Migration
 
         private void TryTrackMigrationPlan(MigrationPlanArtifact plan, string operationName)
         {
+            if (!PersistPlanArtifactsInHistory)
+            {
+                // The caller holds the plan and executes it in this session; see PersistPlanArtifactsInHistory.
+                plan.PlanPersistenceStatus = PersistenceWriteStatus.Skipped;
+                plan.PlanPersistenceErrorCode = string.Empty;
+                return;
+            }
+
             var outcome = MigrationRecordWriter.WritePlanArtifact(
                 _editor,
                 plan,

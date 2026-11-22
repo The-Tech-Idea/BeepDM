@@ -13,7 +13,7 @@
     <Copyright>2022</Copyright>
     <PackageProjectUrl>https://github.com/The-Tech-Idea/BeepDM</PackageProjectUrl>
     <RepositoryUrl>https://github.com/The-Tech-Idea/BeepDM</RepositoryUrl>
-    <PackageIcon>SimpleODM.png</PackageIcon>
+    <PackageIcon>beepdm.png</PackageIcon>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
 	  <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 	  <ProduceReferenceAssembly>True</ProduceReferenceAssembly>
@@ -45,7 +45,7 @@
 
 
   <ItemGroup>
-    <None Include="..\..\InstallationScripts\LogoGFx\128\SimpleODM.png">
+    <None Include="..\assets\beepdm.png">
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
     </None>

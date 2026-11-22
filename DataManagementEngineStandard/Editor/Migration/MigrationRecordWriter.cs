@@ -56,13 +56,19 @@ namespace TheTechIdea.Beep.Editor.Migration
         internal static PersistenceWriteResult WriteExecutionSnapshotToStore(
             IMigrationHistoryPersistence persistence, MigrationExecutionCheckpoint checkpoint,
             string datasourceName, DataSourceType datasourceType,
-            System.Threading.CancellationToken token = default)
+            System.Threading.CancellationToken token = default,
+            bool includePlanAndSteps = true)
         {
             if (checkpoint == null) return new PersistenceWriteResult(PersistenceWriteStatus.Failed,
                 new ArgumentNullException(nameof(checkpoint)));
             try
             {
-                var snapshot = MigrationManager.SerializeCheckpointSnapshot(checkpoint);
+                // A caller that keeps its plan in memory (and does not persist plan artifacts) gets a compact
+                // checkpoint: the plan and the step list are what make a record megabytes, and re-writing them on
+                // every checkpoint is what made a large apply take tens of minutes.
+                var snapshot = includePlanAndSteps
+                    ? MigrationManager.SerializeCheckpointSnapshot(checkpoint)
+                    : MigrationManager.SerializeCheckpointSnapshotCompact(checkpoint);
                 var record = new MigrationRecord
                 {
                     MigrationId  = checkpoint.ExecutionToken,

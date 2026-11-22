@@ -35,6 +35,29 @@ namespace TheTechIdea.Beep.Editor.Migration
         private readonly List<DdlOperationEvidence> _ddlEvidence = new List<DdlOperationEvidence>();
 
         public IDMEEditor DMEEditor => _editor;
+
+        /// <summary>
+        /// Whether planning writes the full plan artifact into the migration history.
+        /// </summary>
+        /// <remarks>
+        /// The history file is a single JSON document rewritten on every record, so a plan record that carries the
+        /// whole artifact makes each later append rewrite it too. For a plan over thousands of entities that record
+        /// is hundreds of megabytes, and appending per operation then costs O(plan size) each time - which is what
+        /// made a 2716-entity schema apply take minutes per module. Callers that keep the plan in memory and execute
+        /// it in the same session (the desktop's module setup) set this to false; execution and checkpoint records
+        /// are still written, so the audit trail of what ran remains. Defaults to true, which is the existing
+        /// behaviour for callers that reload a plan by id after a restart.
+        /// </remarks>
+        public bool PersistPlanArtifactsInHistory { get; set; } = true;
+
+        /// <summary>
+        /// Whether each executed operation (one record per created/altered entity) is appended to the migration
+        /// history. The history is a whole-file JSON document, so one record per entity makes a large apply rewrite
+        /// it thousands of times. A caller running a generated, thousands-of-entities setup in one session can turn
+        /// this off; the throttled execution checkpoints still record progress and outcome. Defaults to true.
+        /// </summary>
+        public bool TrackOperationsInHistory { get; set; } = true;
+
         public IDataSource MigrateDataSource
         {
             get => _executionScope.Value?.Source ?? _migrationSource;
@@ -117,6 +140,11 @@ namespace TheTechIdea.Beep.Editor.Migration
 
         private void TrackMigration(string operation, string entityName, string columnName, string sql, IErrorsInfo result)
         {
+            if (!TrackOperationsInHistory)
+            {
+                return;
+            }
+
             MigrationRecordWriter.WriteOperation(
                 _editor,
                 operation,

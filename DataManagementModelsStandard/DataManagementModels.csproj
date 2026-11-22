@@ -3,7 +3,7 @@
   <PropertyGroup>
 	  <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
 	  <LangVersion>latest</LangVersion>
-    <PackageIcon>SimpleODM.png</PackageIcon>
+    <PackageIcon>beepdm.png</PackageIcon>
     <Authors>The Tech Idea</Authors>
     <Company>The Tech Idea</Company>
     <Product>TheTechIdea.Beep.DataManagementModels</Product>
@@ -35,7 +35,7 @@
 	  <Compile Remove="AppTemplate.cs" />
 	</ItemGroup>
   <ItemGroup>
-    <None Include="..\..\InstallationScripts\LogoGFx\128\SimpleODM.png">
+    <None Include="..\assets\beepdm.png">
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
     </None>
