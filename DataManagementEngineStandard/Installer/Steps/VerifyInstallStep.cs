@@ -39,6 +39,13 @@ namespace TheTechIdea.Beep.Installer.Steps
             if (string.IsNullOrWhiteSpace(installPath))
                 return StepErrorHelpers.Fail("InstallPath not set.");
 
+            // A dry run copies nothing, so there are no files to verify, no install to describe in an uninstall
+            // manifest and nothing to register. This step used to run regardless: it failed every dry run that
+            // carried a file ("Missing files: ..."), and it wrote the manifest and the install registration for an
+            // install that never happened. Every other step answers a dry run the same way.
+            if (context.Options?.DryRun == true)
+                return StepErrorHelpers.Ok("Dry run: the installed files would be verified, and the uninstall manifest and install registration written. Nothing was checked or written.");
+
             var missing = new List<string>();
             var verified = 0;
             int total = config.Components.Sum(c => c.Files.Count);
