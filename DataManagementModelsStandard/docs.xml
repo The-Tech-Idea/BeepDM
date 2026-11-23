@@ -14407,6 +14407,12 @@
         <member name="M:TheTechIdea.Beep.Editor.SchemaMigration.DatabaseTargetMigrationIdentity.#ctor(System.String,System.String,System.String,System.String)">
             <summary>Immutable catalog identity captured before any provisioning work.</summary>
         </member>
+        <member name="T:TheTechIdea.Beep.Editor.SchemaMigration.DatabaseTargetInspection">
+            <summary>A read-only observation of a native catalog and this lifecycle's durable ownership claim.</summary>
+        </member>
+        <member name="M:TheTechIdea.Beep.Editor.SchemaMigration.DatabaseTargetInspection.#ctor(System.Boolean,System.Boolean,System.Boolean)">
+            <summary>A read-only observation of a native catalog and this lifecycle's durable ownership claim.</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.SchemaMigration.DatabaseTargetLegacyClaimBinding">
             <summary>Explicit compatibility mapping for an existing unscoped v1 receipt.</summary>
         </member>

@@ -7,6 +7,9 @@ namespace TheTechIdea.Beep.Editor.SchemaMigration
     /// <summary>Immutable catalog identity captured before any provisioning work.</summary>
     public sealed record DatabaseTargetMigrationIdentity(string Provider, string Server, string Database, string OwnershipScope);
 
+    /// <summary>A read-only observation of a native catalog and this lifecycle's durable ownership claim.</summary>
+    public sealed record DatabaseTargetInspection(bool DatabaseExists, bool OwnershipConfirmed, bool RequiresReconciliation);
+
     /// <summary>Explicit compatibility mapping for an existing unscoped v1 receipt.</summary>
     public sealed record DatabaseTargetLegacyClaimBinding(string Provider, string OwnershipScope);
 

@@ -27513,6 +27513,10 @@
         <member name="P:TheTechIdea.Beep.Editor.Migration.DatabaseTargetMigration.Exists">
             <summary>Read-only status. No claim, catalog or schema is created.</summary>
         </member>
+        <member name="M:TheTechIdea.Beep.Editor.Migration.DatabaseTargetMigration.Inspect">
+            <summary>Observes the native target without creating a claim, catalog, directory or lock file.
+            Execution rechecks identity and provider state under its creation lease; this is not an execution admission.</summary>
+        </member>
         <member name="T:TheTechIdea.Beep.Editor.Migration.DbSchemaVersionStore">
             <summary>
             Reads and writes the authoritative schema-version marker <em>inside the target database</em>

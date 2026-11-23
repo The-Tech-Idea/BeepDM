@@ -70,6 +70,17 @@ namespace TheTechIdea.Beep.Editor.Migration
             get { CheckTarget(); var claim = ReadClaim(); return claim != null && DatabaseExists() && OwnerMatches(claim); }
         }
         public Guid Owner { get { CheckTarget(); return ReadClaim()?.Owner ?? Guid.Empty; } }
+        /// <summary>Observes the native target without creating a claim, catalog, directory or lock file.
+        /// Execution rechecks identity and provider state under its creation lease; this is not an execution admission.</summary>
+        public DatabaseTargetInspection Inspect()
+        {
+            CheckTarget();
+            var claim = ReadClaim();
+            var exists = DatabaseExists();
+            var owned = exists && claim != null && OwnerMatches(claim);
+            var reconcile = !owned && claim != null && (claim.CreationDispatched || exists);
+            return new DatabaseTargetInspection(exists, owned, reconcile);
+        }
         public async Task PrepareAsync(bool createIfMissing, bool allowExistingUnowned, CancellationToken ct = default)
         {
             ct.ThrowIfCancellationRequested(); CheckTarget();
